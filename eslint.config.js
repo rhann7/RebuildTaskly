@@ -12,7 +12,7 @@ export default [
     ...typescript.configs.recommended,
     {
         ...react.configs.flat.recommended,
-        ...react.configs.flat['jsx-runtime'], // Required for React 17+
+        ...react.configs.flat['jsx-runtime'],
         languageOptions: {
             globals: {
                 ...globals.browser,
@@ -22,6 +22,8 @@ export default [
             'react/react-in-jsx-scope': 'off',
             'react/prop-types': 'off',
             'react/no-unescaped-entities': 'off',
+
+            '@typescript-eslint/no-explicit-any': 'off',
         },
         settings: {
             react: {
