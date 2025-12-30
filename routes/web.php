@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Rules\PermissionController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -14,6 +15,24 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', function () {
         return Inertia::render('dashboard');
     })->name('dashboard');
+    
+    Route::middleware('role:admin')->group(function () {
+        Route::prefix('access-control')->name('access-control.')->group(function () {
+            Route::resource('permissions', PermissionController::class);
+        });
+    });
+
+    Route::get('manage-company', function () {
+        return "<h1>Tes halaman company dengan general permission: manage-company</h1>";
+    })->middleware('company_can:manage-company');
+    
+    Route::get('manage-workspace', function () {
+        return "<h1>Tes halaman company dengan general permission: manage-workspace</h1>";
+    })->middleware('company_can:manage-workspace');
+
+    Route::get('view-analytics', function () {
+        return "<h1>Tes halaman company dengan unique permission: view-analytics</h1>";
+    })->middleware('company_can:view-analytics');
 });
 
 require __DIR__.'/settings.php';
