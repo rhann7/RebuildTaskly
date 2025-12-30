@@ -3,25 +3,30 @@
 namespace Database\Seeders;
 
 use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
+use Spatie\Permission\Models\Role;
 
 class DatabaseSeeder extends Seeder
 {
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        // User::factory(10)->create();
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
-        User::firstOrCreate(
-            ['email' => 'test@example.com'],
+        Role::firstOrCreate(['name' => 'admin']);
+        Role::firstOrCreate(['name' => 'company-owner']);
+
+        $admin = User::firstOrCreate(
+            ['email'             => 'admin@localhost.com'],
             [
-                'name' => 'Test User',
-                'password' => 'password',
+                'name'              => 'Admin',
+                'password'          => Hash::make('password'),
                 'email_verified_at' => now(),
+                'remember_token'    => Str::random(10),
             ]
         );
+        
+        $admin->syncRoles(['admin']);
     }
 }
