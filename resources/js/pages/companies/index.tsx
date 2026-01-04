@@ -2,7 +2,7 @@ import ResourceListLayout from '@/layouts/resource/resource-list-layout';
 import { Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { useState } from 'react';
-import {  Search, Pencil, Trash2, Phone, MapPin, Building2, Filter, Fingerprint, Plus } from 'lucide-react';
+import {  Search, Pencil, Trash2, Phone, MapPin, Building2, Filter, Plus } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -43,7 +43,7 @@ interface PageProps {
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Company List', href: '/companies' },
+    { title: 'Company List', href: '/company-management/companies' },
 ];
 
 export default function CompanyIndex({ companies, categories, filters }: PageProps) {
@@ -52,7 +52,7 @@ export default function CompanyIndex({ companies, categories, filters }: PagePro
 
     const handleSearch = () => {
         router.get(
-            '/companies', 
+            '/company-management/companies', 
             { search: searchQuery, category: categoryFilter }, 
             { preserveState: true, replace: true }
         );
@@ -61,7 +61,7 @@ export default function CompanyIndex({ companies, categories, filters }: PagePro
     const handleCategoryChange = (value: string) => {
         setCategoryFilter(value);
         router.get(
-            '/companies', 
+            '/company-management/companies', 
             { search: searchQuery, category: value }, 
             { preserveState: true, replace: true }
         );
@@ -69,22 +69,7 @@ export default function CompanyIndex({ companies, categories, filters }: PagePro
 
     const handleDelete = (id: number) => {
         if (confirm('Delete this company?')) {
-            router.delete(`/companies/${id}`);
-        }
-    };
-
-    const handleImpersonate = (e: React.MouseEvent, company: Company) => {
-        e.stopPropagation();
-        
-        const targetUserId = company.company_owner?.user_id;
-
-        if (!targetUserId) {
-            alert('Error: Akun user untuk owner ini tidak ditemukan (user_id null).');
-            return;
-        }
-
-        if (confirm(`Masuk ke sistem sebagai ${company.name}?`)) {
-            router.get(`/impersonate/take/${targetUserId}`);
+            router.delete(`/company-management/companies/${id}`);
         }
     };
 
@@ -122,7 +107,7 @@ export default function CompanyIndex({ companies, categories, filters }: PagePro
 
     const HeaderActions = (
         <Button asChild>
-            <Link href="/companies/create">
+            <Link href="/company-management/companies/create">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Company
             </Link>
@@ -166,7 +151,7 @@ export default function CompanyIndex({ companies, categories, filters }: PagePro
                         <TableRow
                             key={company.id}
                             className="group cursor-pointer hover:bg-muted/30 transition-colors"
-                            onClick={() => router.visit(`/companies/${company.slug}`)}
+                            onClick={() => router.visit(`/company-management/companies/${company.slug}`)}
                         >
                             <TableCell className="text-center text-muted-foreground tabular-nums">
                                 {companies.from + i}
@@ -215,22 +200,12 @@ export default function CompanyIndex({ companies, categories, filters }: PagePro
                             >
                                 <div className="flex justify-end gap-2">
                                     <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                                        title="Masuk sebagai company ini"
-                                        onClick={(e) => handleImpersonate(e, company)}
-                                    >
-                                        <Fingerprint className="h-3.5 w-3.5" />
-                                    </Button>
-
-                                    <Button
                                         asChild
                                         variant="ghost"
                                         size="icon"
                                         className="h-8 w-8 text-muted-foreground hover:text-foreground"
                                     >
-                                        <Link href={`/companies/${company.id}/edit`}>
+                                        <Link href={`/company-management/companies/${company.id}/edit`}>
                                             <Pencil className="h-3.5 w-3.5" />
                                         </Link>
                                     </Button>

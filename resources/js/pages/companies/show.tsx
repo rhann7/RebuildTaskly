@@ -28,8 +28,8 @@ interface PageProps {
 
 const breadcrumbs = (company: Company): BreadcrumbItem[] => [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Company List', href: '/companies' },
-    { title: company.name, href: `/companies/${company.slug}` },
+    { title: 'Company List', href: '/company-management/companies' },
+    { title: company.name, href: `/company-management/companies/${company.slug}` },
 ];
 
 const formatDate = (date: string) =>
@@ -48,7 +48,7 @@ export default function CompanyShow({ company }: PageProps) {
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                            <Link href="/companies">
+                            <Link href="/company-management/companies">
                                 <Button
                                     variant="ghost"
                                     size="icon"
@@ -70,7 +70,7 @@ export default function CompanyShow({ company }: PageProps) {
                     </div>
 
                     <div className="pl-10 md:pl-0">
-                        <Link href={`/companies/${company.id}/edit`}>
+                        <Link href={`/company-management/companies/${company.id}/edit`}>
                             <Button size="sm" className="gap-2">
                                 <Pencil className="h-4 w-4" />
                                 Edit Company

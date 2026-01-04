@@ -20,8 +20,8 @@ interface PageProps {
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Company List', href: '/companies' },
-    { title: 'Add New Company', href: '/companies/create' },
+    { title: 'Company List', href: '/company-management/companies' },
+    { title: 'Add New Company', href: '/company-management/companies/create' },
 ];
 
 export default function CreateCompany({ categories }: PageProps) {
@@ -36,7 +36,7 @@ export default function CreateCompany({ categories }: PageProps) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        post('/companies');
+        post('/company-management/companies');
     };
 
     return (
@@ -46,7 +46,7 @@ export default function CreateCompany({ categories }: PageProps) {
             <div className="max-w-3xl mx-auto py-6 px-4">
                 <div className="mb-6">
                     <Button variant="ghost" asChild className="pl-0 hover:bg-transparent">
-                        <Link href="/companies">
+                        <Link href="/company-management/companies">
                             <ChevronLeft className="h-4 w-4 mr-1" /> Back to List
                         </Link>
                     </Button>

@@ -36,8 +36,8 @@ type PageProps = {
 export default function CompanyEdit({ company, categories }: PageProps) {
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },
-        { title: 'Company List', href: '/companies' },
-        { title: 'Edit Company', href: `/companies/${company.id}/edit` },
+        { title: 'Company List', href: '/company-management/companies' },
+        { title: 'Edit Company', href: `/company-management/companies/${company.id}/edit` },
     ];
 
     const { data, setData, put, processing, errors } = useForm({
@@ -52,12 +52,12 @@ export default function CompanyEdit({ company, categories }: PageProps) {
 
     const handleSubmit: FormEventHandler = (e) => {
         e.preventDefault();
-        put(`/companies/${company.id}`);
+        put(`/company-management/companies/${company.id}`);
     };
 
     const handleDelete = () => {
         if (confirm('Are you sure you want to delete this company? This action cannot be undone and will remove all associated data.')) {
-            router.delete(`/companies/${company.id}`);
+            router.delete(`/company-management/companies/${company.id}`);
         }
     };
 
@@ -69,7 +69,7 @@ export default function CompanyEdit({ company, categories }: PageProps) {
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                            <Link href="/companies">
+                            <Link href="/company-management/companies">
                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
                                     <ArrowLeft className="h-4 w-4" />
                                 </Button>
@@ -229,7 +229,7 @@ export default function CompanyEdit({ company, categories }: PageProps) {
                         </div>
 
                         <div className="flex items-center justify-end gap-3 border-t border-border/50 bg-muted/10 px-6 py-4">
-                            <Link href="/companies">
+                            <Link href="/company-management/companies">
                                 <Button type="button" variant="ghost">Cancel</Button>
                             </Link>
                             <Button type="submit" disabled={processing} className="min-w-[120px] gap-2">
