@@ -19,7 +19,7 @@ class CategoryController extends Controller
             $query->where('name', 'like', '%' . $request->search . '%');
         }
 
-        $categories = $query->orderBy('name', 'asc')->paginate(10)->withQueryString();
+        $categories = $query->orderBy('id', 'asc')->paginate(10)->withQueryString();
 
         return Inertia::render('companies/category', [
             'categories' => $categories,
