@@ -23,20 +23,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::resource('permissions', PermissionController::class);
         });
 
-        Route::prefix('companies')->name('companies.')->group(function () {
-            Route::resource('categories', CategoryController::class)
-                ->names('categories')->parameters(['categories' => 'category'])->except(['create', 'edit', 'show']);
+        Route::resource('company-categories', CategoryController::class)
+            ->names('companies.categories')
+            ->parameters(['company-categories' => 'category'])
+            ->except(['create', 'edit', 'show']);
 
-            Route::resource('/', CompanyController::class)
-                ->names([
-                    'index'   => 'index',
-                    'store'   => 'store',
-                    'update'  => 'update',
-                    'destroy' => 'destroy',
-                    'create'  => 'create',
-                ])->parameters(['' => 'company'])->except(['show']);
-        });
-
+        Route::resource('companies', CompanyController::class)
+            ->except(['show']);
+            
         Route::get('/companies/{company:slug}', [CompanyController::class, 'show'])->name('companies.show');
     });
 
