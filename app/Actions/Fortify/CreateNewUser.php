@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
+use Spatie\Permission\Models\Permission;
 
 class CreateNewUser implements CreatesNewUsers
 {
@@ -42,7 +43,7 @@ class CreateNewUser implements CreatesNewUsers
 
         $slug = Str::slug($input['company_name']);
 
-        Company::create([
+        $company = Company::create([
             'company_owner_id'    => $owner->id,
             'company_category_id' => $input['company_category_id'],
             'name'                => $input['company_name'],
@@ -54,6 +55,11 @@ class CreateNewUser implements CreatesNewUsers
         ]);
 
         $user->assignRole('company-owner');
+
+        $generalPermissions = Permission::where('type', 'general')->get();
+        if ($generalPermissions->count() > 0) {
+            $company->givePermissionTo($generalPermissions);
+        }
         
         return $user;
     }
