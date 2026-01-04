@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\CompanyCategory;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -30,9 +31,13 @@ class HandleInertiaRequests extends Middleware
                     'name' => $user->name,
                     'email' => $user->email,
                     'roles' => $user->getRoleNames(),
+                    'company' => $user->companyOwner,
                     'permissions' => $user->getAllPermissions()->pluck('name'),
                 ] : null,
             ],
+            'categories' => fn () => $request->routeIs('register')
+                ? CompanyCategory::select(['id', 'name'])->get()
+                : [],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }
