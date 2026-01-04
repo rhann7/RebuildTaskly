@@ -42,6 +42,16 @@ class User extends Authenticatable
         return $this->hasRole('admin');
     }
 
+    public function canImpersonate()
+    {
+        return $this->isAdmin();
+    }
+
+    public function canBeImpersonated()
+    {
+        return !$this->isAdmin();
+    }
+
     public function companyOwner()
     {
         return $this->hasOne(CompanyOwner::class);
