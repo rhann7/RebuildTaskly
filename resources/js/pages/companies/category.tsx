@@ -7,7 +7,7 @@ import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Plus, Trash2, Pencil, Search, Tag, Building2 } from 'lucide-react';
+import { Plus, Trash2, Pencil, Search, Tag } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
@@ -32,7 +32,7 @@ type PageProps = {
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Company Categories', href: '/companies/categories' },
+    { title: 'Company Categories', href: '/company-categories' },
 ];
 
 export default function CategoryIndex({ categories, filters }: PageProps) {
@@ -63,7 +63,7 @@ export default function CategoryIndex({ categories, filters }: PageProps) {
     
     const handleDelete = (id: number) => { 
         if (confirm('Are you sure you want to delete this category?')) {
-            router.delete(`/companies/categories/${id}`); 
+            router.delete(`/company-categories/${id}`); 
         }
     };
     
@@ -71,8 +71,8 @@ export default function CategoryIndex({ categories, filters }: PageProps) {
         e.preventDefault(); 
         const action = isEditing && currentId ? put : post; 
         const url = isEditing && currentId 
-            ? `/companies/categories/${currentId}` 
-            : '/companies/categories'; 
+            ? `/company-categories/${currentId}` 
+            : '/company-categories'; 
             
         action(url, { 
             onSuccess: () => { 
@@ -83,7 +83,7 @@ export default function CategoryIndex({ categories, filters }: PageProps) {
     };
     
     const handleSearch = () => { 
-        router.get('/companies/categories', 
+        router.get('/company-categories', 
             { search: searchQuery }, 
             { preserveState: true, replace: true }
         ); 
@@ -139,7 +139,7 @@ export default function CategoryIndex({ categories, filters }: PageProps) {
                             <TableHead className="w-[50px] text-center">#</TableHead>
                             <TableHead>Category Name</TableHead>
                             <TableHead>Slug</TableHead>
-                            <TableHead className="text-center">Usage</TableHead>
+                            <TableHead>Usage</TableHead>
                             <TableHead>Created At</TableHead>
                             <TableHead className="text-right px-6">Actions</TableHead>
                         </TableRow>
@@ -159,9 +159,8 @@ export default function CategoryIndex({ categories, filters }: PageProps) {
                                         {category.slug}
                                     </span>
                                 </TableCell>
-                                <TableCell className="text-center">
-                                    <div className="flex justify-center items-center gap-1 text-xs text-muted-foreground">
-                                        <Building2 className="h-3.5 w-3.5" />
+                                <TableCell>
+                                    <div className="flex justify-start items-center gap-1 text-xs text-muted-foreground">
                                         {category.companies_count} Companies
                                     </div>
                                 </TableCell>
