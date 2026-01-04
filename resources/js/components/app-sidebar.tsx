@@ -39,17 +39,17 @@ export function AppSidebar() {
                 title: 'Company Management',
                 href: '#',
                 icon: Building2,
-                isActive: currentUrl.startsWith('/companies'),
+                isActive: currentUrl.startsWith('/companies') || currentUrl.startsWith('/company-categories'),
                 items: [
+                    {
+                        title: 'Company Categories',
+                        href: '/company-categories',
+                        isActive: currentUrl.startsWith('/company-categories'),
+                    },
                     {
                         title: 'Company List',
                         href: '/companies',
-                        isActive: currentUrl === '/companies' || (currentUrl.startsWith('/companies/') && !currentUrl.includes('/categories')),
-                    },
-                    {
-                        title: 'Company Categories',
-                        href: '/companies/categories',
-                        isActive: currentUrl.startsWith('/companies/categories'),
+                        isActive: currentUrl.startsWith('/companies'),
                     },
                 ],
             },
