@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Companies\CategoryController;
+use App\Http\Controllers\Companies\CompanyController;
 use App\Http\Controllers\Rules\PermissionController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -20,6 +22,22 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::prefix('access-control')->name('access-control.')->group(function () {
             Route::resource('permissions', PermissionController::class);
         });
+
+        Route::prefix('companies')->name('companies.')->group(function () {
+            Route::resource('categories', CategoryController::class)
+                ->names('categories')->parameters(['categories' => 'category'])->except(['create', 'edit', 'show']);
+
+            Route::resource('/', CompanyController::class)
+                ->names([
+                    'index'   => 'index',
+                    'store'   => 'store',
+                    'update'  => 'update',
+                    'destroy' => 'destroy',
+                    'create'  => 'create',
+                ])->parameters(['' => 'company'])->except(['show']);
+        });
+
+        Route::get('/companies/{company:slug}', [CompanyController::class, 'show'])->name('companies.show');
     });
 
     Route::get('manage-company', function () {
