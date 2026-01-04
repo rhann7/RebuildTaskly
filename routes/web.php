@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Companies\CategoryController;
 use App\Http\Controllers\Companies\CompanyController;
+use App\Http\Controllers\Rules\PermissionAccessController;
 use App\Http\Controllers\Rules\PermissionController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -21,17 +22,22 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware('role:admin')->group(function () {
         Route::prefix('access-control')->name('access-control.')->group(function () {
             Route::resource('permissions', PermissionController::class);
+
+            Route::get('company-access', [PermissionAccessController::class, 'index'])->name('company-access.index');
+            Route::post('company-access/{company}', [PermissionAccessController::class, 'update'])->name('company-access.update');
         });
 
-        Route::resource('company-categories', CategoryController::class)
-            ->names('companies.categories')
-            ->parameters(['company-categories' => 'category'])
-            ->except(['create', 'edit', 'show']);
+        Route::prefix('company-management')->name('companies.')->group(function () {
+            Route::resource('categories', CategoryController::class)
+                ->names('categories')
+                ->parameters(['categories' => 'category'])
+                ->except(['create', 'edit', 'show']);
 
-        Route::resource('companies', CompanyController::class)
-            ->except(['show']);
-            
-        Route::get('/companies/{company:slug}', [CompanyController::class, 'show'])->name('companies.show');
+            Route::resource('companies', CompanyController::class)
+                ->except(['show']);
+                
+            Route::get('/companies/{company:slug}', [CompanyController::class, 'show'])->name('show');
+        });
     });
 
     Route::get('manage-company', function () {
