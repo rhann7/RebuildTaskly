@@ -34,6 +34,7 @@ class HandleInertiaRequests extends Middleware
                     'company' => $user->companyOwner,
                     'permissions' => $user->getAllPermissions()->pluck('name'),
                 ] : null,
+                'is_impersonating' => app('impersonate')->isImpersonating()
             ],
             'categories' => fn () => $request->routeIs('register')
                 ? CompanyCategory::select(['id', 'name'])->get()
