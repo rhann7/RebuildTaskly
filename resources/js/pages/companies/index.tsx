@@ -2,7 +2,7 @@ import ResourceListLayout from '@/layouts/resource/resource-list-layout';
 import { Link, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { useState } from 'react';
-import {  Search, Pencil, Trash2, Phone, MapPin, Building2, Filter, Plus } from 'lucide-react';
+import {  Search, Pencil, Trash2, Phone, MapPin, Building2, Filter, Plus, Fingerprint } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -70,6 +70,21 @@ export default function CompanyIndex({ companies, categories, filters }: PagePro
     const handleDelete = (id: number) => {
         if (confirm('Delete this company?')) {
             router.delete(`/company-management/companies/${id}`);
+        }
+    };
+
+    const handleImpersonate = (e: React.MouseEvent, company: Company) => {
+        e.stopPropagation();
+        
+        const targetUserId = company.company_owner?.user_id;
+
+        if (!targetUserId) {
+            alert('Error: Akun user untuk owner ini tidak ditemukan (user_id null).');
+            return;
+        }
+
+        if (confirm(`Masuk ke sistem sebagai ${company.name}?`)) {
+            router.get(`/impersonate/take/${targetUserId}`);
         }
     };
 
@@ -199,6 +214,16 @@ export default function CompanyIndex({ companies, categories, filters }: PagePro
                                 onClick={(e) => e.stopPropagation()}
                             >
                                 <div className="flex justify-end gap-2">
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                                        title="Masuk sebagai company ini"
+                                        onClick={(e) => handleImpersonate(e, company)}
+                                    >
+                                        <Fingerprint className="h-3.5 w-3.5" />
+                                    </Button>
+
                                     <Button
                                         asChild
                                         variant="ghost"
