@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Rules;
 
 use App\Http\Controllers\Controller;
+use App\Models\Company;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -38,7 +39,16 @@ class PermissionController extends Controller
             'price' => 'required|numeric|min:0|max:999999999.99',
         ]);
 
-        Permission::create([...$datas, 'guard_name' => 'web']);
+        $permission = Permission::create([...$datas, 'guard_name' => 'web']);
+
+        if ($request->type === 'general') {
+            Company::chunk(100, function ($companies) use ($permission) {
+                foreach ($companies as $company) {
+                    $company->givePermissionTo($permission);
+                }
+            });
+        }
+
         return redirect()->back()->with('success', 'Permission created successfully.');
     }
 
