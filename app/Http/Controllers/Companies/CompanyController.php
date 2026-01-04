@@ -97,7 +97,7 @@ class CompanyController extends Controller
             $company->givePermissionTo($generalPermissions);
         }
 
-        return redirect()->route('companies.index')->with('success', 'Company created successfully.');
+        return redirect()->route('company-management.companies.index')->with('success', 'Company created successfully.');
     }
 
     public function edit(Company $company)
@@ -139,7 +139,7 @@ class CompanyController extends Controller
             'is_active'           => $request->boolean('is_active'),
         ]);
 
-        return redirect()->route('companies.index')->with('success', 'Company, Owner, and Login account updated successfully.');
+        return redirect()->route('company-management.companies.index')->with('success', 'Company, Owner, and Login account updated successfully.');
     }
 
     public function destroy(Company $company)
