@@ -40,4 +40,9 @@ class User extends Authenticatable
     {
         return $this->hasRole('admin');
     }
+
+    public function companyOwner()
+    {
+        return $this->hasOne(CompanyOwner::class);
+    }
 }
