@@ -5,7 +5,7 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, Sid
 import { dashboard } from '@/routes';
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid, ShieldCheck } from 'lucide-react';
+import { BookOpen, Building2, Folder, LayoutGrid, ShieldCheck } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const footerNavItems: NavItem[] = [
@@ -35,6 +35,24 @@ export function AppSidebar() {
             isActive: currentUrl === '/dashboard',
         },
         ...(userRoles.includes('admin') ? [
+            {
+                title: 'Company Management',
+                href: '#',
+                icon: Building2,
+                isActive: currentUrl.startsWith('/companies'),
+                items: [
+                    {
+                        title: 'Company List',
+                        href: '/companies',
+                        isActive: currentUrl === '/companies' || (currentUrl.startsWith('/companies/') && !currentUrl.includes('/categories')),
+                    },
+                    {
+                        title: 'Company Categories',
+                        href: '/companies/categories',
+                        isActive: currentUrl.startsWith('/companies/categories'),
+                    },
+                ],
+            },
             {
                 title: 'Access Control',
                 href: '#',
