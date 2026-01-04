@@ -34,7 +34,7 @@ type PageProps = {
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Permissions', href: '/access-control/permissions' },
+    { title: 'Permissions List', href: '/access-control/permissions' },
 ];
 
 export default function PermissionIndex({ permissions, filters }: PageProps) {
