@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('permissions', function (Blueprint $table) {
-            $table->decimal('price', 12, 2)->default(0)->after('type');
+            $table->decimal('price', 12, 2)->after('type')->default(0);
         });
     }
 
