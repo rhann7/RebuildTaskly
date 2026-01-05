@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Companies\CategoryController;
 use App\Http\Controllers\Companies\CompanyController;
+use App\Http\Controllers\Companies\InvoiceController;
 use App\Http\Controllers\Rules\PermissionAccessController;
 use App\Http\Controllers\Rules\PermissionController;
 use Illuminate\Support\Facades\Route;
@@ -31,7 +32,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('company-access/{company}', [PermissionAccessController::class, 'update'])->name('company-access.update');
         });
 
-        Route::prefix('company-management')->name('companies.')->group(function () {
+        Route::prefix('company-management')->name('company-management.')->group(function () {
             Route::resource('categories', CategoryController::class)
                 ->names('categories')
                 ->parameters(['categories' => 'category'])
