@@ -12,7 +12,9 @@ class PermissionAccessController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Company::with('permissions');
+        $query = Company::with(['permissions' => function($q) {
+            $q->where('scope', '!=', 'system');
+        }]);
 
         if ($request->filled('search')) {
             $query->where('name', 'like', '%' . $request->search . '%');
@@ -34,8 +36,8 @@ class PermissionAccessController extends Controller
         
         return Inertia::render('permissions/access', [
             'companies'           => $companies,
-            'uniquePermissions'   => Permission::where('type', 'unique')->get(),
-            'generalPermissions'  => Permission::where('type', 'general')->get(),
+            'uniquePermissions'   => Permission::where('type', 'unique')->where('scope', '!=', 'system')->get(),
+            'generalPermissions'  => Permission::where('type', 'general')->where('scope', '!=', 'system')->get(),
             'filters'             => $request->only(['search', 'type']),
         ]);
     }
@@ -52,6 +54,8 @@ class PermissionAccessController extends Controller
         if ($request->enabled) {
             $company->givePermissionTo($permission->name);
             $message = "Access '{$permission->name}' granted to {$company->name}.";
+
+            cache()->forget("company-{$company->id}-permission-{$permission->name}");
         } else {
             $company->revokePermissionTo($permission->name);
             $message = "Access '{$permission->name}' revoked from {$company->name}.";
