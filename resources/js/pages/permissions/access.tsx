@@ -11,8 +11,18 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
-type Permission = { id: number; name: string; type: string; };
-type Company = { id: number; name: string; permissions?: Permission[]; };
+type Permission = { 
+    id: number; 
+    name: string; 
+    type: string; 
+    scope: string;
+};
+
+type Company = { 
+    id: number; 
+    name: string; 
+    permissions?: Permission[]; 
+};
 
 type PageProps = {
     companies: {
@@ -100,6 +110,10 @@ export default function CompanyAccess({ companies, generalPermissions = [], uniq
         const isEnabled = selectedCompany ? hasPermission(selectedCompany, permission.name) : false;
         const isLoading = processingId === permission.name;
 
+        const scopeBadgeColor = permission.scope === 'workspace' 
+            ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+            : 'bg-amber-50 text-amber-700 border-amber-200';
+
         return (
             <div
                 className={`flex items-center justify-between rounded-md border px-3 py-2 text-sm ${
@@ -108,9 +122,14 @@ export default function CompanyAccess({ companies, generalPermissions = [], uniq
                         : 'bg-muted/30 border-border'
                 }`}
             >
-                <span className={`font-medium ${isLoading ? 'opacity-50' : ''}`}>
-                    {permission.name}
-                </span>
+                <div className="flex flex-col gap-1">
+                    <span className={`font-medium ${isLoading ? 'opacity-50' : ''}`}>
+                        {permission.name}
+                    </span>
+                    <span className={`text-[9px] font-bold uppercase w-fit px-1.5 rounded border shadow-sm ${scopeBadgeColor}`}>
+                        {permission.scope}
+                    </span>
+                </div>
 
                 <Switch
                     checked={isEnabled}
@@ -175,10 +194,10 @@ export default function CompanyAccess({ companies, generalPermissions = [], uniq
                 <Table>
                     <TableHeader>
                         <TableRow className="hover:bg-transparent bg-zinc-50/50 dark:bg-zinc-900/50">
-                            <TableHead className="w-[50px] text-center">#</TableHead>
-                            <TableHead>Company</TableHead>
-                            <TableHead>Active Permissions</TableHead>
-                            <TableHead className="text-right px-6">Actions</TableHead>
+                            <TableHead className="w-[50px] text-center font-bold">#</TableHead>
+                            <TableHead className="font-bold">Company</TableHead>
+                            <TableHead className="font-bold">Active Permissions</TableHead>
+                            <TableHead className="text-right px-6 font-bold">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
 
@@ -190,23 +209,23 @@ export default function CompanyAccess({ companies, generalPermissions = [], uniq
                                 </TableCell>
 
                                 <TableCell>
-                                    <span className="font-medium text-foreground">
+                                    <span className="font-semibold text-foreground">
                                         {company.name}
                                     </span>
                                 </TableCell>
 
                                 <TableCell>
-                                    <span className="inline-flex rounded bg-muted/50 px-2 py-0.5 text-[11px] font-medium text-muted-foreground border">
-                                        {(company.permissions?.length ?? 0)} Active
+                                    <span className="inline-flex rounded-full bg-muted/80 px-2.5 py-0.5 text-[11px] font-bold text-muted-foreground border shadow-sm">
+                                        {(company.permissions?.length ?? 0)} Features Active
                                     </span>
                                 </TableCell>
 
                                 <TableCell className="text-right px-6">
                                     <div className="flex justify-end">
                                         <Button
-                                            variant="ghost"
+                                            variant="outline"
                                             size="sm"
-                                            className="h-8 text-xs text-muted-foreground border hover:text-foreground hover:bg-muted"
+                                            className="h-8 text-xs font-bold hover:bg-zinc-900 hover:text-white transition-all"
                                             onClick={() => openManageModal(company)}
                                         >
                                             Manage Access
@@ -228,10 +247,10 @@ export default function CompanyAccess({ companies, generalPermissions = [], uniq
                     
                     <div className="py-2 space-y-6">
                         <div className="space-y-3">
-                            <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2 border-b pb-2">
-                                <Zap className="h-3 w-3" /> General (Basic)
+                            <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2 border-b pb-2">
+                                <Zap className="h-3 w-3 fill-zinc-400" /> General Features
                             </h4>
-                            <div className="space-y-2">
+                            <div className="grid gap-2">
                                 {generalPermissions.length > 0 ? (
                                     generalPermissions.map(p => <PermissionItem key={p.id} permission={p} />)
                                 ) : (
@@ -242,11 +261,11 @@ export default function CompanyAccess({ companies, generalPermissions = [], uniq
 
                         <div className="space-y-3">
                             <div className="flex items-center justify-between border-b pb-2">
-                                <h4 className="text-xs font-semibold uppercase tracking-wider text-purple-600/80 dark:text-purple-400 flex items-center gap-2">
-                                    <Star className="h-3 w-3" /> Unique (Exclusive)
+                                <h4 className="text-[10px] font-bold uppercase tracking-widest text-purple-600 flex items-center gap-2">
+                                    <Star className="h-3 w-3 fill-purple-400" /> Exclusive Access
                                 </h4>
                                 {!isGranting && (
-                                    <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px] text-purple-600 hover:text-purple-700 hover:bg-purple-50" onClick={() => setIsGranting(true)}>
+                                    <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px] font-bold text-purple-600 hover:text-purple-700 hover:bg-purple-50" onClick={() => setIsGranting(true)}>
                                         <Plus className="mr-1 h-3 w-3" /> Grant Access
                                     </Button>
                                 )}
@@ -258,12 +277,17 @@ export default function CompanyAccess({ companies, generalPermissions = [], uniq
                                         <div className="flex-1">
                                             {assignablePermissions.length > 0 ? (
                                                 <Select value={selectedGrantPermission} onValueChange={setSelectedGrantPermission}>
-                                                    <SelectTrigger className="h-9 w-full bg-background border border-input">
-                                                        <SelectValue placeholder="Select a permission..." />
+                                                    <SelectTrigger className="h-9 w-full bg-background">
+                                                        <SelectValue placeholder="Select exclusive feature..." />
                                                     </SelectTrigger>
                                                     <SelectContent>
                                                         {assignablePermissions.map(perm => (
-                                                            <SelectItem key={perm.id} value={perm.name}>{perm.name}</SelectItem>
+                                                            <SelectItem key={perm.id} value={perm.name}>
+                                                                <div className="flex items-center gap-2">
+                                                                    <span>{perm.name}</span>
+                                                                    <span className="text-[9px] uppercase px-1 border rounded">{perm.scope}</span>
+                                                                </div>
+                                                            </SelectItem>
                                                         ))}
                                                     </SelectContent>
                                                 </Select>
@@ -271,13 +295,13 @@ export default function CompanyAccess({ companies, generalPermissions = [], uniq
                                                 <div className="text-xs text-muted-foreground h-9 flex items-center px-2 italic">No more unique permissions available.</div>
                                             )}
                                         </div>
-                                        <Button size="sm" className="h-9 bg-purple-600 hover:bg-purple-700 text-white" disabled={!selectedGrantPermission || processingId === 'grant-action'} onClick={handleGrantAccess}>Add</Button>
+                                        <Button size="sm" className="h-9 bg-purple-600 hover:bg-purple-700 text-white font-bold" disabled={!selectedGrantPermission || processingId === 'grant-action'} onClick={handleGrantAccess}>Add</Button>
                                         <Button size="icon" variant="ghost" className="h-9 w-9" onClick={() => setIsGranting(false)}><X className="h-4 w-4" /></Button>
                                     </div>
                                 </div>
                             )}
 
-                            <div className="space-y-2">
+                            <div className="grid gap-2">
                                 {activeUniquePermissions.length > 0 ? (
                                     activeUniquePermissions.map(p => <PermissionItem key={p.id} permission={p} isUnique={true} />)
                                 ) : (

@@ -1,5 +1,5 @@
 import ResourceListLayout from '@/layouts/resource/resource-list-layout';
-import { useState, FormEventHandler } from 'react';
+import { useState, FormEventHandler, useEffect } from 'react';
 import { useForm, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 
@@ -7,7 +7,7 @@ import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Plus, Trash2, Pencil, Search, Star, Zap, Filter, ShieldCheck } from 'lucide-react';
+import { Plus, Trash2, Pencil, Search, Star, Zap, ShieldCheck } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -16,6 +16,7 @@ type Permission = {
     id: number;
     name: string;
     type: string;
+    scope: string;
     price: number;
     guard_name: string;
     created_at: string;
@@ -29,7 +30,7 @@ type PageProps = {
         to: number;
         total: number;
     };
-    filters: { search?: string; type?: string; };
+    filters: { search?: string; type?: string; scope?: string; };
 };
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -43,17 +44,35 @@ export default function PermissionIndex({ permissions, filters }: PageProps) {
     const [currentId, setCurrentId] = useState<number | null>(null);
     const [searchQuery, setSearchQuery] = useState(filters.search || '');
     const [typeFilter, setTypeFilter] = useState(filters.type || 'all');
+    const [scopeFilter, setScopeFilter] = useState(filters.scope || 'all');
     
-    const { data, setData, post, put, processing, errors, reset, clearErrors } = useForm({ 
+    const { data, setData, post, put, processing, errors, reset, clearErrors, transform } = useForm({ 
         name: '', 
         type: 'general',
+        scope: 'company',
         price: '' 
     });
+
+    // Logika pengaman agar harga selalu 0 jika scope-nya system
+    useEffect(() => {
+        transform((data) => ({
+            ...data,
+            price: data.scope === 'system' ? '0' : data.price,
+        }));
+    }, [data.scope, data.price, transform]);
+
+    const handleFilterChange = (newSearch?: string, newType?: string, newScope?: string) => {
+        router.get('/access-control/permissions', { 
+            search: newSearch ?? searchQuery, 
+            type: newType ?? typeFilter,
+            scope: newScope ?? scopeFilter
+        }, { preserveState: true, replace: true });
+    };
 
     const openCreateModal = () => { 
         setIsEditing(false); 
         setCurrentId(null); 
-        setData({ name: '', type: 'general', price: '' }); 
+        setData({ name: '', type: 'general', scope: 'company', price: '' });
         clearErrors(); 
         setIsOpen(true); 
     };
@@ -61,31 +80,25 @@ export default function PermissionIndex({ permissions, filters }: PageProps) {
     const openEditModal = (p: Permission) => { 
         setIsEditing(true); 
         setCurrentId(p.id); 
-        setData({ name: p.name, type: p.type, price: p.price.toString() }); 
+        setData({ name: p.name, type: p.type, scope: p.scope, price: p.price.toString() }); 
         clearErrors(); 
         setIsOpen(true); 
     };
     
+    const handleSubmit: FormEventHandler = (e) => { 
+        e.preventDefault(); 
+        const url = isEditing && currentId ? `/access-control/permissions/${currentId}` : '/access-control/permissions'; 
+        if (isEditing) {
+            put(url, { onSuccess: () => { setIsOpen(false); reset(); } });
+        } else {
+            post(url, { onSuccess: () => { setIsOpen(false); reset(); } });
+        }
+    };
+
     const handleDelete = (id: number) => { 
         if (confirm('Are you sure you want to delete this permission?')) {
             router.delete(`/access-control/permissions/${id}`); 
         }
-    };
-    
-    const handleSubmit: FormEventHandler = (e) => { 
-        e.preventDefault(); 
-        const action = isEditing && currentId ? put : post; 
-        const url = isEditing && currentId ? `/access-control/permissions/${currentId}` : '/access-control/permissions'; 
-        action(url, { onSuccess: () => { setIsOpen(false); reset(); } }); 
-    };
-    
-    const handleSearch = () => { 
-        router.get('/access-control/permissions', { search: searchQuery, type: typeFilter }, { preserveState: true, replace: true }); 
-    };
-
-    const handleTypeChange = (value: string) => { 
-        setTypeFilter(value); 
-        router.get('/access-control/permissions', { search: searchQuery, type: value }, { preserveState: true, replace: true }); 
     };
 
     const FilterWidget = (
@@ -97,16 +110,26 @@ export default function PermissionIndex({ permissions, filters }: PageProps) {
                     className="pl-9 bg-background h-9 border-input"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                    onKeyDown={(e) => e.key === 'Enter' && handleFilterChange()}
                 />
             </div>
 
-            <Select value={typeFilter} onValueChange={handleTypeChange}>
-                <SelectTrigger className="w-[200px] h-9 bg-background">
-                    <div className="flex items-center gap-2">
-                        <Filter className="h-4 w-4 text-muted-foreground" />
-                        <SelectValue placeholder="All Types" />
-                    </div>
+            {/* Scope Filter kembali ke versi awal (Compact) */}
+            <Select value={scopeFilter} onValueChange={(val) => { setScopeFilter(val); handleFilterChange(undefined, undefined, val); }}>
+                <SelectTrigger className="w-[160px] h-9 bg-background">
+                    <SelectValue placeholder="All Scopes" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">All Scopes</SelectItem>
+                    <SelectItem value="system">System</SelectItem>
+                    <SelectItem value="company">Company</SelectItem>
+                    <SelectItem value="workspace">Workspace</SelectItem>
+                </SelectContent>
+            </Select>
+
+            <Select value={typeFilter} onValueChange={(val) => { setTypeFilter(val); handleFilterChange(undefined, val); }}>
+                <SelectTrigger className="w-[160px] h-9 bg-background">
+                    <SelectValue placeholder="All Types" />
                 </SelectTrigger>
                 <SelectContent>
                     <SelectItem value="all">All Types</SelectItem>
@@ -117,13 +140,6 @@ export default function PermissionIndex({ permissions, filters }: PageProps) {
         </div>
     );
     
-    const HeaderActions = (
-        <Button onClick={openCreateModal}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add New Permission
-        </Button>
-    );
-
     return (
         <>
             <ResourceListLayout
@@ -131,108 +147,50 @@ export default function PermissionIndex({ permissions, filters }: PageProps) {
                 description="Control access levels and feature availability."
                 breadcrumbs={breadcrumbs}
                 filterWidget={FilterWidget}
-                headerActions={HeaderActions}
+                headerActions={<Button onClick={openCreateModal}><Plus className="h-4 w-4 mr-2" />Add New Permission</Button>}
                 pagination={permissions}
                 isEmpty={permissions.data.length === 0}
-                config={{
-                    showFilter: true,
-                    showPagination: true,
-                    showPaginationInfo: true,
-                    showHeaderActions: true,
-                    showShadow: true,
-                    showBorder: true,
-                    emptyStateIcon: <ShieldCheck className="h-6 w-6 text-muted-foreground/60" />,
-                    emptyStateTitle: 'No permissions found',
-                    emptyStateDescription: 'Create your first permission or adjust your search filters.',
-                }}
+                config={{ showFilter: true, showPagination: true, showPaginationInfo: true, showHeaderActions: true, showShadow: true, showBorder: true, emptyStateIcon: <ShieldCheck className="h-6 w-6 text-muted-foreground/60" /> }}
             >
                 <Table>
                     <TableHeader>
                         <TableRow className="hover:bg-transparent bg-zinc-50/50 dark:bg-zinc-900/50">
                             <TableHead className="w-[50px] text-center">#</TableHead>
                             <TableHead>Permission</TableHead>
+                            <TableHead>Scope</TableHead>
                             <TableHead>Type</TableHead>
                             <TableHead>Price</TableHead>
-                            <TableHead>Guard</TableHead>
-                            <TableHead>Created</TableHead>
                             <TableHead className="text-right px-6">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
 
                     <TableBody>
                         {permissions.data.map((permission, i) => (
-                            <TableRow
-                                key={permission.id}
-                                className="group hover:bg-muted/30 transition-colors"
-                            >
-                                <TableCell className="text-center text-muted-foreground tabular-nums">
-                                    {permissions.from + i}
-                                </TableCell>
-
+                            <TableRow key={permission.id} className="group hover:bg-muted/30">
+                                <TableCell className="text-center text-muted-foreground tabular-nums">{permissions.from + i}</TableCell>
+                                <TableCell className="font-medium text-foreground">{permission.name}</TableCell>
                                 <TableCell>
-                                    <span className="font-medium text-foreground">
-                                        {permission.name}
+                                    <span className="capitalize text-xs font-mono bg-muted/50 px-2 py-0.5 rounded border">
+                                        {permission.scope}
                                     </span>
                                 </TableCell>
-
-                                <TableCell className="px-4 py-3">
-                                    {permission.type === 'unique' ? (
-                                        <span className="inline-flex items-center gap-1 rounded border bg-muted/50 px-2 py-0.5 text-[11px] font-medium text-purple-500">
-                                            <Star className="h-3 w-3 opacity-70" />
-                                            Unique
-                                        </span>
-                                    ) : (
-                                        <span className="inline-flex items-center gap-1 rounded border bg-muted/50 px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
-                                            <Zap className="h-3 w-3 opacity-70" />
-                                            General
-                                        </span>
-                                    )}
+                                <TableCell>
+                                    <span className={`inline-flex items-center gap-1 rounded border bg-muted/50 px-2 py-0.5 text-[11px] font-medium ${permission.type === 'unique' ? 'text-purple-500' : 'text-muted-foreground'}`}>
+                                        {permission.type === 'unique' ? <Star className="h-3 w-3" /> : <Zap className="h-3 w-3" />}
+                                        {permission.type}
+                                    </span>
                                 </TableCell>
-
                                 <TableCell>
                                     <div className="flex flex-col">
-                                        <span className="font-mono text-sm font-medium text-foreground">
-                                            Rp {new Intl.NumberFormat('id-ID', {
-                                                minimumFractionDigits: 0,
-                                                maximumFractionDigits: 0,
-                                            }).format(permission.price)}
+                                        <span className="font-mono text-sm font-medium">
+                                            {permission.scope === 'system' ? 'Admin Only' : `Rp ${new Intl.NumberFormat('id-ID').format(permission.price)}`}
                                         </span>
-                                        <span className="text-[10px] text-muted-foreground">per month</span>
+                                        {permission.scope !== 'system' && <span className="text-[10px] text-muted-foreground">per month</span>}
                                     </div>
                                 </TableCell>
-
-                                <TableCell>
-                                    <span className="font-mono text-xs text-muted-foreground bg-muted/50 px-2 py-0.5 rounded border">
-                                        {permission.guard_name}
-                                    </span>
-                                </TableCell>
-
-                                <TableCell>
-                                    <span className="text-xs text-muted-foreground">
-                                        {new Date(permission.created_at).toLocaleDateString()}
-                                    </span>
-                                </TableCell>
-
-                                <TableCell className="text-right px-6">
-                                    <div className="flex justify-end gap-2">
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                                            onClick={() => openEditModal(permission)}
-                                        >
-                                            <Pencil className="h-3.5 w-3.5" />
-                                        </Button>
-
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-8 w-8 text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-                                            onClick={() => handleDelete(permission.id)}
-                                        >
-                                            <Trash2 className="h-3.5 w-3.5" />
-                                        </Button>
-                                    </div>
+                                <TableCell className="text-right px-6 space-x-1">
+                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditModal(permission)}><Pencil className="h-3.5 w-3.5" /></Button>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-red-600" onClick={() => handleDelete(permission.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
                                 </TableCell>
                             </TableRow>
                         ))}
@@ -250,35 +208,41 @@ export default function PermissionIndex({ permissions, filters }: PageProps) {
                         <div className="grid gap-2">
                             <Label>Identifier</Label>
                             <Input value={data.name} onChange={(e) => setData('name', e.target.value)} placeholder="e.g. create-workspace" autoFocus />
-                            <p className="text-[11px] text-muted-foreground">Recommend using kebab-case.</p>
                             <InputError message={errors.name} />
                         </div>
-                        <div className="grid gap-2">
-                            <Label>Category</Label>
-                            <Select value={data.type} onValueChange={(val) => setData('type', val)}>
-                                <SelectTrigger className="w-full"><SelectValue placeholder="Select Type" /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="general">General (Basic)</SelectItem>
-                                    <SelectItem value="unique">Unique (Exclusive)</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            <InputError message={errors.type as string} />
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="grid gap-2">
+                                <Label>Scope Access</Label>
+                                <Select value={data.scope} onValueChange={(val) => setData('scope', val)}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="system">System</SelectItem>
+                                        <SelectItem value="company">Company</SelectItem>
+                                        <SelectItem value="workspace">Workspace</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="grid gap-2">
+                                <Label>Category</Label>
+                                <Select value={data.type} onValueChange={(val) => setData('type', val)}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="general">General</SelectItem>
+                                        <SelectItem value="unique">Unique</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </div>
-                        <div className="grid gap-2">
-                            <Label>Monthly Price (IDR)</Label>
-                            <Input 
-                                type="number" 
-                                value={data.price} 
-                                onChange={(e) => setData('price', e.target.value)} 
-                                placeholder="e.g. 50000"
-                                min="0"
-                                step="1000"
-                            />
-                            <p className="text-[11px] text-muted-foreground">
-                                General: Rp 50k - 500k | Unique: Rp 500k+
-                            </p>
-                            <InputError message={errors.price as string} />
-                        </div>
+
+                        {data.scope !== 'system' && (
+                            <div className="grid gap-2">
+                                <Label>Monthly Price (IDR)</Label>
+                                <Input type="number" value={data.price} onChange={(e) => setData('price', e.target.value)} placeholder="50000" />
+                                <InputError message={errors.price as string} />
+                            </div>
+                        )}
+
                         <DialogFooter>
                             <Button type="button" variant="ghost" onClick={() => setIsOpen(false)}>Cancel</Button>
                             <Button type="submit" disabled={processing}>{isEditing ? 'Save Changes' : 'Create'}</Button>
