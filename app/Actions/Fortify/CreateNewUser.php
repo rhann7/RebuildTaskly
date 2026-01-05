@@ -56,7 +56,10 @@ class CreateNewUser implements CreatesNewUsers
 
         $user->assignRole('company-owner');
 
-        $generalPermissions = Permission::where('type', 'general')->get();
+        $generalPermissions = Permission::where('type', 'general')
+            ->whereIn('scope', ['company', 'workspace'])
+            ->get();
+            
         if ($generalPermissions->count() > 0) {
             $company->givePermissionTo($generalPermissions);
         }
