@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Companies\CategoryController;
 use App\Http\Controllers\Companies\CompanyController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Rules\PermissionAccessController;
 use App\Http\Controllers\Rules\PermissionController;
 use Illuminate\Support\Facades\Route;
@@ -19,9 +20,7 @@ Route::middleware(['auth'])->group(function () {
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('dashboard', function () {
-        return Inertia::render('dashboard');
-    })->name('dashboard');
+    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
     
     Route::middleware('role:super-admin')->group(function () {
         Route::prefix('access-control')->name('access-control.')->group(function () {
