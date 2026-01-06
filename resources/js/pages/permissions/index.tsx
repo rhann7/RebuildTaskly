@@ -53,7 +53,6 @@ export default function PermissionIndex({ permissions, filters }: PageProps) {
         price: '' 
     });
 
-    // Logika pengaman agar harga selalu 0 jika scope-nya system
     useEffect(() => {
         transform((data) => ({
             ...data,
