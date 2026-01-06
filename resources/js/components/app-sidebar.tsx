@@ -5,7 +5,7 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, Sid
 import { dashboard } from '@/routes';
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, Building2, Folder, LayoutGrid, ShieldCheck } from 'lucide-react';
+import { BookOpen, Briefcase, Building2, Folder, LayoutGrid, ShieldCheck } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const footerNavItems: NavItem[] = [
@@ -25,7 +25,8 @@ export function AppSidebar() {
     const page = usePage();
     const currentUrl = page.url;
     const { auth } = page.props as any;
-    const userRoles = auth.user.roles || [];
+    const companyRoles = auth.user.roles || [];
+    const companyPermissions = auth.user.permissions || [];
 
     const mainNavItems: NavItem[] = [
         {
@@ -34,7 +35,15 @@ export function AppSidebar() {
             icon: LayoutGrid,
             isActive: currentUrl === '/dashboard',
         },
-        ...(userRoles.includes('super-admin') ? [
+        ...(companyPermissions.includes('access-workspace') && companyRoles.includes('company') ? [
+            {
+                title: 'Workspaces',
+                href: '/workspaces',
+                icon: Briefcase,
+                isActive: currentUrl.startsWith('/workspaces'),
+            }
+        ] : []),
+        ...(companyRoles.includes('super-admin') ? [
             {
                 title: 'Company Management',
                 href: '#',
