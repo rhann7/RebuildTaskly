@@ -34,7 +34,7 @@ export function AppSidebar() {
             icon: LayoutGrid,
             isActive: currentUrl === '/dashboard',
         },
-        ...(userRoles.includes('admin') ? [
+        ...(userRoles.includes('super-admin') ? [
             {
                 title: 'Company Management',
                 href: '#',
