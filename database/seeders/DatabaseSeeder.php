@@ -14,19 +14,19 @@ class DatabaseSeeder extends Seeder
     {
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
-        Role::firstOrCreate(['name' => 'admin']);
-        Role::firstOrCreate(['name' => 'company-owner']);
+        Role::firstOrCreate(['name' => 'super-admin']);
+        Role::firstOrCreate(['name' => 'company']);
 
         $admin = User::firstOrCreate(
-            ['email'             => 'admin@localhost.com'],
+            ['email' => 'superadmin@system.com'],
             [
-                'name'              => 'Admin',
+                'name'              => 'Super Admin',
                 'password'          => Hash::make('password'),
                 'email_verified_at' => now(),
                 'remember_token'    => Str::random(10),
             ]
         );
         
-        $admin->syncRoles(['admin']);
+        $admin->syncRoles(['super-admin']);
     }
 }
