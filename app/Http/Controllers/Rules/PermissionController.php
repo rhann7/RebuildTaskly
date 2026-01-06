@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Rules;
 use App\Http\Controllers\Controller;
 use App\Models\Company;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 class PermissionController extends Controller
 {
@@ -15,22 +17,16 @@ class PermissionController extends Controller
     {
         $query = Permission::query();
 
-        if ($request->filled('search')) {
-            $query->where('name', 'like', '%' . $request->search . '%');
-        }
-
-        if ($request->filled('type') && $request->type !== 'all') {
-            $query->where('type', $request->type);
-        }
-        
-        if ($request->filled('scope') && $request->scope !== 'all') {
-            $query->where('scope', $request->scope);
-        }
-
-        $permissions = $query->orderBy('id', 'asc')->paginate(10)->withQueryString();
+        $query->when($request->search, function ($q, $search) {
+            $q->where('name', 'like', "%{$search}%");
+        })->when($request->type && $request->type !== 'all', function ($q) use ($request) {
+            $q->where('type', $request->type);
+        })->when($request->scope && $request->scope !== 'all', function ($q) use ($request) {
+            $q->where('scope', $request->scope);
+        });
 
         return Inertia::render('permissions/index', [
-            'permissions' => $permissions,
+            'permissions' => $query->orderBy('id', 'asc')->paginate(10)->withQueryString(),
             'filters'     => $request->only(['search', 'type', 'scope']),
         ]);
     }
@@ -44,38 +40,51 @@ class PermissionController extends Controller
             'price' => 'required|numeric|min:0|max:999999999.99',
         ]);
 
-        $permission = Permission::create([...$datas, 'guard_name' => 'web']);
+        return DB::transaction(function () use ($datas, $request) {
+            $permission = Permission::create([...$datas, 'guard_name' => 'web']);
 
-        if ($request->scope !== 'system' && $request->type === 'general') {
-            Company::chunk(100, function ($companies) use ($permission) {
-                foreach ($companies as $company) {
-                    $company->givePermissionTo($permission);
+            if ($request->scope === 'system') {
+                $superAdmin = Role::where('name', 'super-admin')->first();
+                if ($superAdmin) {
+                    $superAdmin->givePermissionTo($permission);
                 }
-            });
-        }
-
-        return redirect()->back()->with('success', 'Permission created successfully.');
+            }
+            
+            if ($request->type === 'general' && $request->scope !== 'system') {
+                Company::chunk(100, function ($companies) use ($permission) {
+                    foreach ($companies as $company) {
+                        $company->givePermissionTo($permission);
+                    }
+                });
+            }
+            
+            return redirect()->back()->with('success', 'Permission created successfully.');
+        });
     }
 
     public function update(Request $request, Permission $permission)
     {
         $datas = $request->validate([
-            'name'  => ['required', 'string', 'max:255', Rule::unique('permissions')->ignore($permission->id)],
-            'type'  => 'required|string|in:general,unique',
-            'scope' => 'required|string|in:system,company,workspace',
-            'price' => 'required|numeric|min:0|max:999999999.99',
+            'name'  => ['sometimes', 'string', 'max:255', Rule::unique('permissions')->ignore($permission->id)],
+            'type'  => 'sometimes|string|in:general,unique',
+            'scope' => 'sometimes|string|in:system,company,workspace',
+            'price' => 'sometimes|numeric|min:0|max:999999999.99',
         ]);
 
-        $permission->update($datas);
+        return DB::transaction(function () use ($datas, $permission) {
+            $permission->update($datas);
 
-        if ($permission->wasChanged('type') && $permission->type === 'general' && $permission->scope !== 'system') {
-            Company::whereDoesntHave('permissions', fn($q) => $q->where('id', $permission->id))
-                ->chunk(100, function($companies) use ($permission) {
-                    foreach($companies as $c) $c->givePermissionTo($permission);
-            });
-        }
+            if ($permission->wasChanged('type') && $permission->type === 'general' && $permission->scope !== 'system') {
+                Company::whereDoesntHave('permissions', fn($q) => $q->where('id', $permission->id))
+                    ->chunk(100, function($companies) use ($permission) {
+                        foreach($companies as $c) {
+                            $c->givePermissionTo($permission);
+                        }
+                });
+            }
 
-        return redirect()->back()->with('success', 'Permission updated successfully.');
+            return redirect()->back()->with('success', 'Permission updated successfully.');
+        });
     }
 
     public function destroy(Permission $permission)
