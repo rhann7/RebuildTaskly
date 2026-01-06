@@ -21,6 +21,7 @@ class HandleInertiaRequests extends Middleware
         [$message, $author] = str(Inspiring::quotes()->random())->explode('-');
 
         $user = $request->user();
+        $company = $user ? $user->loadMissing('companyOwner.company')->companyOwner?->company : null;
 
         return [
             ...parent::share($request),
@@ -31,8 +32,11 @@ class HandleInertiaRequests extends Middleware
                     'name' => $user->name,
                     'email' => $user->email,
                     'roles' => $user->getRoleNames(),
+                    'permissions' => array_unique(array_merge(
+                        $user->getAllPermissions()->pluck('name')->toArray(),
+                        $company ? $company->getAllPermissions()->pluck('name')->toArray() : []
+                    )),
                     'company' => $user->companyOwner,
-                    'permissions' => $user->getAllPermissions()->pluck('name'),
                 ] : null,
                 'is_impersonating' => app('impersonate')->isImpersonating()
             ],
