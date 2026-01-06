@@ -2,7 +2,6 @@
 
 use App\Http\Controllers\Companies\CategoryController;
 use App\Http\Controllers\Companies\CompanyController;
-use App\Http\Controllers\Companies\InvoiceController;
 use App\Http\Controllers\Rules\PermissionAccessController;
 use App\Http\Controllers\Rules\PermissionController;
 use Illuminate\Support\Facades\Route;
@@ -45,17 +44,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         });
     });
 
-    Route::get('manage-company', function () {
-        return "<h1>Tes halaman company dengan general permission: manage-company</h1>";
-    })->middleware('company_can:manage-company');
+    Route::get('can-view-analytics', function () {
+        return "<h1>Tes halaman company dengan general permission: can-view-analytics</h1>";
+    })->middleware('company_can:can-view-analytics');
     
-    Route::get('manage-workspace', function () {
-        return "<h1>Tes halaman company dengan general permission: manage-workspace</h1>";
-    })->middleware('company_can:manage-workspace');
-
-    Route::get('view-analytics', function () {
-        return "<h1>Tes halaman company dengan unique permission: view-analytics</h1>";
-    })->middleware('company_can:view-analytics');
+    Route::get('can-edit-company', function () {
+        return "<h1>Tes halaman company dengan general permission: can-edit-company</h1>";
+    })->middleware('company_can:can-edit-company');
 });
 
 require __DIR__.'/settings.php';
