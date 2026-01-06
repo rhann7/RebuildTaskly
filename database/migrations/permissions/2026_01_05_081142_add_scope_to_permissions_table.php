@@ -9,14 +9,14 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('permissions', function (Blueprint $table) {
-            $table->decimal('price', 12, 2)->after('type')->default(0);
+            $table->string('scope')->after('type')->default('system');
         });
     }
 
     public function down(): void
     {
         Schema::table('permissions', function (Blueprint $table) {
-            $table->dropColumn('price');
+            $table->dropColumn('scope');
         });
     }
 };

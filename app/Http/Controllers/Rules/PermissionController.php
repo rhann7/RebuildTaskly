@@ -22,12 +22,16 @@ class PermissionController extends Controller
         if ($request->filled('type') && $request->type !== 'all') {
             $query->where('type', $request->type);
         }
+        
+        if ($request->filled('scope') && $request->scope !== 'all') {
+            $query->where('scope', $request->scope);
+        }
 
         $permissions = $query->orderBy('id', 'asc')->paginate(10)->withQueryString();
 
         return Inertia::render('permissions/index', [
             'permissions' => $permissions,
-            'filters'     => $request->only(['search', 'type'])
+            'filters'     => $request->only(['search', 'type', 'scope']),
         ]);
     }
 
@@ -36,12 +40,13 @@ class PermissionController extends Controller
         $datas = $request->validate([
             'name'  => 'required|string|max:255|unique:permissions,name',
             'type'  => 'required|string|in:general,unique',
+            'scope' => 'required|string|in:system,company,workspace',
             'price' => 'required|numeric|min:0|max:999999999.99',
         ]);
 
         $permission = Permission::create([...$datas, 'guard_name' => 'web']);
 
-        if ($request->type === 'general') {
+        if ($request->scope !== 'system' && $request->type === 'general') {
             Company::chunk(100, function ($companies) use ($permission) {
                 foreach ($companies as $company) {
                     $company->givePermissionTo($permission);
@@ -57,10 +62,19 @@ class PermissionController extends Controller
         $datas = $request->validate([
             'name'  => ['required', 'string', 'max:255', Rule::unique('permissions')->ignore($permission->id)],
             'type'  => 'required|string|in:general,unique',
+            'scope' => 'required|string|in:system,company,workspace',
             'price' => 'required|numeric|min:0|max:999999999.99',
         ]);
 
         $permission->update($datas);
+
+        if ($permission->wasChanged('type') && $permission->type === 'general' && $permission->scope !== 'system') {
+            Company::whereDoesntHave('permissions', fn($q) => $q->where('id', $permission->id))
+                ->chunk(100, function($companies) use ($permission) {
+                    foreach($companies as $c) $c->givePermissionTo($permission);
+            });
+        }
+
         return redirect()->back()->with('success', 'Permission updated successfully.');
     }
 
