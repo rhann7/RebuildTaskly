@@ -5,6 +5,7 @@ namespace App\Actions\Fortify;
 use App\Models\Company;
 use App\Models\CompanyOwner;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -28,42 +29,37 @@ class CreateNewUser implements CreatesNewUsers
             'company_category_id' => ['required', 'exists:company_categories,id'],
         ])->validate();
 
-        $user = User::create([
-            'name'              => $input['company_name'],
-            'email'             => $input['email'],
-            'password'          => Hash::make($input['password']),
-            'email_verified_at' => now(),
-            'remember_token'    => Str::random(10),
-        ]);
+        return DB::transaction(function () use ($input) {
+            $user = User::create([
+                'name'              => $input['company_name'],
+                'email'             => $input['email'],
+                'password'          => Hash::make($input['password']),
+                'email_verified_at' => now(),
+                'remember_token'    => Str::random(10),
+            ])->assignRole('company');
 
-        $owner = CompanyOwner::create([
-            'user_id'    => $user->id,
-            'name'       => $input['company_owner_name'],
-        ]);
-
-        $slug = Str::slug($input['company_name']);
-
-        $company = Company::create([
-            'company_owner_id'    => $owner->id,
-            'company_category_id' => $input['company_category_id'],
-            'name'                => $input['company_name'],
-            'slug'                => $slug,
-            'email'               => $input['email'],
-            'address'             => $input['company_address'],
-            'phone'               => $input['company_phone'],
-            'is_active'           => true,
-        ]);
-
-        $user->assignRole('company-owner');
-
-        $generalPermissions = Permission::where('type', 'general')
-            ->whereIn('scope', ['company', 'workspace'])
-            ->get();
+            $company = Company::create([
+                'company_owner_id'    => CompanyOwner::create([
+                    'user_id' => $user->id,
+                    'name'    => $input['company_owner_name'],
+                ])->id,
+                'company_category_id' => $input['company_category_id'],
+                'name'                => $input['company_name'],
+                'slug'                => Str::slug($input['company_name']),
+                'email'               => $input['email'],
+                'address'             => $input['company_address'],
+                'phone'               => $input['company_phone'],
+                'is_active'           => true,
+            ]);
             
-        if ($generalPermissions->count() > 0) {
-            $company->givePermissionTo($generalPermissions);
-        }
-        
-        return $user;
+            $permissions = Permission::where('type', 'general')
+                ->whereIn('scope', ['company', 'workspace'])->get();
+                
+            if ($permissions->count() > 0) {
+                $company->givePermissionTo($permissions);
+            }
+            
+            return $user;
+        });
     }
 }
