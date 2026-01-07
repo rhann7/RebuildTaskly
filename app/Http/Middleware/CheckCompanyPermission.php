@@ -8,30 +8,23 @@ use Spatie\Permission\Models\Permission;
 
 class CheckCompanyPermission
 {
-    public function handle(Request $request, Closure $next, string $permissionName)
+    public function handle(Request $request, Closure $next, string $permission)
     {
-        $permission = cache()->remember("perm-def-{$permissionName}", 3600, function() use ($permissionName) {
-            return Permission::where('name', $permissionName)->first();
-        });
+        $user = $request->user();
+        abort_if(!$user, 403);
 
-        if ($permission && $permission->scope === 'system') {
+        if ($user->hasRole('super-admin')) {
             return $next($request);
         }
 
-        $user = $request->user();
-        if (!$user || !$user->companyOwner?->company) {
-            abort(403, 'Company context not found.');
-        }
+        $company = $user->companyOwner->company ?? null;
 
-        $company = $user->companyOwner?->company;
-        $cacheKey = "company-{$company->id}-permission-{$permissionName}";
+        $up = $user->getAllPermissions()->pluck('name');
+        $cp = $company ? $company->getAllPermissions()->pluck('name') : collect();
+        $ap = $up->merge($cp)->unique();
 
-        $hasAccess = cache()->remember($cacheKey, 3600, function () use ($company, $permissionName) {
-            return $company->hasPermissionTo($permissionName, 'web');
-        });
-
-        if (!$hasAccess) {
-            abort(403, "Fitur '{$permissionName}' tidak aktif untuk paket layanan Anda.");
+        if (!$ap->contains($permission)) {
+            abort(403, "Company anda tidak memiliki akses ke fitur: {$permission}");
         }
 
         return $next($request);
