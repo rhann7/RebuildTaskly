@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\CompanyCategory;
+use App\Services\MenuService;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -37,6 +38,7 @@ class HandleInertiaRequests extends Middleware
                         $company ? $company->getAllPermissions()->pluck('name')->toArray() : []
                     )),
                     'company' => $user->companyOwner,
+                    'menu' => (new MenuService())->getSidebarMenu($request),
                 ] : null,
                 'is_impersonating' => app('impersonate')->isImpersonating()
             ],
