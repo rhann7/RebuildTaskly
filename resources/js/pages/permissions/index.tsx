@@ -1,7 +1,7 @@
 import ResourceListLayout from '@/layouts/resource/resource-list-layout';
 import { useState, FormEventHandler, useEffect } from 'react';
 import { useForm, router } from '@inertiajs/react';
-import { type BreadcrumbItem } from '@/types';
+import { PageConfig, type BreadcrumbItem } from '@/types';
 
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -31,6 +31,7 @@ type PageProps = {
         total: number;
     };
     filters: { search?: string; type?: string; scope?: string; };
+    pageConfig: PageConfig;
 };
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -38,7 +39,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Permissions List', href: '/access-control/permissions' },
 ];
 
-export default function PermissionIndex({ permissions, filters }: PageProps) {
+export default function PermissionIndex({ permissions, filters, pageConfig }: PageProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [currentId, setCurrentId] = useState<number | null>(null);
@@ -112,28 +113,26 @@ export default function PermissionIndex({ permissions, filters }: PageProps) {
                     onKeyDown={(e) => e.key === 'Enter' && handleFilterChange()}
                 />
             </div>
-
-            {/* Scope Filter kembali ke versi awal (Compact) */}
+            
             <Select value={scopeFilter} onValueChange={(val) => { setScopeFilter(val); handleFilterChange(undefined, undefined, val); }}>
-                <SelectTrigger className="w-[160px] h-9 bg-background">
-                    <SelectValue placeholder="All Scopes" />
-                </SelectTrigger>
+                <SelectTrigger className="w-[160px] h-9 bg-background"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="all">All Scopes</SelectItem>
-                    <SelectItem value="system">System</SelectItem>
-                    <SelectItem value="company">Company</SelectItem>
-                    <SelectItem value="workspace">Workspace</SelectItem>
+                    {pageConfig.options.scopes.map((opt) => (
+                        <SelectItem key={opt.value} value={String(opt.value)}>
+                            {opt.label}
+                        </SelectItem>
+                    ))}
                 </SelectContent>
             </Select>
 
             <Select value={typeFilter} onValueChange={(val) => { setTypeFilter(val); handleFilterChange(undefined, val); }}>
-                <SelectTrigger className="w-[160px] h-9 bg-background">
-                    <SelectValue placeholder="All Types" />
-                </SelectTrigger>
+                <SelectTrigger className="w-[160px] h-9 bg-background"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
-                    <SelectItem value="general">General</SelectItem>
-                    <SelectItem value="unique">Unique</SelectItem>
+                    {pageConfig.options.types.map((opt) => (
+                        <SelectItem key={opt.value} value={String(opt.value)}>
+                            {opt.label}
+                        </SelectItem>
+                    ))}
                 </SelectContent>
             </Select>
         </div>
@@ -142,8 +141,8 @@ export default function PermissionIndex({ permissions, filters }: PageProps) {
     return (
         <>
             <ResourceListLayout
-                title="Manage Permissions"
-                description="Control access levels and feature availability."
+                title={pageConfig.title}
+                description={pageConfig.description}
                 breadcrumbs={breadcrumbs}
                 filterWidget={FilterWidget}
                 headerActions={<Button onClick={openCreateModal}><Plus className="h-4 w-4 mr-2" />Add New Permission</Button>}
