@@ -13,21 +13,42 @@ use Spatie\Permission\Models\Role;
 
 class PermissionController extends Controller
 {
+    private function getPageConfig(Request $request)
+    {
+        return [
+            'title'       => 'Manage Permissions',
+            'description' => 'Control access levels and feature availability.',
+            'can_manage'  => $request->user()->hasRole('super-admin'),
+            'options'     => [
+                'scopes'  => [
+                    ['label' => 'All Scopes', 'value' => 'all'],
+                    ['label' => 'System', 'value' => 'system'],
+                    ['label' => 'Company', 'value' => 'company'],
+                    ['label' => 'Workspace', 'value' => 'workspace'],
+                ],
+                'types'   => [
+                    ['label' => 'All Types', 'value' => 'all'],
+                    ['label' => 'General', 'value' => 'general'],
+                    ['label' => 'Unique', 'value' => 'unique'],
+                ]
+            ]
+        ];
+    }
+
     public function index(Request $request)
     {
-        $query = Permission::query();
-
-        $query->when($request->search, function ($q, $search) {
-            $q->where('name', 'like', "%{$search}%");
-        })->when($request->type && $request->type !== 'all', function ($q) use ($request) {
-            $q->where('type', $request->type);
-        })->when($request->scope && $request->scope !== 'all', function ($q) use ($request) {
-            $q->where('scope', $request->scope);
-        });
+        $permissions = Permission::query()
+            ->when($request->search, fn($q, $search) => $q->where('name', 'like', "%{$search}%"))
+            ->when($request->type && $request->type !== 'all', fn($q) => $q->where('type', $request->type))
+            ->when($request->scope && $request->scope !== 'all', fn($q) => $q->where('scope', $request->scope))
+            ->orderBy('id', 'asc')
+            ->paginate(10)
+            ->withQueryString();
 
         return Inertia::render('permissions/index', [
-            'permissions' => $query->orderBy('id', 'asc')->paginate(10)->withQueryString(),
+            'permissions' => $permissions,
             'filters'     => $request->only(['search', 'type', 'scope']),
+            'pageConfig'  => $this->getPageConfig($request)
         ]);
     }
 
