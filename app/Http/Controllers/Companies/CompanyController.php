@@ -17,6 +17,24 @@ use Spatie\Permission\Models\Permission;
 
 class CompanyController extends Controller
 {
+    private function getPageConfig(Request $request)
+    {
+        return [
+            'title'       => 'Company Management',
+            'description' => 'Manage all registered companies and their accounts.',
+            'can_manage'  => $request->user()->hasRole('super-admin'),
+            'options'     => [
+                'categories' => CompanyCategory::select(['id', 'name'])
+                ->orderBy('id')->get()
+                ->map(fn($c) => ['label' => $c->name, 'value' => $c->id]),
+                
+                'status' => [
+                    ['label' => 'Active', 'value' => 1],
+                    ['label' => 'Inactive', 'value' => 0],
+                ],
+            ]
+        ];
+    }
     public function index(Request $request)
     {
         $companies = Company::with(['companyOwner', 'companyCategory'])
@@ -31,8 +49,8 @@ class CompanyController extends Controller
 
         return Inertia::render('companies/index', [
             'companies'  => $companies,
-            'categories' => CompanyCategory::select(['id', 'name'])->orderBy('id')->get(),
             'filters'    => $request->only(['search', 'category']),
+            'pageConfig' => $this->getPageConfig($request)
         ]);
     }
 
