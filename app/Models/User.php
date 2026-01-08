@@ -31,25 +31,25 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'password' => 'hashed', 
-            'email_verified_at' => 'datetime', 
+            'password'                => 'hashed', 
+            'email_verified_at'       => 'datetime', 
             'two_factor_confirmed_at' => 'datetime'
         ];
     }
 
-    public function isAdmin()
+    public function isSuperAdmin()
     {
-        return $this->hasRole('admin');
+        return $this->hasRole('super-admin');
     }
 
     public function canImpersonate()
     {
-        return $this->isAdmin();
+        return $this->isSuperAdmin();
     }
 
     public function canBeImpersonated()
     {
-        return !$this->isAdmin();
+        return !$this->isSuperAdmin();
     }
 
     public function companyOwner()

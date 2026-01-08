@@ -17,13 +17,22 @@ export interface NavGroup {
 export interface NavItem {
     title: string;
     href: string;
-    icon?: LucideIcon | null;
+    icon?: LucideIcon | string | null;
     isActive?: boolean;
     items?: {
         title: string;
         href: string;
         isActive?: boolean;
     }[];
+}
+
+export interface PageConfig {
+    title: string;
+    description: string;
+    can_manage: boolean;
+    options: {
+        [key: string]: { label: string; value: string | number }[];
+    };
 }
 
 export interface SharedData {

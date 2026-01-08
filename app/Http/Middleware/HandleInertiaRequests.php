@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\CompanyCategory;
+use App\Services\MenuService;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -21,6 +22,7 @@ class HandleInertiaRequests extends Middleware
         [$message, $author] = str(Inspiring::quotes()->random())->explode('-');
 
         $user = $request->user();
+        $company = $user ? $user->loadMissing('companyOwner.company')->companyOwner?->company : null;
 
         return [
             ...parent::share($request),
@@ -31,8 +33,12 @@ class HandleInertiaRequests extends Middleware
                     'name' => $user->name,
                     'email' => $user->email,
                     'roles' => $user->getRoleNames(),
+                    'permissions' => array_unique(array_merge(
+                        $user->getAllPermissions()->pluck('name')->toArray(),
+                        $company ? $company->getAllPermissions()->pluck('name')->toArray() : []
+                    )),
                     'company' => $user->companyOwner,
-                    'permissions' => $user->getAllPermissions()->pluck('name'),
+                    'menu' => (new MenuService())->getSidebarMenu($request),
                 ] : null,
                 'is_impersonating' => app('impersonate')->isImpersonating()
             ],

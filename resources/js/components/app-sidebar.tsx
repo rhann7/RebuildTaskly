@@ -5,7 +5,7 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, Sid
 import { dashboard } from '@/routes';
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, Building2, Folder, LayoutGrid, ShieldCheck } from 'lucide-react';
+import { BookOpen, Folder } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const footerNavItems: NavItem[] = [
@@ -23,56 +23,8 @@ const footerNavItems: NavItem[] = [
 
 export function AppSidebar() {
     const page = usePage();
-    const currentUrl = page.url;
     const { auth } = page.props as any;
-    const userRoles = auth.user.roles || [];
-
-    const mainNavItems: NavItem[] = [
-        {
-            title: 'Dashboard',
-            href: '/dashboard',
-            icon: LayoutGrid,
-            isActive: currentUrl === '/dashboard',
-        },
-        ...(userRoles.includes('admin') ? [
-            {
-                title: 'Company Management',
-                href: '#',
-                icon: Building2,
-                isActive: currentUrl.startsWith('/company-management'),
-                items: [
-                    {
-                        title: 'Company Categories',
-                        href: '/company-management/categories',
-                        isActive: currentUrl.startsWith('/company-management/categories'),
-                    },
-                    {
-                        title: 'Company List',
-                        href: '/company-management/companies',
-                        isActive: currentUrl.startsWith('/company-management/companies'),
-                    },
-                ],
-            },
-            {
-                title: 'Access Control',
-                href: '#',
-                icon: ShieldCheck,
-                isActive: currentUrl.startsWith('/access-control'),
-                items: [
-                    {
-                        title: 'Permissions List',
-                        href: '/access-control/permissions',
-                        isActive: currentUrl.startsWith('/access-control/permissions'),
-                    },
-                    {
-                        title: 'Company Access',
-                        href: '/access-control/company-access',
-                        isActive: currentUrl.startsWith('/access-control/company-access'),
-                    },
-                ],
-            },
-        ] : []),
-    ];
+    const mainNavItems = auth.user.menu;
 
     return (
         <Sidebar collapsible="icon" variant="inset">
