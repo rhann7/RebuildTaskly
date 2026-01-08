@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Chatbot\ChatbotController;
 use App\Http\Controllers\Companies\CategoryController;
 use App\Http\Controllers\Companies\CompanyController;
 use App\Http\Controllers\Companies\InvoiceController;
@@ -17,6 +18,7 @@ Route::get('/', function () {
 
 Route::middleware(['auth'])->group(function () {
     Route::impersonate();
+    Route::post('/chatbot/c', [ChatbotController::class, 'chat']);
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {

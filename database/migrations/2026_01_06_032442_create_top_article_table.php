@@ -11,8 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('article', function (Blueprint $table) {
+        Schema::create('top_article', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('rating_article_id')->references('id')->on('rating_article')->cascadeOnDelete();
+            $table->float('percentage_of_trending_search');
             $table->timestamps();
         });
     }
@@ -22,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('article');
+        Schema::dropIfExists('rating_article');
     }
 };

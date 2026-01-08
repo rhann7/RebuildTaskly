@@ -1,4 +1,5 @@
 import AppLayoutTemplate from '@/layouts/app/app-sidebar-layout';
+import FloatingChatButton from '@/components/chatbot/floating-chat-button';
 import { type BreadcrumbItem } from '@/types';
 import { type ReactNode } from 'react';
 import { usePage, Link } from '@inertiajs/react';
@@ -14,6 +15,9 @@ export default ({ children, breadcrumbs, ...props }: AppLayoutProps) => {
 
     return (
         <div className="relative flex min-h-screen flex-col">
+            {/* Floating Chat Button */}
+            <FloatingChatButton />
+
             <AppLayoutTemplate breadcrumbs={breadcrumbs} {...props}>
                 {children}
             

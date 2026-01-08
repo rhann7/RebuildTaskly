@@ -67,6 +67,7 @@ export default function ResourceListLayout({
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={title} />
+           
             <div className="flex h-full flex-1 flex-col gap-6 p-6">
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div className="space-y-1">
