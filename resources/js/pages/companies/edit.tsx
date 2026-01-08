@@ -23,10 +23,10 @@ type Company = {
     phone: string;
     address: string;
     company_category_id: number;
-    is_active: boolean;
-    owner?: {
+    company_owner?: { 
         name: string;
     };
+    is_active: boolean;
 };
 
 type PageProps = {
@@ -42,7 +42,7 @@ export default function CompanyEdit({ company, categories }: PageProps) {
     ];
 
     const { data, setData, put, processing, errors } = useForm({
-        company_owner_name: company.owner?.name || '',
+        company_owner_name: company.company_owner?.name || '',
         name: company.name || '',
         email: company.email || '',
         phone: company.phone || '',
