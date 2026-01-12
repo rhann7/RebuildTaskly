@@ -8,6 +8,7 @@ use App\Models\CompanyCategory;
 use App\Models\CompanyOwner;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -90,8 +91,7 @@ class CompanyController extends Controller
                 'is_active'           => true,
             ]);
 
-            $permissions = Permission::where('type', 'general')
-                ->whereIn('scope', ['company', 'workspace'])->pluck('id');
+            $permissions = Permission::where('type', 'general')->whereIn('scope', ['company', 'workspace'])->pluck('id');
 
             if ($permissions->isNotEmpty()) {
                 $company->syncPermissions($permissions);
@@ -110,7 +110,7 @@ class CompanyController extends Controller
 
     public function show(Company $company)
     {
-        $company->load(['companyOwner', 'companyCategory']);
+        $company->load(['companyOwner', 'companyCategory'])->loadCount(['members', 'workspaces']); 
         return inertia('companies/show', ['company' => $company]);
     }
 
@@ -131,7 +131,7 @@ class CompanyController extends Controller
             'email'               => ['required', 'email', Rule::unique('users')->ignore($company->companyOwner->user_id)],
             'phone'               => 'required|string|max:20',
             'address'             => 'required|string|max:255',
-            'is_active'           => 'required|in:0,1',
+            'is_active'           => 'required|boolean',
         ]);
 
         DB::transaction(function () use ($validated, $company) {
@@ -153,15 +153,15 @@ class CompanyController extends Controller
                 'phone'               => $validated['phone'],
                 'address'             => $validated['address'],
                 'company_category_id' => $validated['company_category_id'],
-                'is_active'           => (bool) $validated['is_active'],
+                'is_active'           => $validated['is_active'],
             ]);
 
             if ($oldStatus && !$company->is_active) {
-                cache()->forget("company-{$company->id}-permissions");
+                Cache::forget("company-{$company->id}-permissions");
             }
         });
 
-        return redirect()->route('company-management.companies.index')->with('success', "Company {$company->name} updated successfully.");
+        return redirect()->route('company-management.companies.show', $company->slug)->with('success', "Company updated successfully.");
     }
 
     public function destroy(Company $company)
