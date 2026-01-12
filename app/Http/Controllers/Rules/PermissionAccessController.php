@@ -54,7 +54,7 @@ class PermissionAccessController extends Controller
             }
 
             app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
-            cache()->forget("company-{$company->id}-permission-{$permission->name}");
+            cache()->forget("company-{$company->id}-permissions");
 
             return redirect()->back()->with('success', $message);
         });
