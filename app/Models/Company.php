@@ -33,6 +33,16 @@ class Company extends Model
         return $this->belongsTo(CompanyCategory::class, 'company_category_id');
     }
 
+    public function workspaces()
+    {
+        return $this->hasMany(Workspace::class);
+    }
+
+    public function roles()
+    {
+        return $this->hasMany(Role::class);
+    }
+
     public function hasFeature(string $permissionName)
     {
         return $this->hasPermissionTo($permissionName);
