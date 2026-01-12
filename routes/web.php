@@ -6,8 +6,10 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Rules\PermissionAccessController;
 use App\Http\Controllers\Rules\PermissionController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
+use Spatie\Permission\Models\Permission;
 
 Route::get('/', function () {
     return Inertia::render('welcome', [
@@ -15,9 +17,23 @@ Route::get('/', function () {
     ]);
 })->name('home');
 
-Route::middleware(['auth'])->group(function () {
+Route::middleware('auth')->group(function () {
     Route::impersonate();
 });
+
+if (Schema::hasTable('permissions')) {
+    $dynamicRoutes = cache()->rememberForever('dynamic_routes', function () {
+        return Permission::whereNotNull('route_path')->get();
+    });
+
+    foreach ($dynamicRoutes as $route) {
+        if ($route->route_path && $route->controller_action) {
+            Route::get($route->route_path, $route->controller_action)
+                ->name($route->route_name)
+                ->middleware(['auth', 'verified', "company_can:{$route->name}"]);
+        }
+    }
+}
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -32,24 +48,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::prefix('company-management')->name('company-management.')->group(function () {
             Route::resource('categories', CategoryController::class)
-                ->names('categories')
-                ->parameters(['categories' => 'category'])
+                ->parameters(['categories' => 'category:slug'])
                 ->except(['create', 'edit', 'show']);
 
             Route::resource('companies', CompanyController::class)
-                ->except(['show']);
-                
-            Route::get('/companies/{company:slug}', [CompanyController::class, 'show'])->name('show');
+                ->parameters(['companies' => 'company:slug']);
         });
     });
-
-    Route::get('can-view-analytics', function () {
-        return "<h1>Tes halaman company dengan general permission: can-view-analytics</h1>";
-    })->middleware('company_can:can-view-analytics');
-    
-    Route::get('can-edit-company', function () {
-        return "<h1>Tes halaman company dengan general permission: can-edit-company</h1>";
-    })->middleware('company_can:can-edit-company');
 });
 
 require __DIR__.'/settings.php';
