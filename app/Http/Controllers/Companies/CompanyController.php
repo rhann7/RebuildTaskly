@@ -117,21 +117,21 @@ class CompanyController extends Controller
     public function edit(Company $company)
     {
         return Inertia::render('companies/edit', [
-            'company'    => $company->load('companyCategory', 'companyOwner'),
-            'categories' => CompanyCategory::all(),
+            'company'    => $company->load('companyCategory', 'companyOwner.user'),
+            'categories' => CompanyCategory::select(['id', 'name'])->get(),
         ]);
     }
 
     public function update(Request $request, Company $company)
     {
         $validated = $request->validate([
-            'company_owner_name'  => 'sometimes|string|max:255',
-            'company_category_id' => 'sometimes|exists:company_categories,id',
-            'name'                => 'sometimes|string|max:255',
-            'email'               => ['sometimes', 'email', Rule::unique('users')->ignore($company->companyOwner->user_id)],
-            'phone'               => 'sometimes|string|max:20',
-            'address'             => 'sometimes|string|max:255',
-            'is_active'           => 'sometimes|boolean',
+            'company_owner_name'  => 'required|string|max:255',
+            'company_category_id' => 'required|exists:company_categories,id',
+            'name'                => 'required|string|max:255',
+            'email'               => ['required', 'email', Rule::unique('users')->ignore($company->companyOwner->user_id)],
+            'phone'               => 'required|string|max:20',
+            'address'             => 'required|string|max:255',
+            'is_active'           => 'required|in:0,1',
         ]);
 
         DB::transaction(function () use ($validated, $company) {
@@ -144,28 +144,37 @@ class CompanyController extends Controller
                 'name' => $validated['company_owner_name']
             ]);
 
+            $oldStatus = $company->is_active;
+            
             $company->update([
                 'name'                => $validated['name'],
-                'slug'                => Str::slug($validated['name']),
+                'slug'                => Str::slug($validated['name']), 
                 'email'               => $validated['email'],
                 'phone'               => $validated['phone'],
                 'address'             => $validated['address'],
                 'company_category_id' => $validated['company_category_id'],
-                'is_active'           => $validated['is_active'],
+                'is_active'           => (bool) $validated['is_active'],
             ]);
+
+            if ($oldStatus && !$company->is_active) {
+                cache()->forget("company-{$company->id}-permissions");
+            }
         });
 
-        return redirect()->route('company-management.companies.index')->with('success', 'All entity data updated successfully.');
+        return redirect()->route('company-management.companies.index')->with('success', "Company {$company->name} updated successfully.");
     }
 
     public function destroy(Company $company)
     {
         DB::transaction(function () use ($company) {
             $user = $company->companyOwner->user;
+            
             $company->delete(); 
-            $user->delete(); 
+            if ($user) {
+                $user->delete(); 
+            }
         });
         
-        return redirect()->back()->with('success', 'Company and associated account deleted.');
+        return redirect()->route('company-management.companies.index')->with('success', 'Company and associated user account have been permanently deleted.');
     }
 }
