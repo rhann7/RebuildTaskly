@@ -4,6 +4,8 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 
 class CheckCompanyPermission
 {
@@ -16,6 +18,15 @@ class CheckCompanyPermission
             return $next($request);
         }
 
+        $company = $user->company ?? ($user->companyOwner->company ?? null);
+        if ($company && !$company->is_active) {
+            Auth::guard('web')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            abort(403, "Akses ditolak. Perusahaan Anda ({$company->name}) sedang ditangguhkan. Silakan hubungi admin.");
+        }
+
         $workspaceId = $request->route('workspace'); 
         $workspaceId = is_object($workspaceId) ? $workspaceId->id : $workspaceId;
 
@@ -26,10 +37,9 @@ class CheckCompanyPermission
             }
         }
 
-        $company = $user->companyOwner->company ?? null;
-        $up = $user->getAllPermissions()->pluck('name');
+        $up = $user->getAllPermissions()->pluck('name');        
         $cp = $company 
-            ? cache()->remember("company-{$company->id}-permissions", 3600, fn() => $company->getAllPermissions()->pluck('name')) 
+            ? Cache::remember("company-{$company->id}-permissions", 3600, fn() => $company->getAllPermissions()->pluck('name')) 
             : collect();
         $ap = $up->merge($cp)->unique();
 
