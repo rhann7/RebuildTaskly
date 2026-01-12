@@ -1,13 +1,14 @@
 import ResourceListLayout from '@/layouts/resource/resource-list-layout';
-import { useState, FormEventHandler, useEffect } from 'react';
+import { useState, FormEventHandler } from 'react';
 import { useForm, router } from '@inertiajs/react';
 import { PageConfig, type BreadcrumbItem } from '@/types';
+import { Plus, Trash2, Pencil, Search, Star, Zap, ShieldCheck, LayoutGrid } from 'lucide-react';
 
 import InputError from '@/components/input-error';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Plus, Trash2, Pencil, Search, Star, Zap, ShieldCheck } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -18,6 +19,11 @@ type Permission = {
     type: string;
     scope: string;
     price: number;
+    route_path: string | null;
+    route_name: string | null;
+    controller_action: string | null;
+    icon: string | null;
+    isMenu: boolean;
     guard_name: string;
     created_at: string;
 };
@@ -31,7 +37,13 @@ type PageProps = {
         total: number;
     };
     filters: { search?: string; type?: string; scope?: string; };
-    pageConfig: PageConfig;
+    pageConfig: PageConfig & {
+        routes: Array<{
+            route_path: string;
+            route_name: string;
+            controller_action: string;
+        }>
+    };
 };
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -47,19 +59,29 @@ export default function PermissionIndex({ permissions, filters, pageConfig }: Pa
     const [typeFilter, setTypeFilter] = useState(filters.type || 'all');
     const [scopeFilter, setScopeFilter] = useState(filters.scope || 'all');
     
-    const { data, setData, post, put, processing, errors, reset, clearErrors, transform } = useForm({ 
+    const { data, setData, post, put, processing, errors, reset, clearErrors } = useForm({ 
         name: '', 
         type: 'general',
         scope: 'company',
-        price: '' 
+        price: '',
+        route_path: '',
+        route_name: '',
+        controller_action: '',
+        icon: '',
+        isMenu: false,
     });
 
-    useEffect(() => {
-        transform((data) => ({
-            ...data,
-            price: data.scope === 'system' ? '0' : data.price,
-        }));
-    }, [data.scope, data.price, transform]);
+    const handleRouteSelect = (routeName: string) => {
+        const selected = pageConfig.routes.find(r => r.route_name === routeName);
+        if (selected) {
+            setData((prev) => ({
+                ...prev,
+                route_name: selected.route_name,
+                route_path: selected.route_path,
+                controller_action: selected.controller_action,
+            }));
+        }
+    };
 
     const handleFilterChange = (newSearch?: string, newType?: string, newScope?: string) => {
         router.get('/access-control/permissions', { 
@@ -72,7 +94,7 @@ export default function PermissionIndex({ permissions, filters, pageConfig }: Pa
     const openCreateModal = () => { 
         setIsEditing(false); 
         setCurrentId(null); 
-        setData({ name: '', type: 'general', scope: 'company', price: '' });
+        reset();
         clearErrors(); 
         setIsOpen(true); 
     };
@@ -80,7 +102,17 @@ export default function PermissionIndex({ permissions, filters, pageConfig }: Pa
     const openEditModal = (p: Permission) => { 
         setIsEditing(true); 
         setCurrentId(p.id); 
-        setData({ name: p.name, type: p.type, scope: p.scope, price: p.price.toString() }); 
+        setData({ 
+            name: p.name, 
+            type: p.type, 
+            scope: p.scope, 
+            price: p.price.toString(),
+            route_path: p.route_path || '',
+            route_name: p.route_name || '',
+            controller_action: p.controller_action || '',
+            icon: p.icon || '',
+            isMenu: p.isMenu,
+        }); 
         clearErrors(); 
         setIsOpen(true); 
     };
@@ -88,6 +120,7 @@ export default function PermissionIndex({ permissions, filters, pageConfig }: Pa
     const handleSubmit: FormEventHandler = (e) => { 
         e.preventDefault(); 
         const url = isEditing && currentId ? `/access-control/permissions/${currentId}` : '/access-control/permissions'; 
+        
         if (isEditing) {
             put(url, { onSuccess: () => { setIsOpen(false); reset(); } });
         } else {
@@ -155,6 +188,7 @@ export default function PermissionIndex({ permissions, filters, pageConfig }: Pa
                         <TableRow className="hover:bg-transparent bg-zinc-50/50 dark:bg-zinc-900/50">
                             <TableHead className="w-[50px] text-center">#</TableHead>
                             <TableHead>Permission</TableHead>
+                            <TableHead>Route Path</TableHead>
                             <TableHead>Scope</TableHead>
                             <TableHead>Type</TableHead>
                             <TableHead>Price</TableHead>
@@ -166,7 +200,19 @@ export default function PermissionIndex({ permissions, filters, pageConfig }: Pa
                         {permissions.data.map((permission, i) => (
                             <TableRow key={permission.id} className="group hover:bg-muted/30">
                                 <TableCell className="text-center text-muted-foreground tabular-nums">{permissions.from + i}</TableCell>
-                                <TableCell className="font-medium text-foreground">{permission.name}</TableCell>
+                                <TableCell>
+                                    <div className="flex flex-col">
+                                        <span className="font-medium text-foreground">{permission.name}</span>
+                                        {permission.isMenu && (
+                                            <span className="text-[10px] text-blue-600 font-bold flex items-center gap-1">
+                                                <LayoutGrid className="h-3 w-3" /> SIDEBAR MENU
+                                            </span>
+                                        )}
+                                    </div>
+                                </TableCell>
+                                <TableCell className="font-mono text-[11px] text-muted-foreground">
+                                    {permission.route_path || '-'}
+                                </TableCell>
                                 <TableCell>
                                     <span className="capitalize text-xs font-mono bg-muted/50 px-2 py-0.5 rounded border">
                                         {permission.scope}
@@ -197,16 +243,50 @@ export default function PermissionIndex({ permissions, filters, pageConfig }: Pa
             </ResourceListLayout>
 
             <Dialog open={isOpen} onOpenChange={setIsOpen}>
-                <DialogContent className="sm:max-w-[425px]">
+                <DialogContent className="sm:max-w-[500px]">
                     <DialogHeader>
                         <DialogTitle>{isEditing ? 'Edit Permission' : 'New Permission'}</DialogTitle>
-                        <DialogDescription>Define the permission key and its category.</DialogDescription>
+                        <DialogDescription>Define the permission key and link it to a system route.</DialogDescription>
                     </DialogHeader>
-                    <form onSubmit={handleSubmit} className="space-y-5 pt-2">
+                    <form onSubmit={handleSubmit} className="space-y-4 pt-2">
                         <div className="grid gap-2">
-                            <Label>Identifier</Label>
-                            <Input value={data.name} onChange={(e) => setData('name', e.target.value)} placeholder="e.g. create-workspace" autoFocus />
+                            <Label>Lucide Icon Name</Label>
+                            <Input value={data.icon} onChange={(e) => setData('icon', e.target.value)} placeholder="e.g. LayoutGrid, Zap, Settings" />
+                            <p className="text-[10px] text-muted-foreground">Use any icon name from lucide-react.</p>
+                        </div>
+
+                        <div className="grid gap-2">
+                            <Label>Identifier (Permission Name)</Label>
+                            <Input value={data.name} onChange={(e) => setData('name', e.target.value)} placeholder="e.g. access-workspace" />
                             <InputError message={errors.name} />
+                        </div>
+
+                        <div className="grid gap-2 border-t pt-4">
+                            <Label className="text-blue-600 text-xs uppercase font-bold">Dynamic Route Configuration</Label>
+                            <Select value={data.route_name} onValueChange={handleRouteSelect}>
+                                <SelectTrigger className="bg-blue-50/30 border-blue-100">
+                                    <SelectValue placeholder="Autofill from existing Laravel routes..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {pageConfig.routes.map((r) => (
+                                        <SelectItem key={r.route_name} value={r.route_name}>
+                                            <div className="flex flex-col items-start">
+                                                <span>{r.route_name}</span>
+                                                <span className="text-[10px] text-muted-foreground">{r.route_path}</span>
+                                            </div>
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <InputError message={errors.route_name} />
+                        </div>
+
+                        <div className="flex items-center space-x-2 border rounded-md p-3 bg-zinc-50/50">
+                            <Switch checked={data.isMenu} onCheckedChange={(val) => setData('isMenu', val)} />
+                            <div className="grid gap-0.5">
+                                <Label className="text-sm font-semibold">Sidebar Menu</Label>
+                                <span className="text-[10px] text-muted-foreground">Automatically show this route in the sidebar if accessible.</span>
+                            </div>
                         </div>
                         
                         <div className="grid grid-cols-2 gap-4">
@@ -237,13 +317,13 @@ export default function PermissionIndex({ permissions, filters, pageConfig }: Pa
                             <div className="grid gap-2">
                                 <Label>Monthly Price (IDR)</Label>
                                 <Input type="number" value={data.price} onChange={(e) => setData('price', e.target.value)} placeholder="50000" />
-                                <InputError message={errors.price as string} />
+                                <InputError message={errors.price} />
                             </div>
                         )}
 
-                        <DialogFooter>
+                        <DialogFooter className="border-t pt-4 mt-4">
                             <Button type="button" variant="ghost" onClick={() => setIsOpen(false)}>Cancel</Button>
-                            <Button type="submit" disabled={processing}>{isEditing ? 'Save Changes' : 'Create'}</Button>
+                            <Button type="submit" disabled={processing}>{isEditing ? 'Save Changes' : 'Create Permission'}</Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
