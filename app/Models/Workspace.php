@@ -20,6 +20,10 @@ class Workspace extends Model
         return $this->hasMany(Role::class);
     }
 
+    public function members(): HasMany {
+        return $this->hasMany(WorkspaceMember::class);
+    }
+
     public function workspaceMembers()
     {
         return $this->belongsToMany(User::class, 'workspace_members')
