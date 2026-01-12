@@ -7,6 +7,11 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
 class WorkspaceMember extends Pivot
 {
     protected $table = 'workspace_members';
+    protected $fillable = [
+        'workspace_id',
+        'user_id',
+        'role_id'
+    ];
 
     public function role()
     {
