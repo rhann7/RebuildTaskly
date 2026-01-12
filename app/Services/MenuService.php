@@ -11,7 +11,13 @@ class MenuService
         $user = $request->user();
         if (!$user) return [];
 
-        $permissions = $user->getAllPermissions()->pluck('name');
+        $company = $user->companyOwner->company ?? null;
+
+        $up = $user->getAllPermissions()->pluck('name');
+        $cp = $company 
+            ? cache()->remember("company-{$company->id}-permissions", 3600, fn() => $company->getAllPermissions()->pluck('name')) 
+            : collect();
+        $ap = $up->merge($cp)->unique();
 
         $menu = [];
         $menu[] = [
@@ -62,12 +68,20 @@ class MenuService
         }
 
         if ($user->hasRole('company')) {
-            if ($permissions->contains('access-workspace')) {
+            if ($ap->contains('access-workspace')) {
                 $menu[] = [
                     'title'    => 'Workspaces',
                     'href'     => '/workspaces',
                     'icon'     => 'Briefcase',
                     'isActive' => $request->routeIs('workspaces.*')
+                ];
+            }
+
+            if ($ap->contains('view-analytics')) {
+                $menu[] = [
+                    'title'    => 'Analytics',
+                    'href'     => '/view-analytics',
+                    'icon'     => 'Activity',
                 ];
             }
         }
