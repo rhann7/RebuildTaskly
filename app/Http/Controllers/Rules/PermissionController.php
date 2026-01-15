@@ -14,20 +14,26 @@ use Spatie\Permission\Models\Role;
 
 class PermissionController extends Controller
 {
+    private function clearPermissionCache()
+    {
+        cache()->forget('dynamic_routes');
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+    }
     private function getPageConfig(Request $request)
     {
-        $routes = collect(Route::getRoutes())->map(function ($route) {
-            return [
+        $routes = collect(Route::getRoutes())
+            ->map(fn($route) => [
                 'route_path'        => '/' . ltrim($route->uri(), '/'),
                 'route_name'        => $route->getName(),
                 'controller_action' => $route->getActionName(),
-            ];
-        })->filter(fn($r) => $r['route_name'] !== null)->values();
+            ])
+            ->whereNotNull('route_name')
+            ->values();
 
         return [
             'title'       => 'Manage Permissions',
             'description' => 'Control access levels and feature availability.',
-            'can_manage'  => $request->user()->hasRole('super-admin'),
+            'can_manage'  => $request->user()->isSuperAdmin(),
             'routes'      => $routes,
             'options'     => [
                 'scopes'  => [
@@ -48,10 +54,12 @@ class PermissionController extends Controller
     public function index(Request $request)
     {
         $permissions = Permission::query()
-            ->when($request->search, fn($q, $search) => $q->where('name', 'like', "%{$search}%"))
+            ->when($request->search, fn($q, $s) => $q->where('name', 'like', "%{$s}%"))
             ->when($request->type && $request->type !== 'all', fn($q) => $q->where('type', $request->type))
             ->when($request->scope && $request->scope !== 'all', fn($q) => $q->where('scope', $request->scope))
-            ->orderBy('id', 'asc')->paginate(10)->withQueryString();
+            ->orderBy('id')
+            ->paginate(10)
+            ->withQueryString();
 
         return Inertia::render('permissions/index', [
             'permissions' => $permissions,
@@ -66,7 +74,7 @@ class PermissionController extends Controller
             'name'              => 'required|string|max:255|unique:permissions,name',
             'type'              => 'required|string|in:general,unique',
             'scope'             => 'required|string|in:system,company,workspace',
-            'price'             => 'required|numeric|min:0|max:999999999.99',
+            'price'             => $request->scope === 'system' ? 'nullable|numeric' : 'required|numeric|min:0|max:999999999.99',
             'route_path'        => 'nullable|string',
             'route_name'        => 'nullable|string',
             'controller_action' => 'nullable|string',
@@ -75,13 +83,12 @@ class PermissionController extends Controller
         ]);
 
         return DB::transaction(function () use ($datas, $request) {
+            if ($request->scope === 'system') $datas['price'] = 0;
+
             $permission = Permission::create([...$datas, 'guard_name' => 'web']);
 
-            if ($request->scope === 'system') {
-                $superAdmin = Role::where('name', 'super-admin')->first();
-                if ($superAdmin) $superAdmin->givePermissionTo($permission);
-            }
-            
+            if ($request->scope === 'system') Role::where('name', 'super-admin')->first()?->givePermissionTo($permission);
+
             if ($request->type === 'general' && $request->scope !== 'system') {
                 Company::chunk(100, function ($companies) use ($permission) {
                     foreach ($companies as $company) {
@@ -89,7 +96,8 @@ class PermissionController extends Controller
                     }
                 });
             }
-            
+
+            $this->clearPermissionCache();
             return redirect()->back()->with('success', 'Permission created successfully.');
         });
     }
@@ -100,7 +108,7 @@ class PermissionController extends Controller
             'name'              => ['sometimes', 'string', 'max:255', Rule::unique('permissions')->ignore($permission->id)],
             'type'              => 'sometimes|string|in:general,unique',
             'scope'             => 'sometimes|string|in:system,company,workspace',
-            'price'             => 'sometimes|numeric|min:0|max:999999999.99',
+            'price'             => $request->scope === 'system' ? 'nullable|numeric' : 'sometimes|numeric|min:0|max:999999999.99',
             'route_path'        => 'nullable|string',
             'route_name'        => 'nullable|string',
             'controller_action' => 'nullable|string',
@@ -109,6 +117,8 @@ class PermissionController extends Controller
         ]);
 
         return DB::transaction(function () use ($datas, $permission) {
+            if (isset($datas['scope']) && $datas['scope'] === 'system') $datas['price'] = 0;
+            
             $permission->update($datas);
 
             if ($permission->wasChanged('type') && $permission->type === 'general' && $permission->scope !== 'system') {
@@ -120,6 +130,7 @@ class PermissionController extends Controller
                 });
             }
 
+            $this->clearPermissionCache();
             return redirect()->back()->with('success', 'Permission updated successfully.');
         });
     }
@@ -127,6 +138,8 @@ class PermissionController extends Controller
     public function destroy(Permission $permission)
     {
         $permission->delete();
+        $this->clearPermissionCache();
+
         return redirect()->back()->with('success', 'Permission deleted successfully.');
     }
 }
