@@ -33,11 +33,18 @@ class CategoryController extends Controller
             'name' => 'required|string|max:255|unique:company_categories,name',
         ]);
 
-        CompanyCategory::create([
+        $category = CompanyCategory::create([
             'name' => $validated['name'],
             'slug' => Str::slug($validated['name']),
         ]);
 
+        if($request->wantsJson()){
+            return response()->json([
+                'success' => true,
+                'message' => 'Category created successfully!',
+                'data' => $category
+            ]);
+        }
         return redirect()->back()->with('success', 'Category created successfully.');
     }
 

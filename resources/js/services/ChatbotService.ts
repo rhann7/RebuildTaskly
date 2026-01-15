@@ -1,13 +1,12 @@
-const LOCALHOST = 'http://127.0.0.1:8000'
-const getCsrfToken = (): string => {
-    return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-};
+import { GlobalHelper } from "@/helpers/GlobalHelper";
+
+const BASEURL = 'http://127.0.0.1:8000'
 
 export const Chat = async (req: string) => {
-    const response = await fetch(`${LOCALHOST}/chatbot/c`, {
+    const response = await fetch(`${BASEURL}/chatbot/c`, {
         method: 'POST',
         headers: {
-            'X-CSRF-TOKEN' : getCsrfToken(),
+            'X-CSRF-TOKEN' : GlobalHelper.getCsrfToken(),
             'Content-Type': 'application/json',
             'Accept': 'application/json',
         },
@@ -17,6 +16,5 @@ export const Chat = async (req: string) => {
     var res = response.json()
     console.log(res);
     
-
     return res;
 }

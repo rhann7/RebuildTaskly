@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { ArrowUpRight, Bot, MessageCircle, Send, X } from 'lucide-react';
+import { ArrowUpRight, Bot, CornerUpLeft, MessageCircle, Send, X } from 'lucide-react';
 import { usePage } from '@inertiajs/react';
 import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle, DrawerTrigger } from '../ui/drawer';
 import { Button } from '../ui/button';
@@ -7,6 +7,11 @@ import { Textarea } from '../ui/textarea';
 import { ScrollArea } from '../ui/scroll-area';
 import { BlinkBlur } from 'react-loading-indicators'
 import { Chat } from '@/services/ChatbotService';
+import { useSpring, useSpringRef, config, useTransition, useChain, animated } from '@react-spring/web'
+import dataListFeature from '../../types/data-list-feature';
+import { ActionAgent, ActionChatbot } from '../../types/data-fast-action';
+import { Badge } from '../ui/badge';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '../ui/select';
 
 interface FloatingChatButtonProps {
     onToggle?: (isOpen: boolean) => void;
@@ -21,9 +26,46 @@ interface Message {
 export default function FloatingChatButton({ onToggle }: FloatingChatButtonProps) {
     const [isChatStarted, setChatStarted] = useState(false);
     const [inputValue, setInputValue] = useState(''); // State untuk value textarea
+    const [previewValue, setPreviewValue] = useState('');
     const [isAnalyze, setAnalyze] = useState(false);
     const [messages, setMessages] = useState<Message[]>([]); // State untuk menyimpan pesan
     const [isDrawerOpen, setIsDrawerOpen] = useState(false); // State untuk track drawer
+    const [open, setOpen] = useState(false)
+    const [showTransition, setShowTransition] = useState(false)
+    const [aiType, setAiType] = useState<string[]>([])
+    const [selectedAiType, setSelectedAiType] = useState('') // State kosong dulu
+    const [type, setType] = useState('')
+
+    const springApi = useSpringRef()
+    const { size, ...rest } = useSpring({
+        ref: springApi,
+        config: config.stiff,
+        from: { size: '20%' },
+        to: {
+            size: open ? '100%' : '20%'
+        }
+    })
+
+    const buttonSpring = useSpring({
+        opacity: open ? 0 : 1,
+        transform: open ? 'translateY(-20px)' : 'translateY(0px)',
+        config: config.gentle
+    })
+
+    const filteredFeatures = dataListFeature.filter(item => item.type === type);
+    const transApi = useSpringRef()
+    const transition = useTransition(open ? filteredFeatures : [], {
+        ref: transApi,
+        trail: 400 / filteredFeatures.length,
+        from: { opacity: 0, scale: 0 },
+        enter: { opacity: 1, scale: 1 },
+        leave: { opacity: 0, scale: 0 },
+    })
+
+    useChain(open ? [springApi, transApi] : [transApi, springApi], [
+        0,
+        open ? 0.1 : 0.6
+    ])
 
     // Ref untuk auto scroll di dalam ScrollArea
     const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -44,15 +86,35 @@ export default function FloatingChatButton({ onToggle }: FloatingChatButtonProps
         }
     };
 
-    // Scroll saat ada pesan baru atau loading
+    useEffect(() => {
+        if (user.role !== 'company' && 'company-owner') {
+            setAiType(['Agent', 'Chat'])
+            setSelectedAiType('Chat')
+        } else {
+            setAiType(['Chat'])
+            setSelectedAiType('Chat') // Set default value
+        }
+    }, [user?.role])
+
+    useEffect(() => {
+        let timer: NodeJS.Timeout
+        if (open) {
+            timer = setTimeout(() => {
+                setShowTransition(true);
+            }, 200);
+        } else {
+            setShowTransition(false);
+        }
+        return () => clearTimeout(timer);
+    }, [open])
+
     useEffect(() => {
         scrollToBottom();
     }, [messages, isAnalyze]);
 
-    // Scroll ke chat terakhir saat drawer dibuka
     useEffect(() => {
         if (isDrawerOpen && messages.length > 0) {
-            // Delay sedikit agar drawer fully rendered
+
             const timer = setTimeout(() => {
                 scrollToBottom();
             }, 100);
@@ -63,6 +125,7 @@ export default function FloatingChatButton({ onToggle }: FloatingChatButtonProps
     // Fungsi untuk mengirim pesan
     const handleSendMessage = async () => {
         if (!inputValue.trim() || isAnalyze) return; // Jangan kirim jika kosong
+
 
         // Tambah pesan user
         const newMessage: Message = {
@@ -77,12 +140,18 @@ export default function FloatingChatButton({ onToggle }: FloatingChatButtonProps
         setAnalyze(true)
 
         try {
-            // Panggil API dengan text dari input user
-            const response = await Chat(inputValue);
+            let response
+
+            if (selectedAiType.toLowerCase() == 'agent') {
+
+            } else {
+                response = await Chat(inputValue);
+            }
+
 
             const botResponse: Message = {
                 id: Date.now() + 1,
-                text: response.reply || 'Maaf, terjadi kesalahan.',
+                text: response.reply ? response.reply : response,
                 sender: 'bot'
             };
             setMessages(prev => [...prev, botResponse]);
@@ -96,7 +165,7 @@ export default function FloatingChatButton({ onToggle }: FloatingChatButtonProps
         } finally {
             setAnalyze(false);
         }
-    };
+    }
 
     const handleSendMessageWithText = async (text: string) => {
         if (isAnalyze) return
@@ -112,11 +181,17 @@ export default function FloatingChatButton({ onToggle }: FloatingChatButtonProps
         setAnalyze(true)
 
         try {
-            const response = await Chat(text);
+            let response
+
+            if (selectedAiType.toLowerCase() == 'agent') {
+
+            } else {
+                response = await Chat(inputValue);
+            }
 
             const botResponse: Message = {
                 id: Date.now() + 1,
-                text: response.reply || 'Maaf, terjadi kesalahan.',
+                text: response.reply || 'Maaf, terjadi kesalahan!',
                 sender: 'bot'
             };
             setMessages(prev => [...prev, botResponse]);
@@ -132,9 +207,19 @@ export default function FloatingChatButton({ onToggle }: FloatingChatButtonProps
         }
     };
 
+
+
     // Fungsi untuk quick action
     const handleQuickAction = (text: string) => {
         handleSendMessageWithText(text);
+    };
+
+    // Fungsi untuk clear messages
+    const handleClearMessages = () => {
+        setMessages([]);
+        setChatStarted(false);
+        setInputValue('');
+        setAnalyze(false);
     };
 
     // Handle Enter key
@@ -156,7 +241,7 @@ export default function FloatingChatButton({ onToggle }: FloatingChatButtonProps
                         title="Buka chat"
                     >
                         <div className='flex gap-3 items-center'>
-                            <Bot /> <p className='font-bold'>SADA CS</p>
+                            <Bot /> <p className='font-bold'>SADA AI</p>
                         </div>
                     </button>
                 </DrawerTrigger>
@@ -170,38 +255,93 @@ export default function FloatingChatButton({ onToggle }: FloatingChatButtonProps
 
                         {/* Chat Content - Scrollable Area */}
                         <ScrollArea ref={scrollAreaRef} className="flex-1 px-4 py-6 h-30">
+
                             {!isChatStarted ?
                                 (
-                                    <div className='mt-5'>
-                                        <p className='text-foreground font-bold text-center'>Halo {user?.name} 👋, ada yang bisa SADA AI bantu?</p>
-                                        <div className='mt-6 flex flex-col w-full'>
-                                            <button
-                                                onClick={() => handleQuickAction('Membuat jadwal meeting')}
-                                                className='flex items-center gap-4 w-full py-4 px-2 hover:bg-muted/50 transition-colors border-b border-border'
-                                            >
-                                                <ArrowUpRight size={18} className='text-foreground flex-shrink-0' />
-                                                <span className='text-foreground text-left'>Membuat jadwal meeting</span>
-                                            </button>
-                                            <button
-                                                onClick={() => handleQuickAction('Melaporkan bug')}
-                                                className='flex items-center gap-4 w-full py-4 px-2 hover:bg-muted/50 transition-colors border-b border-border'
-                                            >
-                                                <ArrowUpRight size={18} className='text-foreground flex-shrink-0' />
-                                                <span className='text-foreground text-left'>Melaporkan bug</span>
-                                            </button>
-                                            <button
-                                                onClick={() => handleQuickAction('Apa saja metode pembayarannya')}
-                                                className='flex items-center gap-4 w-full py-4 px-2 hover:bg-muted/50 transition-colors border-b border-border'
-                                            >
-                                                <ArrowUpRight size={18} className='text-foreground flex-shrink-0' />
-                                                <span className='text-foreground text-left'>Apa saja metode pembayarannya</span>
-                                            </button>
+                                    <>
+                                        <div className=''>
+                                            <p className='text-foreground font-bold text-center'>Halo {user?.name} 👋, ada yang bisa SADA AI bantu?</p>
+
+                                            {open && showTransition && (
+                                                <div className='flex flex-wrap gap-2 mt-4 justify-center'>
+                                                    <button
+                                                        onClick={() => setOpen(false)}
+                                                    >
+                                                        <CornerUpLeft />
+                                                    </button>
+                                                    {transition((style, item) => (
+
+                                                        <animated.div
+                                                            key={item.id}
+                                                            style={style}
+                                                            className='bg-muted px-3 py-2 rounded-md cursor-pointer hover:bg-muted/80 transition-colors'
+                                                            onMouseEnter={() => {
+                                                                setPreviewValue(inputValue); // Simpan value asli
+                                                                setInputValue(item.prompt ?? '');
+                                                            }}
+                                                            onMouseLeave={() => {
+                                                                setInputValue(previewValue); // Kembalikan value asli
+                                                            }}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setInputValue(item.prompt ?? '');
+                                                                setPreviewValue('');
+                                                                setOpen(false)
+                                                            }}
+                                                        >
+                                                            {item.name_feat}
+                                                        </animated.div>
+                                                    ))}
+                                                </div>
+                                            )}
+
+                                            {user.role == 'company' && 'company-owner' ?
+
+                                                <div className='mt-6 flex flex-col w-full'>
+                                                    {ActionChatbot.map((action, index) => (
+                                                        <button
+                                                            key={index}
+                                                            onClick={() => handleQuickAction('Membuat jadwal meeting')}
+                                                            className='flex items-center gap-4 w-full py-4 px-2 hover:bg-muted/50 transition-colors border-b border-border'
+                                                        >
+                                                            <ArrowUpRight size={18} className='text-foreground flex-shrink-0' />
+                                                            <span className='text-foreground text-left'>{action.title}</span>
+                                                        </button>
+                                                    ))}
+                                                </div>
+
+                                                :
+
+                                                <div className='mt-6 flex flex-col w-full'>
+                                                    {ActionAgent.map((action, index) => (
+                                                        <animated.div
+                                                            key={index}
+                                                            style={buttonSpring}
+                                                            className={`${open ? 'pointer-events-none' : ''}`}
+                                                        >
+                                                            <button
+                                                                onClick={() => {
+                                                                    setOpen(true)
+                                                                    setType(action.category)
+                                                                }}
+                                                                className='flex items-center gap-4 w-full py-4 px-2 hover:bg-muted/50 transition-colors border-b border-border'
+                                                            >
+                                                                <div className='flex items-center gap-4'>
+                                                                    <ArrowUpRight size={18} className='text-foreground flex-shrink-0' />
+                                                                    <span className='text-foreground text-left'>{action.title}</span>-<span className='text-gray-400'>{action.description}</span>
+                                                                </div>
+                                                            </button>
+                                                        </animated.div>
+                                                    ))}
+                                                </div>
+
+                                            }
                                         </div>
-                                    </div>
+
+                                    </>
                                 ) : (
                                     /* Chat Messages */
                                     <div className='mt-6 flex flex-col gap-4'>
-
                                         {messages.map((message) => (
                                             <div
                                                 key={message.id}
@@ -226,6 +366,31 @@ export default function FloatingChatButton({ onToggle }: FloatingChatButtonProps
 
                         {/* Input Area - Fixed at bottom */}
                         <DrawerFooter className="flex-shrink-0 border-t p-4">
+                            <div className="flex items-center justify-between mb-2">
+                                <Select value={selectedAiType} onValueChange={setSelectedAiType}>
+                                    <SelectTrigger className="w-[120px]">
+                                        <SelectValue placeholder="Type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectGroup>
+                                            {aiType.map((type) => (
+                                                <SelectItem key={type} value={type}>{type}</SelectItem>
+                                            ))}
+                                        </SelectGroup>
+                                    </SelectContent>
+                                </Select>
+                                {messages.length > 0 && (
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={handleClearMessages}
+                                        className="text-red-500"
+                                    >
+                                        <X className="mr-1 h-4 w-4" />
+                                        Clear Messages
+                                    </Button>
+                                )}
+                            </div>
                             <Textarea
                                 placeholder='Apa yang ingin anda tanyakan?'
                                 className='mb-3 min-h-[100px] resize-none'
@@ -243,7 +408,7 @@ export default function FloatingChatButton({ onToggle }: FloatingChatButtonProps
                                 Kirim
                             </Button>
                             <DrawerClose asChild>
-                                <Button variant="outline">Cancel</Button>
+                                <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
                             </DrawerClose>
                         </DrawerFooter>
                     </div>

@@ -15,4 +15,8 @@ class CompanyCategory extends Model
     {
         return $this->hasMany(Company::class);
     }
+
+    public static function store() {
+        
+    }
 }
