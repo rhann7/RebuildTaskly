@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Rules;
 use App\Http\Controllers\Controller;
 use App\Models\Company;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Spatie\Permission\Models\Permission;
@@ -54,7 +55,7 @@ class PermissionAccessController extends Controller
             }
 
             app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
-            cache()->forget("company-{$company->id}-permissions");
+            Cache::forget("company-{$company->id}-permissions");
 
             return redirect()->back()->with('success', $message);
         });
