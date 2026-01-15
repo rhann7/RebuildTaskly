@@ -5,47 +5,50 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Cache;
+use Spatie\Permission\Models\Permission;
 
 class CheckCompanyPermission
 {
-    public function handle(Request $request, Closure $next, string $permission)
+    public function handle(Request $request, Closure $next, ?string $permission = null)
     {
         $user = $request->user();
-        abort_if(!$user, 403);
+        abort_if(!$user, 403, 'Anda belum login.');
 
-        if ($user->hasRole('super-admin')) {
-            return $next($request);
-        }
+        if ($user->isSuperAdmin()) return $next($request);
 
-        $company = $user->company ?? ($user->companyOwner->company ?? null);
-        if ($company && !$company->is_active) {
-            Auth::guard('web')->logout();
+        $company = $user->company;
+        abort_if(!$company, 403, 'Akun ini tidak terhubung dengan company.');
+
+        if (!$company->is_active) {
+            Auth::logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
 
-            abort(403, "Akses ditolak. Perusahaan Anda ({$company->name}) sedang ditangguhkan. Silakan hubungi admin.");
+            abort(403, "Akses ditolak. Perusahaan Anda ({$company->name}) sedang ditangguhkan.");
         }
 
-        $workspaceId = $request->route('workspace'); 
-        $workspaceId = is_object($workspaceId) ? $workspaceId->id : $workspaceId;
+        $routeName = $request->route()->getName();
 
-        if ($workspaceId) {
-            $role = $user->getWorkspaceRole((int)$workspaceId);
-            if (!$role || !$role->hasPermissionTo($permission)) {
-                abort(403, "Jabatan Anda di workspace ini tidak mengizinkan akses: {$permission}");
-            }
+        $whiteList = [
+            'dashboard', 
+            'profile.edit', 
+            'profile.update', 
+            'profile.destroy', 
+            'impersonate.take', 
+            'impersonate.leave',
+        ];
+
+        if (in_array($routeName, $whiteList)) return $next($request);
+
+        if (!$permission) {
+            $dbPermission = Permission::where('route_name', $routeName)->first();
+            abort_if(!$dbPermission, 403, "Rute {$routeName} belum dikonfigurasi.");
+
+            $permission = $dbPermission->name;
         }
 
-        $up = $user->getAllPermissions()->pluck('name');        
-        $cp = $company 
-            ? Cache::remember("company-{$company->id}-permissions", 3600, fn() => $company->getAllPermissions()->pluck('name')) 
-            : collect();
-        $ap = $up->merge($cp)->unique();
-
-        if (!$ap->contains($permission)) {
-            abort(403, "Company anda tidak memiliki akses ke fitur: {$permission}");
-        }
+        $hasPermission = $company->permissions()->where('name', $permission)->exists();
+        abort_if(!$hasPermission, 403, "Company tidak memiliki perizinan {$permission}");
 
         return $next($request);
     }
