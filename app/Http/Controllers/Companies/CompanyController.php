@@ -26,32 +26,40 @@ class CompanyController extends Controller
             'can_manage'  => $request->user()->hasRole('super-admin'),
             'options'     => [
                 'categories' => CompanyCategory::select(['id', 'name'])
-                ->orderBy('id')->get()
-                ->map(fn($c) => ['label' => $c->name, 'value' => $c->id]),
+                    ->orderBy('id')->get()
+                    ->map(fn($c) => ['label' => $c->name, 'value' => $c->id]),
                 
                 'status' => [
                     ['label' => 'Active', 'value' => 1],
                     ['label' => 'Inactive', 'value' => 0],
-                ],
+                ]
             ]
         ];
     }
+
     public function index(Request $request)
     {
-        $companies = Company::with(['companyOwner', 'companyCategory'])
+        $companies = Company::query()
+            ->with(['companyOwner.user'])
             ->when($request->search, function ($query, $search) {
-                $query->where('name', 'like', "%{$search}%")
-                      ->orWhere('email', 'like', "%{$search}%");
+                $query->where(function ($searchQuery) use ($search) {
+                    $searchQuery->where('name', 'like', "%{$search}%")
+                        ->orWhereHas('companyOwner.user', function ($userQuery) use ($search) {
+                            $userQuery->where('email', 'like', "%{$search}%");
+                        });
+                });
             })
-            ->when($request->category && $request->category !== 'all', function ($query) use ($request) {
-                $query->where('company_category_id', $request->category);
+            ->when($request->status && $request->status !== 'all', function ($q) use ($request) {
+                $q->where('is_active', $request->status);
             })
-            ->latest()->paginate(10)->withQueryString();
+            ->orderBy('id')
+            ->paginate(10)
+            ->withQueryString();
 
         return Inertia::render('companies/index', [
             'companies'  => $companies,
-            'filters'    => $request->only(['search', 'category']),
-            'pageConfig' => $this->getPageConfig($request)
+            'filters'    => $request->only(['search', 'status']),
+            'pageConfig' => $this->getPageConfig($request),
         ]);
     }
 
@@ -92,10 +100,7 @@ class CompanyController extends Controller
             ]);
 
             $permissions = Permission::where('type', 'general')->whereIn('scope', ['company', 'workspace'])->pluck('id');
-
-            if ($permissions->isNotEmpty()) {
-                $company->syncPermissions($permissions);
-            }
+            if ($permissions->isNotEmpty()) $company->syncPermissions($permissions);
 
             return redirect()->route('company-management.companies.index')->with('success', "Company created. Default password: {$pw}");
         });
@@ -124,25 +129,31 @@ class CompanyController extends Controller
 
     public function update(Request $request, Company $company)
     {
+        $owner = $company->companyOwner->user ?? null;
+
         $validated = $request->validate([
             'company_owner_name'  => 'required|string|max:255',
             'company_category_id' => 'required|exists:company_categories,id',
             'name'                => 'required|string|max:255',
-            'email'               => ['required', 'email', Rule::unique('users')->ignore($company->companyOwner->user_id)],
+            'email'               => ['required', 'email', Rule::unique('users')->ignore($owner?->id)],
             'phone'               => 'required|string|max:20',
             'address'             => 'required|string|max:255',
             'is_active'           => 'required|boolean',
         ]);
 
-        DB::transaction(function () use ($validated, $company) {
-            $company->companyOwner->user->update([
-                'name'  => $validated['name'],
-                'email' => $validated['email'],
-            ]);
+        DB::transaction(function () use ($owner, $validated, $company) {
+            if ($owner) {
+                $owner->update([
+                    'name'  => $validated['name'],
+                    'email' => $validated['email'],
+                ]);
+            }
 
-            $company->companyOwner->update([
-                'name' => $validated['company_owner_name']
-            ]);
+            if ($company->companyOwner) {
+                $company->companyOwner->update([
+                    'name' => $validated['company_owner_name']
+                ]);
+            }
 
             $oldStatus = $company->is_active;
             
@@ -156,9 +167,7 @@ class CompanyController extends Controller
                 'is_active'           => $validated['is_active'],
             ]);
 
-            if ($oldStatus && !$company->is_active) {
-                Cache::forget("company-{$company->id}-permissions");
-            }
+            if ($oldStatus === 1 && $company->is_active === 0) Cache::forget("company-{$company->id}-permissions");
         });
 
         return redirect()->route('company-management.companies.show', $company->slug)->with('success', "Company updated successfully.");
@@ -167,12 +176,12 @@ class CompanyController extends Controller
     public function destroy(Company $company)
     {
         DB::transaction(function () use ($company) {
-            $user = $company->companyOwner->user;
+            $user = $company->companyOwner->user ?? null;
+
+            Cache::forget("company-{$company->id}-permissions");
             
             $company->delete(); 
-            if ($user) {
-                $user->delete(); 
-            }
+            if ($user) $user->delete();
         });
         
         return redirect()->route('company-management.companies.index')->with('success', 'Company and associated user account have been permanently deleted.');
