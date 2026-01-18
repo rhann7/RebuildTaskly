@@ -38,11 +38,6 @@ class Company extends Model
         return $this->hasMany(Workspace::class);
     }
 
-    public function roles()
-    {
-        return $this->hasMany(Role::class);
-    }
-
     public function hasFeature(string $permissionName)
     {
         return $this->hasPermissionTo($permissionName);
