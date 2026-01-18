@@ -115,7 +115,7 @@ class CompanyController extends Controller
 
     public function show(Company $company)
     {
-        $company->load(['companyOwner', 'companyCategory'])->loadCount(['members', 'workspaces']); 
+        $company->load(['companyOwner', 'companyCategory']);
         return inertia('companies/show', ['company' => $company]);
     }
 
