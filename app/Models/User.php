@@ -52,6 +52,11 @@ class User extends Authenticatable
         return !$this->isSuperAdmin();
     }
 
+    public function company()
+    {
+        return $this->HasOneThrough(Company::class, CompanyOwner::class, 'user_id', 'company_owner_id', 'id', 'id');
+    }
+
     public function companyOwner()
     {
         return $this->hasOne(CompanyOwner::class);
