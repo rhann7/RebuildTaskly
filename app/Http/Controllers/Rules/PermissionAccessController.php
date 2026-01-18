@@ -14,9 +14,7 @@ class PermissionAccessController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Company::query()->with(['permissions' => function ($q) {
-            $q->where('scope', '!=', 'system');
-        }]);
+        $query = Company::query()->with('permissions');
 
         $query->when($request->search, function ($q, $search) {
             $q->where('name', 'like', "%{$search}%");
@@ -30,8 +28,8 @@ class PermissionAccessController extends Controller
 
         return Inertia::render('permissions/access', [
             'companies'          => $query->orderBy('name', 'asc')->paginate(10)->withQueryString(),
-            'uniquePermissions'  => Permission::where('type', 'unique')->where('scope', '!=', 'system')->get(),
-            'generalPermissions' => Permission::where('type', 'general')->where('scope', '!=', 'system')->get(),
+            'uniquePermissions'  => Permission::where('type', 'unique')->get(),
+            'generalPermissions' => Permission::where('type', 'general')->get(),
             'filters'            => $request->only(['search', 'type']),
         ]);
     }
