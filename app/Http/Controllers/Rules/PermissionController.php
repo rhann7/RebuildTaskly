@@ -38,7 +38,6 @@ class PermissionController extends Controller
             'options'     => [
                 'scopes'  => [
                     ['label' => 'All Scopes', 'value' => 'all'],
-                    ['label' => 'System', 'value' => 'system'],
                     ['label' => 'Company', 'value' => 'company'],
                     ['label' => 'Workspace', 'value' => 'workspace'],
                 ],
@@ -73,23 +72,23 @@ class PermissionController extends Controller
         $datas = $request->validate([
             'name'              => 'required|string|max:255|unique:permissions,name',
             'type'              => 'required|string|in:general,unique',
-            'scope'             => 'required|string|in:system,company,workspace',
-            'price'             => $request->scope === 'system' ? 'nullable|numeric' : 'required|numeric|min:0|max:999999999.99',
+            'scope'             => 'required|string|in:company,workspace',
+            'price'             => 'required|numeric|min:0|max:999999999.99',
             'route_path'        => 'nullable|string',
             'route_name'        => 'nullable|string',
             'controller_action' => 'nullable|string',
             'icon'              => 'nullable|string',
             'isMenu'            => 'boolean',
+            'isGroup'           => 'boolean',
+            'group_routes'      => 'nullable|string',
         ]);
 
         return DB::transaction(function () use ($datas, $request) {
-            if ($request->scope === 'system') $datas['price'] = 0;
-
             $permission = Permission::create([...$datas, 'guard_name' => 'web']);
 
-            if ($request->scope === 'system') Role::where('name', 'super-admin')->first()?->givePermissionTo($permission);
+            Role::where('name', 'super-admin')->first()?->givePermissionTo($permission);
 
-            if ($request->type === 'general' && $request->scope !== 'system') {
+            if ($request->type === 'general') {
                 Company::chunk(100, function ($companies) use ($permission) {
                     foreach ($companies as $company) {
                         $company->givePermissionTo($permission);
@@ -108,20 +107,20 @@ class PermissionController extends Controller
             'name'              => ['sometimes', 'string', 'max:255', Rule::unique('permissions')->ignore($permission->id)],
             'type'              => 'sometimes|string|in:general,unique',
             'scope'             => 'sometimes|string|in:system,company,workspace',
-            'price'             => $request->scope === 'system' ? 'nullable|numeric' : 'sometimes|numeric|min:0|max:999999999.99',
+            'price'             => 'sometimes|numeric|min:0|max:999999999.99',
             'route_path'        => 'nullable|string',
             'route_name'        => 'nullable|string',
             'controller_action' => 'nullable|string',
             'icon'              => 'nullable|string',
             'isMenu'            => 'boolean',
+            'isGroup'           => 'boolean',
+            'group_routes'      => 'nullable|string',
         ]);
 
         return DB::transaction(function () use ($datas, $permission) {
-            if (isset($datas['scope']) && $datas['scope'] === 'system') $datas['price'] = 0;
-            
             $permission->update($datas);
 
-            if ($permission->wasChanged('type') && $permission->type === 'general' && $permission->scope !== 'system') {
+            if ($permission->wasChanged('type') && $permission->type === 'general') {
                 Company::whereDoesntHave('permissions', fn($q) => $q->where('id', $permission->id))
                     ->chunk(100, function($companies) use ($permission) {
                         foreach($companies as $c) {
