@@ -61,18 +61,4 @@ class User extends Authenticatable
     {
         return $this->hasOne(CompanyOwner::class);
     }
-
-    public function workspaces()
-    {
-        return $this->belongsToMany(Workspace::class, 'workspace_members')
-            ->using(WorkspaceMember::class)
-            ->withPivot('role_id')
-            ->withTimestamps();
-    }
-
-    public function getWorkspaceRole(int $workspaceId)
-    {
-        $member = $this->workspaces()->where('workspace_id', $workspaceId)->first();
-        return $member ? Role::find($member->pivot->role_id) : null;
-    }
 }
