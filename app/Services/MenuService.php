@@ -42,6 +42,25 @@ class MenuService
             ];
 
             $menu[] = [
+                'title' => 'Article(s)',
+                'href'  => '#',
+                'icon'  => 'Newspaper',
+                'isActive' => $request->routeIs('article-management.*'),
+                'items' => [
+                    [
+                        'title' => 'Article',
+                        'href'  => '/article-management/article',
+                        'isActive' => $request->routeIs('article-management.article.*'),
+                    ],
+                    [
+                        'title' => 'Article Analytics',
+                        'href'  => '/article-management/analytics',
+                        'isActive' => $request->routeIs('article-management.analytics.*'),
+                    ]
+                ]
+            ];
+
+            $menu[] = [
                 'title' => 'Access Control',
                 'href' => '#',
                 'icon' => 'ShieldCheck',

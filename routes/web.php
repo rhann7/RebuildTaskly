@@ -16,10 +16,6 @@ Route::get('/', function () {
     ]);
 })->name('home');
 
-Route::post('/chatbot/c', [ChatbotController::class, 'chat']);
-Route::get('/sanctum/csrf-cookie', function () {
-    return response()->noContent();
-});
 Route::get('/csrf-token', function () {
     return response()->json(['csrf_token' => csrf_token()]);
 });

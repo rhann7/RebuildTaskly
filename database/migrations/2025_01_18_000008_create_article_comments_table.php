@@ -11,11 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('rating_article', function (Blueprint $table) {
+        Schema::create('article_comments', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('article_id')->references('id')->on('article')->cascadeOnDelete();
-            $table->float('total_rating');
-            $table->string('rating_by');
+            $table->foreignId('article_id')->constrained('articles')->onDelete('cascade');
+            $table->longText('comment');
+            $table->string('comment_by');
             $table->timestamps();
         });
     }
@@ -25,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('top_article');
+        Schema::dropIfExists('article_comments');
     }
 };

@@ -11,13 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('article', function (Blueprint $table) {
+        Schema::create('article_key_summaries', function (Blueprint $table) {
             $table->id();
-            $table->string('code_article');
-            $table->foreignId('category_id')->references('id')->on('category')->cascadeOnDelete();
-            $table->string('title');
-            $table->longText('desc');
-            $table->string('created_by');
+            $table->foreignId('article_id')->constrained('articles')->onDelete('cascade');
+            $table->foreignId('article_keyword_id')->constrained('article_keywords')->onDelete('cascade');
+            $table->integer('total');
+            $table->float('accurate_key');
             $table->timestamps();
         });
     }
@@ -27,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('category');
+        Schema::dropIfExists('article_key_summaries');
     }
 };

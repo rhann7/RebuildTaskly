@@ -1,43 +1,27 @@
 version: "3.8"
 
 services:
+  # Database PostgreSQL dengan pgvector
+  db:
+    image: pgvector/pgvector:pg17-trixie
+    container_name: pg_database
+    restart: always
+    environment:
+      POSTGRES_DB: ${DB_DATABASE}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "5433:5432" # port gunakan 5433 menghindari bentrok pada pgadmin local
+    volumes:
+      - ./docker/db_data:/var/lib/postgresql/data
+
+  # Aplikasi Laravel (PHP-FPM)
   app:
     build:
       context: .
       dockerfile: Dockerfile
-    
-    container_name: sada_taskly_new
-    restart: unless_stopped
-
-    working_dir: /var/www/html
-
+    container_name: laravel_app
     volumes:
-      - .:/var/www/html
-      - ./storage:/var/www/html/storage
-      - ./bootsrap/cache:/var/www/html/bootsrap/cache
-
-    environment:
-      - APP_ENV=production
-      - APP_DEBUG=false
-      - DB_CONNECTION=mysql
-      - DB_HOST=db
-      - DB_PORT=3306
-      - DB_DATABASE=sada_taskly 
-      - DB_USERNAME=sada_T1PFBV1SVzRHiGj8vPz/Dg==
-      - DB_PASSWORD=T1PFBV1SVzRHiGj8vPz/Dg==
-
-    networks:
-      - laravel
+      - .:/var/www
     depends_on:
       - db
-  nginx:
-    image: nginx:alpine
-    container_name: sada_taskly_nginx
-    restart: unless_stopped
-    ports:
-      - "80:80"
-
-    volumes:
-      - .:/var/www/html
-      - ./docker/nginx/default.conf:/
-  db:

@@ -3,6 +3,7 @@
 namespace App\Agents;
 
 use App\Tools\AddDataTool;
+use App\Tools\CompanyCategoryTool;
 use Prism\Prism\Structured\PendingRequest as StructuredPendingRequest;
 use Prism\Prism\Text\PendingRequest as TextPendingRequest;
 use Vizra\VizraADK\Agents\BaseLlmAgent;
@@ -30,6 +31,7 @@ class CrudAssistant extends BaseLlmAgent
     protected string $model = 'gemini-2.5-flash';
 
     protected array $tools = [
+        CompanyCategoryTool::class
     ];
 
     /*

@@ -12,6 +12,7 @@ import dataListFeature from '../../types/data-list-feature';
 import { ActionAgent, ActionChatbot } from '../../types/data-fast-action';
 import { Badge } from '../ui/badge';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '../ui/select';
+import { AgentTask } from '@/services/AgentAIService';
 
 interface FloatingChatButtonProps {
     onToggle?: (isOpen: boolean) => void;
@@ -141,17 +142,21 @@ export default function FloatingChatButton({ onToggle }: FloatingChatButtonProps
 
         try {
             let response
+            let responseText = ''
 
             if (selectedAiType.toLowerCase() == 'agent') {
-
+                response = await AgentTask(inputValue)
+                // AgentTask returns {agent_name, session_id, response}
+                responseText = response.response || JSON.stringify(response)
             } else {
                 response = await Chat(inputValue);
+                responseText = response.reply || 'Tidak ada respons'
             }
 
 
             const botResponse: Message = {
                 id: Date.now() + 1,
-                text: response.reply ? response.reply : response,
+                text: responseText,
                 sender: 'bot'
             };
             setMessages(prev => [...prev, botResponse]);
@@ -182,16 +187,20 @@ export default function FloatingChatButton({ onToggle }: FloatingChatButtonProps
 
         try {
             let response
+            let responseText = ''
 
             if (selectedAiType.toLowerCase() == 'agent') {
-
+                response = await AgentTask(text)
+                // AgentTask returns {agent_name, session_id, response}
+                responseText = response.response || 'Maaf, terjadi kesalahan!'
             } else {
-                response = await Chat(inputValue);
+                response = await Chat(text);
+                responseText = response.reply || 'Maaf, terjadi kesalahan!'
             }
 
             const botResponse: Message = {
                 id: Date.now() + 1,
-                text: response.reply || 'Maaf, terjadi kesalahan!',
+                text: responseText,
                 sender: 'bot'
             };
             setMessages(prev => [...prev, botResponse]);
@@ -241,7 +250,7 @@ export default function FloatingChatButton({ onToggle }: FloatingChatButtonProps
                         title="Buka chat"
                     >
                         <div className='flex gap-3 items-center'>
-                            <Bot /> <p className='font-bold'>SADA AI</p>
+                            <Bot /> <p className='font-bold'>BRIZZ AI</p>
                         </div>
                     </button>
                 </DrawerTrigger>
@@ -249,7 +258,7 @@ export default function FloatingChatButton({ onToggle }: FloatingChatButtonProps
                     <div className="flex flex-col h-full w-full max-w-4xl mx-auto">
                         {/* Header */}
                         <DrawerHeader className="flex-shrink-0 border-b">
-                            <DrawerTitle>Chat Dengan SADA AI</DrawerTitle>
+                            <DrawerTitle>Chat Dengan BRIZZ AI</DrawerTitle>
                             <DrawerDescription>Kami siap membantu Anda 24 x 7</DrawerDescription>
                         </DrawerHeader>
 
