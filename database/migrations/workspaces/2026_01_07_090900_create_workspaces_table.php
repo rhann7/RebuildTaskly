@@ -16,8 +16,11 @@ return new class extends Migration
             $table->string('slug')->unique();
             $table->string('description')->nullable();
 
-            $table->string('status')->default('active');
+            $table->enum('status', ['active', 'inactive'])->default('active');
             $table->timestamps();
+
+            $table->unique(['company_id', 'slug']);
+            $table->index(['company_id', 'status']);
         });
     }
 
