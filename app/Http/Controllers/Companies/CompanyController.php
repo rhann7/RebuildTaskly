@@ -23,7 +23,7 @@ class CompanyController extends Controller
         return [
             'title'       => 'Company Management',
             'description' => 'Manage all registered companies and their accounts.',
-            'can_manage'  => $request->user()->hasRole('super-admin'),
+            'can_manage'  => $request->user()->isSuperAdmin(),
             'options'     => [
                 'categories' => CompanyCategory::select(['id', 'name'])
                     ->orderBy('id')->get()
@@ -99,7 +99,11 @@ class CompanyController extends Controller
                 'is_active'           => true,
             ]);
 
-            $permissions = Permission::where('type', 'general')->whereIn('scope', ['company', 'workspace'])->pluck('id');
+            $permissions = Permission::where('type', 'general')
+                ->where('isGroup', false)
+                ->whereIn('scope', ['company', 'workspace'])
+                ->pluck('id');
+
             if ($permissions->isNotEmpty()) $company->syncPermissions($permissions);
 
             return redirect()->route('company-management.companies.index')->with('success', "Company created. Default password: {$pw}");
@@ -115,7 +119,14 @@ class CompanyController extends Controller
 
     public function show(Company $company)
     {
-        $company->load(['companyOwner', 'companyCategory']);
+        $company->load([
+            'companyOwner', 
+            'companyCategory', 
+            'workspaces' => function($query) {
+                $query->select('id', 'company_id', 'name', 'slug', 'created_at');
+            }
+        ]);
+
         return inertia('companies/show', ['company' => $company]);
     }
 
@@ -167,7 +178,7 @@ class CompanyController extends Controller
                 'is_active'           => $validated['is_active'],
             ]);
 
-            if ($oldStatus === 1 && $company->is_active === 0) Cache::forget("company-{$company->id}-permissions");
+            if ($oldStatus == 1 && $company->is_active == 0) Cache::forget("company-{$company->id}-permissions");
         });
 
         return redirect()->route('company-management.companies.show', $company->slug)->with('success', "Company updated successfully.");
