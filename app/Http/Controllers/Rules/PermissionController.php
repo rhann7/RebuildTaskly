@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Rules;
 use App\Http\Controllers\Controller;
 use App\Models\Company;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\Rule;
@@ -14,11 +15,18 @@ use Spatie\Permission\Models\Role;
 
 class PermissionController extends Controller
 {
-    private function clearPermissionCache()
+    private function clearAllPermissionCache()
     {
-        cache()->forget('dynamic_routes');
+        Cache::forget('dynamic_routes');
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+
+        Company::select('id')->chunk(100, function ($companies) {
+            foreach ($companies as $company) {
+                Cache::forget("company-{$company->id}-permissions");
+            }
+        });
     }
+
     private function getPageConfig(Request $request)
     {
         $routes = collect(Route::getRoutes())
@@ -45,6 +53,10 @@ class PermissionController extends Controller
                     ['label' => 'All Types', 'value' => 'all'],
                     ['label' => 'General', 'value' => 'general'],
                     ['label' => 'Unique', 'value' => 'unique'],
+                ],
+                'booleans' => [
+                    ['label' => 'Yes', 'value' => 1],
+                    ['label' => 'No', 'value' => 0],
                 ]
             ]
         ];
@@ -56,6 +68,8 @@ class PermissionController extends Controller
             ->when($request->search, fn($q, $s) => $q->where('name', 'like', "%{$s}%"))
             ->when($request->type && $request->type !== 'all', fn($q) => $q->where('type', $request->type))
             ->when($request->scope && $request->scope !== 'all', fn($q) => $q->where('scope', $request->scope))
+            ->when($request->filled('isMenu'), fn($q) => $q->where('isMenu', $request->isMenu))
+            ->when($request->filled('isGroup'), fn($q) => $q->where('isGroup', $request->isGroup))
             ->orderBy('id')
             ->paginate(10)
             ->withQueryString();
@@ -83,12 +97,17 @@ class PermissionController extends Controller
             'group_routes'      => 'nullable|string',
         ]);
 
+        if ($request->isGroup && $request->group_routes) {
+            $routesArray = array_map('trim', explode(',', $request->group_routes));
+            $datas['group_routes'] = json_encode($routesArray);
+        }
+
         return DB::transaction(function () use ($datas, $request) {
             $permission = Permission::create([...$datas, 'guard_name' => 'web']);
 
             Role::where('name', 'super-admin')->first()?->givePermissionTo($permission);
 
-            if ($request->type === 'general') {
+            if ($permission->type === 'general' && !$permission->isGroup) {
                 Company::chunk(100, function ($companies) use ($permission) {
                     foreach ($companies as $company) {
                         $company->givePermissionTo($permission);
@@ -96,7 +115,7 @@ class PermissionController extends Controller
                 });
             }
 
-            $this->clearPermissionCache();
+            $this->clearAllPermissionCache();
             return redirect()->back()->with('success', 'Permission created successfully.');
         });
     }
@@ -117,19 +136,30 @@ class PermissionController extends Controller
             'group_routes'      => 'nullable|string',
         ]);
 
+        if (isset($datas['group_routes'])) {
+            if ($request->isGroup && $request->group_routes) {
+                $routesArray = array_map('trim', explode(',', $request->group_routes));
+                $datas['group_routes'] = json_encode($routesArray);
+            } else {
+                $datas['group_routes'] = null;
+            }
+        }
+
         return DB::transaction(function () use ($datas, $permission) {
             $permission->update($datas);
 
-            if ($permission->wasChanged('type') && $permission->type === 'general') {
-                Company::whereDoesntHave('permissions', fn($q) => $q->where('id', $permission->id))
-                    ->chunk(100, function($companies) use ($permission) {
-                        foreach($companies as $c) {
-                            $c->givePermissionTo($permission);
-                        }
-                });
+            if ($permission->wasChanged('type') || $permission->wasChanged('isGroup')) {
+                if ($permission->type === 'general' && !$permission->isGroup) {
+                    Company::whereDoesntHave('permissions', fn($q) => $q->where('id', $permission->id))
+                        ->chunk(100, function($companies) use ($permission) {
+                            foreach($companies as $c) {
+                                $c->givePermissionTo($permission);
+                            }
+                        });
+                }
             }
 
-            $this->clearPermissionCache();
+            $this->clearAllPermissionCache();
             return redirect()->back()->with('success', 'Permission updated successfully.');
         });
     }
@@ -137,8 +167,8 @@ class PermissionController extends Controller
     public function destroy(Permission $permission)
     {
         $permission->delete();
-        $this->clearPermissionCache();
 
+        $this->clearAllPermissionCache();
         return redirect()->back()->with('success', 'Permission deleted successfully.');
     }
 }
