@@ -5,7 +5,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Spatie\Permission\Models\Permission;
+use Illuminate\Support\Facades\Cache;
 
 class CheckCompanyPermission
 {
@@ -28,28 +28,33 @@ class CheckCompanyPermission
         }
 
         $routeName = $request->route()->getName();
-
-        $whiteList = [
-            'dashboard', 
-            'profile.edit', 
-            'profile.update', 
-            'profile.destroy', 
-            'impersonate.take', 
-            'impersonate.leave',
-        ];
-
+        $whiteList = ['dashboard', 'profile.edit', 'profile.update', 'profile.destroy', 'impersonate.take', 'impersonate.leave'];
         if (in_array($routeName, $whiteList)) return $next($request);
 
-        if (!$permission) {
-            $dbPermission = Permission::where('route_name', $routeName)->first();
-            abort_if(!$dbPermission, 403, "Rute {$routeName} belum dikonfigurasi.");
+        $permissions = Cache::remember("company-{$company->id}-permissions", now()->addDay(), function () use ($company) {
+            return $company->permissions()->get(['id', 'name', 'route_name', 'isGroup', 'group_routes']);
+        });
 
-            $permission = $dbPermission->name;
+        foreach($permissions as $p) {
+            if (!$p->isGroup && $p->route_name === $routeName) {
+                return $next($request);
+            }
+
+            if ($p->isGroup && $p->group_routes) {
+                $patterns = is_array($p->group_routes)
+                    ? $p->group_routes
+                    : json_decode($p->group_routes, true);
+                
+                if (is_array($patterns) && str($routeName)->is($patterns)) {
+                    return $next($request);
+                }
+            }
         }
 
-        $hasPermission = $company->permissions()->where('name', $permission)->exists();
-        abort_if(!$hasPermission, 403, "Company tidak memiliki perizinan {$permission}");
+        if ($permission && $permissions->contains('name', $permission)) {
+            return $next($request);
+        }
 
-        return $next($request);
+        abort(403, "Company tidak memiliki akses ke fitur/rute: {$routeName}");
     }
 }
