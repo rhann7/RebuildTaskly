@@ -33,4 +33,41 @@ class ArticleDetail extends Model
     {
         return $this->hasMany(ArticleImage::class);
     }
+
+    /**
+     * Store a new article detail.
+     */
+    public static function store(array $data): self
+    {
+        return self::create([
+            'article_id' => $data['article_id'],
+            'description' => $data['description'],
+            'created_by' => $data['created_by'],
+        ]);
+    }
+
+    /**
+     * Update the article detail.
+     */
+    public static function updateDetail(array $data,int $id): self
+    {
+        $articleDetail = self::findOrFail($id);
+        $articleDetail->update([
+            'description' => $data['description'],
+            'updated_by' => $data['updated_by'],
+        ]);
+
+        return $articleDetail;
+    }
+
+    /**
+     * Delete the article detail and its images.
+     */
+    public static function destroyDetail(int $id): self
+    {
+        $articleDetail = self::findOrFail($id);
+        $articleDetail->images()->delete();
+
+        return $articleDetail;
+    }
 }

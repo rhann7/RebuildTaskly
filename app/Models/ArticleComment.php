@@ -23,4 +23,34 @@ class ArticleComment extends Model
     {
         return $this->belongsTo(Article::class);
     }
+
+    /**
+     * Store a new comment.
+     */
+    public static function store(array $data): self
+    {
+        return self::create([
+            'article_id' => $data['article_id'],
+            'comment' => $data['comment'],
+            'comment_by' => $data['comment_by'] ?? auth()->user()->name,
+        ]);
+    }
+
+    /**
+     * Update the comment.
+     */
+    public function updateComment(array $data): bool
+    {
+        return $this->update([
+            'comment' => $data['comment'] ?? $this->comment,
+        ]);
+    }
+
+    /**
+     * Delete the comment.
+     */
+    public function destroyComment(): bool
+    {
+        return $this->delete();
+    }
 }

@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Articles\ArticleCategoryController;
+use App\Http\Controllers\Articles\ArticleController;
 use App\Http\Controllers\Chatbot\ChatbotController;
 use App\Http\Controllers\Companies\CategoryController;
 use App\Http\Controllers\Companies\CompanyController;
@@ -26,7 +28,7 @@ Route::middleware(['auth'])->group(function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    
+
     Route::middleware('role:super-admin')->group(function () {
         Route::prefix('access-control')->name('access-control.')->group(function () {
             Route::resource('permissions', PermissionController::class);
@@ -43,18 +45,27 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
             Route::resource('companies', CompanyController::class)
                 ->except(['show']);
-                
+
             Route::get('/companies/{company:slug}', [CompanyController::class, 'show'])->name('show');
+        });
+
+        Route::prefix('article-management')->name('article-management.')->group(function () {
+            Route::resource('category', ArticleCategoryController::class)
+                ->names('category')
+                ->parameters(['category' => 'category'])
+                ->except(['create', 'edit', 'show']);
+
+            Route::resource('article', ArticleController::class);
         });
     });
 
     Route::get('can-view-analytics', function () {
         return "<h1>Tes halaman company dengan general permission: can-view-analytics</h1>";
     })->middleware('company_can:can-view-analytics');
-    
+
     Route::get('can-edit-company', function () {
         return "<h1>Tes halaman company dengan general permission: can-edit-company</h1>";
     })->middleware('company_can:can-edit-company');
 });
 
-require __DIR__.'/settings.php';
+require __DIR__ . '/settings.php';

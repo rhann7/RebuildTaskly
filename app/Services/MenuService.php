@@ -29,13 +29,13 @@ class MenuService
                 'isActive' => $request->routeIs('company-management.*'),
                 'items' => [
                     [
-                        'title' => 'Categories', 
-                        'href' => '/company-management/categories', 
+                        'title' => 'Categories',
+                        'href' => '/company-management/categories',
                         'isActive' => $request->routeIs('company-management.categories.*')
                     ],
                     [
-                        'title' => 'Company List', 
-                        'href' => '/company-management/companies', 
+                        'title' => 'Company List',
+                        'href' => '/company-management/companies',
                         'isActive' => $request->routeIs('company-management.companies.*')
                     ],
                 ]
@@ -53,6 +53,11 @@ class MenuService
                         'isActive' => $request->routeIs('article-management.article.*'),
                     ],
                     [
+                        'title' => 'Article Category',
+                        'href'  => '/article-management/category',
+                        'isActive' => $request->routeIs('article-management.category.*'),
+                    ],
+                    [
                         'title' => 'Article Analytics',
                         'href'  => '/article-management/analytics',
                         'isActive' => $request->routeIs('article-management.analytics.*'),
@@ -67,13 +72,13 @@ class MenuService
                 'isActive' => $request->routeIs('access-control.*'),
                 'items' => [
                     [
-                        'title' => 'Permission List', 
-                        'href' => '/access-control/permissions', 
+                        'title' => 'Permission List',
+                        'href' => '/access-control/permissions',
                         'isActive' => $request->routeIs('access-control.permissions.*')
                     ],
                     [
-                        'title' => 'Company Access', 
-                        'href' => '/access-control/company-access', 
+                        'title' => 'Company Access',
+                        'href' => '/access-control/company-access',
                         'isActive' => $request->routeIs('access-control.company-access.*')
                     ],
                 ]

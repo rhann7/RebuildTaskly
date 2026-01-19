@@ -36,6 +36,7 @@ interface ResourceListLayoutProps {
     isEmpty?: boolean;
     isLoading?: boolean;
     config?: LayoutConfig;
+    badge?: ReactNode;
 }
 
 export default function ResourceListLayout({
@@ -48,7 +49,8 @@ export default function ResourceListLayout({
     children,
     isEmpty = false,
     isLoading = false,
-    config = {}
+    config = {},
+    badge
 }: ResourceListLayoutProps) {
     const layoutConfig: LayoutConfig = {
         showFilter: true,
@@ -67,12 +69,13 @@ export default function ResourceListLayout({
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={title} />
-           
+
             <div className="flex h-full flex-1 flex-col gap-6 p-6">
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div className="space-y-1">
                         <h2 className="text-2xl font-bold tracking-tight text-foreground">{title}</h2>
                         {description && <p className="text-sm text-muted-foreground">{description}</p>}
+                        {badge && <span>{badge}</span>}
                     </div>
                     {layoutConfig.showHeaderActions && headerActions && (
                         <div className="flex items-center gap-2">{headerActions}</div>
@@ -85,12 +88,10 @@ export default function ResourceListLayout({
                     </div>
                 )}
 
-                <div className={`relative flex-1 overflow-hidden rounded-xl flex flex-col ${
-                    layoutConfig.showBorder ? 'border border-border/50' : ''
-                } ${
-                    layoutConfig.showShadow ? 'shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)]' : ''
-                } bg-background ${layoutConfig.containerClassName}`}>
-                    
+                <div className={`relative flex-1 overflow-hidden rounded-xl flex flex-col ${layoutConfig.showBorder ? 'border border-border/50' : ''
+                    } ${layoutConfig.showShadow ? 'shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)]' : ''
+                    } bg-background ${layoutConfig.containerClassName}`}>
+
                     {isLoading && (
                         <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/50 backdrop-blur-[1px]">
                             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -122,24 +123,22 @@ export default function ResourceListLayout({
                                     <span className="font-medium text-foreground">{pagination.total}</span> results
                                 </div>
                             )}
-                            
-                            <div className={`flex items-center gap-1 ${
-                                layoutConfig.showPaginationInfo ? 'w-full justify-center md:w-auto' : 'w-full justify-center'
-                            }`}>
+
+                            <div className={`flex items-center gap-1 ${layoutConfig.showPaginationInfo ? 'w-full justify-center md:w-auto' : 'w-full justify-center'
+                                }`}>
                                 {pagination.links.map((link, i) => {
                                     const isNext = link.label.includes('Next');
                                     const isPrev = link.label.includes('Previous');
-                                    
+
                                     return link.url ? (
                                         <Link
                                             key={i}
                                             href={link.url}
                                             preserveScroll
-                                            className={`flex h-8 min-w-[32px] items-center justify-center rounded-md px-2 text-xs font-medium transition-colors ${
-                                                link.active 
-                                                ? 'bg-foreground text-background shadow-sm' 
+                                            className={`flex h-8 min-w-[32px] items-center justify-center rounded-md px-2 text-xs font-medium transition-colors ${link.active
+                                                ? 'bg-foreground text-background shadow-sm'
                                                 : 'bg-background border border-border/60 hover:bg-muted text-muted-foreground hover:text-foreground'
-                                            }`}
+                                                }`}
                                         >
                                             {isPrev ? <ChevronLeft className="h-4 w-4" /> : isNext ? <ChevronRight className="h-4 w-4" /> : link.label}
                                         </Link>

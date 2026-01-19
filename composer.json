@@ -11,6 +11,7 @@
     "require": {
         "php": "^8.2",
         "inertiajs/inertia-laravel": "^2.0",
+        "jenssegers/agent": "^2.6",
         "lab404/laravel-impersonate": "^1.7",
         "laravel/fortify": "^1.30",
         "laravel/framework": "^12.0",
