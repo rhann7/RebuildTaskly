@@ -17,8 +17,8 @@ class DatabaseSeeder extends Seeder
         Role::firstOrCreate(['name' => 'super-admin']);
         Role::firstOrCreate(['name' => 'company']);
 
-        $admin = User::firstOrCreate(
-            ['email' => 'superadmin@system.com'],
+        $superAdmin = User::firstOrCreate(
+            ['email' => 'superadmin@taskly.com'],
             [
                 'name'              => 'Super Admin',
                 'password'          => Hash::make('password'),
@@ -27,6 +27,6 @@ class DatabaseSeeder extends Seeder
             ]
         );
         
-        $admin->syncRoles(['super-admin']);
+        $superAdmin->syncRoles(['super-admin']);
     }
 }

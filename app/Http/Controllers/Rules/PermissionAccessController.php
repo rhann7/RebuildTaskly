@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Rules;
 use App\Http\Controllers\Controller;
 use App\Models\Company;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Spatie\Permission\Models\Permission;
@@ -13,9 +14,7 @@ class PermissionAccessController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Company::query()->with(['permissions' => function ($q) {
-            $q->where('scope', '!=', 'system');
-        }]);
+        $query = Company::query()->with('permissions');
 
         $query->when($request->search, function ($q, $search) {
             $q->where('name', 'like', "%{$search}%");
@@ -29,8 +28,8 @@ class PermissionAccessController extends Controller
 
         return Inertia::render('permissions/access', [
             'companies'          => $query->orderBy('name', 'asc')->paginate(10)->withQueryString(),
-            'uniquePermissions'  => Permission::where('type', 'unique')->where('scope', '!=', 'system')->get(),
-            'generalPermissions' => Permission::where('type', 'general')->where('scope', '!=', 'system')->get(),
+            'uniquePermissions'  => Permission::where('type', 'unique')->get(),
+            'generalPermissions' => Permission::where('type', 'general')->get(),
             'filters'            => $request->only(['search', 'type']),
         ]);
     }
@@ -54,7 +53,7 @@ class PermissionAccessController extends Controller
             }
 
             app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
-            cache()->forget("company-{$company->id}-permission-{$permission->name}");
+            Cache::forget("company-{$company->id}-permissions");
 
             return redirect()->back()->with('success', $message);
         });

@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -15,7 +16,10 @@ class AppServiceProvider extends ServiceProvider
     {
         $path = database_path('migrations');
         $paths = array_merge([$path], glob($path . '/*', GLOB_ONLYDIR));
-
         $this->loadMigrationsFrom($paths);
+
+        Gate::before(function ($user, $ability) {
+            return $user->isSuperAdmin() ? true : null;
+        });
     }
 }

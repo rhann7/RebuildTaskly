@@ -38,7 +38,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 export default function CategoryIndex({ categories, filters }: PageProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
-    const [currentId, setCurrentId] = useState<number | null>(null);
+    const [currentSlug, setCurrentSlug] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState(filters.search || '');
     
     const { data, setData, post, put, processing, errors, reset, clearErrors } = useForm({ 
@@ -47,7 +47,7 @@ export default function CategoryIndex({ categories, filters }: PageProps) {
 
     const openCreateModal = () => { 
         setIsEditing(false); 
-        setCurrentId(null); 
+        setCurrentSlug(null); 
         setData({ name: '' }); 
         clearErrors(); 
         setIsOpen(true); 
@@ -55,31 +55,35 @@ export default function CategoryIndex({ categories, filters }: PageProps) {
     
     const openEditModal = (c: Category) => { 
         setIsEditing(true); 
-        setCurrentId(c.id); 
+        setCurrentSlug(c.slug); 
         setData({ name: c.name }); 
         clearErrors(); 
         setIsOpen(true); 
     };
     
-    const handleDelete = (id: number) => { 
+    const handleDelete = (slug: string) => { 
         if (confirm('Are you sure you want to delete this category?')) {
-            router.delete(`/company-management/categories/${id}`); 
+            router.delete(`/company-management/categories/${slug}`, {
+                preserveScroll: true,
+            }); 
         }
     };
     
     const handleSubmit: FormEventHandler = (e) => { 
         e.preventDefault(); 
-        const action = isEditing && currentId ? put : post; 
-        const url = isEditing && currentId 
-            ? `/company-management/categories/${currentId}` 
-            : '/company-management/categories'; 
-            
-        action(url, { 
+        
+        const options = { 
             onSuccess: () => { 
                 setIsOpen(false); 
                 reset(); 
             } 
-        }); 
+        };
+
+        if (isEditing && currentSlug) {
+            put(`/company-management/categories/${currentSlug}`, options);
+        } else {
+            post('/company-management/categories', options);
+        }
     };
     
     const handleSearch = () => { 
@@ -148,32 +152,34 @@ export default function CategoryIndex({ categories, filters }: PageProps) {
                     <TableBody>
                         {categories.data.map((category, i) => (
                             <TableRow key={category.id} className="group hover:bg-muted/30 transition-colors">
-                                <TableCell className="text-center text-muted-foreground tabular-nums">
+                                <TableCell className="text-center text-muted-foreground tabular-nums text-xs">
                                     {categories.from + i}
                                 </TableCell>
                                 <TableCell className="font-medium text-foreground">
                                     {category.name}
                                 </TableCell>
                                 <TableCell>
-                                    <span className="text-xs font-mono text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">
+                                    <span className="text-[10px] font-mono text-muted-foreground bg-muted/50 px-2 py-0.5 rounded border border-border/50">
                                         {category.slug}
                                     </span>
                                 </TableCell>
                                 <TableCell className="text-center">
-                                    <div className="flex justify-center items-center gap-1 text-xs text-muted-foreground">
-                                        <Building2 className="h-3.5 w-3.5" />
+                                    <div className="flex justify-center items-center gap-1.5 text-xs text-muted-foreground">
+                                        <Building2 className="h-3.5 w-3.5 opacity-60" />
                                         {category.companies_count} Companies
                                     </div>
                                 </TableCell>
                                 <TableCell className="text-xs text-muted-foreground">
-                                    {new Date(category.created_at).toLocaleDateString()}
+                                    {new Date(category.created_at).toLocaleDateString('id-ID', {
+                                        day: '2-digit', month: 'short', year: 'numeric'
+                                    })}
                                 </TableCell>
                                 <TableCell className="text-right px-6">
-                                    <div className="flex justify-end gap-2">
-                                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditModal(category)}>
+                                    <div className="flex justify-end gap-1">
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => openEditModal(category)}>
                                             <Pencil className="h-3.5 w-3.5" />
                                         </Button>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-red-600" onClick={() => handleDelete(category.id)}>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-red-600" onClick={() => handleDelete(category.slug)}>
                                             <Trash2 className="h-3.5 w-3.5" />
                                         </Button>
                                     </div>

@@ -18,10 +18,7 @@ interface Company {
     phone: string;
     is_active: boolean;
     company_category?: { name: string };
-    company_owner?: { 
-        name: string; 
-        user_id: number;
-    };
+    company_owner?: { name: string; user_id: number; };
 }
 
 interface PageProps {
@@ -62,9 +59,9 @@ export default function CompanyIndex({ companies, filters, pageConfig }: PagePro
         );
     };
 
-    const handleDelete = (id: number) => {
+    const handleDelete = (slug: string) => {
         if (confirm('Delete this company?')) {
-            router.delete(`/company-management/companies/${id}`);
+            router.delete(`/company-management/companies/${slug}`);
         }
     };
 
@@ -194,11 +191,11 @@ export default function CompanyIndex({ companies, filters, pageConfig }: PagePro
                                     <Fingerprint className="h-3.5 w-3.5" />
                                 </Button>
                                 <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
-                                    <Link href={`/company-management/companies/${company.id}/edit`}>
+                                    <Link href={`/company-management/companies/${company.slug}/edit`}>
                                         <Pencil className="h-3.5 w-3.5" />
                                     </Link>
                                 </Button>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-red-600" onClick={() => handleDelete(company.id)}>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-red-600" onClick={() => handleDelete(company.slug)}>
                                     <Trash2 className="h-3.5 w-3.5" />
                                 </Button>
                             </TableCell>

@@ -1,11 +1,12 @@
 import AppLayout from '@/layouts/app-layout';
-import { FormEventHandler } from 'react';
 import { type BreadcrumbItem } from '@/types';
+import { FormEventHandler, useEffect } from 'react';
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import { Activity, ArrowLeft, Building2, Mail, MapPin, Phone, Save, Tag, Trash2, User } from 'lucide-react';
+import { Activity, ArrowLeft, Building2, Mail, MapPin, Phone, Save, Tag, Trash2, User, AlertCircle } from 'lucide-react';
 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from "@/components/ui/badge";
 import { Button } from '@/components/ui/button';
 import InputError from '@/components/input-error';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -19,14 +20,13 @@ type Category = {
 type Company = {
     id: number;
     name: string;
+    slug: string;
     email: string;
     phone: string;
     address: string;
-    company_category_id: number;
     is_active: boolean;
-    owner?: {
-        name: string;
-    };
+    company_category_id: number;
+    company_owner?: { name: string; };
 };
 
 type PageProps = {
@@ -38,11 +38,11 @@ export default function CompanyEdit({ company, categories }: PageProps) {
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },
         { title: 'Company List', href: '/company-management/companies' },
-        { title: 'Edit Company', href: `/company-management/companies/${company.id}/edit` },
+        { title: 'Edit Company', href: `/company-management/companies/${company.slug}/edit` },
     ];
 
-    const { data, setData, put, processing, errors } = useForm({
-        company_owner_name: company.owner?.name || '',
+    const { data, setData, put, processing, errors, isDirty } = useForm({
+        company_owner_name: company.company_owner?.name || '',
         name: company.name || '',
         email: company.email || '',
         phone: company.phone || '',
@@ -51,14 +51,36 @@ export default function CompanyEdit({ company, categories }: PageProps) {
         is_active: company.is_active ? '1' : '0',
     });
 
+    useEffect(() => {
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            if (isDirty) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [isDirty]);
+
+    useEffect(() => {
+        const removeListener = router.on('before', (event) => {
+            if (isDirty && !confirm('You have unsaved changes. Are you sure you want to leave?')) {
+                event.preventDefault();
+            }
+        });
+        return () => removeListener();
+    }, [isDirty]);
+
     const handleSubmit: FormEventHandler = (e) => {
         e.preventDefault();
-        put(`/company-management/companies/${company.id}`);
+        put(`/company-management/companies/${company.slug}`, {
+            preserveScroll: true,
+        });
     };
 
     const handleDelete = () => {
-        if (confirm('Are you sure you want to delete this company? This action cannot be undone.')) {
-            router.delete(`/company-management/companies/${company.id}`);
+        if (confirm(`Are you sure you want to delete ${company.name}? This will affect all associated users.`)) {
+            router.delete(`/company-management/companies/${company.slug}`);
         }
     };
 
@@ -69,26 +91,26 @@ export default function CompanyEdit({ company, categories }: PageProps) {
             <div className="max-w-4xl mx-auto py-8 px-4 space-y-6">
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                            <Button variant="ghost" size="icon" asChild className="h-9 w-9 text-muted-foreground hover:text-foreground">
+                        <div className="flex items-center gap-3">
+                            <Button variant="ghost" size="icon" asChild className="h-9 w-9">
                                 <Link href="/company-management/companies">
                                     <ArrowLeft className="h-5 w-5" />
                                 </Link>
                             </Button>
-                            <h2 className="text-2xl font-bold tracking-tight text-foreground">Edit Company</h2>
+                            <h2 className="text-2xl font-bold tracking-tight">Edit Company</h2>
+                            {isDirty && (
+                                <Badge variant="outline" className="text-orange-500 border-orange-200 bg-orange-50 animate-pulse gap-1">
+                                    <AlertCircle className="h-3 w-3" /> Unsaved Changes
+                                </Badge>
+                            )}
                         </div>
-                        <p className="text-sm text-muted-foreground pl-11">
-                            Update details for <span className="font-semibold text-foreground">{company.name}</span>
+                        <p className="text-sm text-muted-foreground pl-12">
+                            Managing: <span className="font-semibold text-foreground">{company.name}</span>
                         </p>
                     </div>
 
-                    <div className="pl-11 md:pl-0">
-                        <Button 
-                            variant="destructive" 
-                            size="sm" 
-                            onClick={handleDelete}
-                            className="h-9 gap-2"
-                        >
+                    <div className="pl-12 md:pl-0">
+                        <Button variant="destructive" size="sm" onClick={handleDelete} className="gap-2 shadow-sm">
                             <Trash2 className="h-4 w-4" /> 
                             <span>Delete Company</span>
                         </Button>
@@ -99,11 +121,11 @@ export default function CompanyEdit({ company, categories }: PageProps) {
                     <form onSubmit={handleSubmit}>
                         <div className="grid gap-6 p-8 md:grid-cols-2">
                             <div className="space-y-2 col-span-2">
-                                <Label className="text-[13px] font-semibold uppercase tracking-wider text-muted-foreground/80">Owner / PIC Name</Label>
+                                <Label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/80">Owner / PIC Name</Label>
                                 <div className="relative">
                                     <User className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground/50" />
                                     <Input
-                                        className="pl-9 bg-zinc-50/50 dark:bg-zinc-900/50"
+                                        className="pl-9 bg-muted/20 focus:bg-background transition-colors"
                                         value={data.company_owner_name}
                                         onChange={(e) => setData('company_owner_name', e.target.value)}
                                         required
@@ -113,11 +135,11 @@ export default function CompanyEdit({ company, categories }: PageProps) {
                             </div>
 
                             <div className="space-y-2">
-                                <Label className="text-[13px] font-semibold uppercase tracking-wider text-muted-foreground/80">Company Name</Label>
+                                <Label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/80">Company Name</Label>
                                 <div className="relative">
                                     <Building2 className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground/50" />
                                     <Input
-                                        className="pl-9 bg-zinc-50/50 dark:bg-zinc-900/50"
+                                        className="pl-9"
                                         value={data.name}
                                         onChange={(e) => setData('name', e.target.value)}
                                         required
@@ -127,9 +149,9 @@ export default function CompanyEdit({ company, categories }: PageProps) {
                             </div>
 
                             <div className="space-y-2">
-                                <Label className="text-[13px] font-semibold uppercase tracking-wider text-muted-foreground/80">Category</Label>
+                                <Label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/80">Category</Label>
                                 <Select value={data.company_category_id} onValueChange={(val) => setData('company_category_id', val)}>
-                                    <SelectTrigger className="bg-zinc-50/50 dark:bg-zinc-900/50 pl-9 relative">
+                                    <SelectTrigger className="pl-9 relative">
                                         <Tag className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground/50" />
                                         <SelectValue placeholder="Select Category" />
                                     </SelectTrigger>
@@ -143,12 +165,12 @@ export default function CompanyEdit({ company, categories }: PageProps) {
                             </div>
 
                             <div className="space-y-2">
-                                <Label className="text-[13px] font-semibold uppercase tracking-wider text-muted-foreground/80">Email Address</Label>
+                                <Label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/80">Email Address</Label>
                                 <div className="relative">
                                     <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground/50" />
                                     <Input
                                         type="email"
-                                        className="pl-9 bg-muted/30 font-medium"
+                                        className="pl-9"
                                         value={data.email}
                                         onChange={(e) => setData('email', e.target.value)}
                                         required
@@ -158,11 +180,11 @@ export default function CompanyEdit({ company, categories }: PageProps) {
                             </div>
 
                             <div className="space-y-2">
-                                <Label className="text-[13px] font-semibold uppercase tracking-wider text-muted-foreground/80">Phone Number</Label>
+                                <Label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/80">Phone Number</Label>
                                 <div className="relative">
                                     <Phone className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground/50" />
                                     <Input
-                                        className="pl-9 bg-zinc-50/50 dark:bg-zinc-900/50"
+                                        className="pl-9"
                                         value={data.phone}
                                         onChange={(e) => setData('phone', e.target.value)}
                                         required
@@ -172,11 +194,11 @@ export default function CompanyEdit({ company, categories }: PageProps) {
                             </div>
 
                             <div className="space-y-2 col-span-2">
-                                <Label className="text-[13px] font-semibold uppercase tracking-wider text-muted-foreground/80">Address</Label>
+                                <Label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/80">Address</Label>
                                 <div className="relative">
                                     <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground/50" />
                                     <textarea
-                                        className="flex min-h-[100px] w-full rounded-md border border-input bg-zinc-50/50 dark:bg-zinc-900/50 px-3 py-2 pl-9 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                        className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 pl-9 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                         value={data.address}
                                         onChange={(e) => setData('address', e.target.value)}
                                         required
@@ -185,16 +207,17 @@ export default function CompanyEdit({ company, categories }: PageProps) {
                                 <InputError message={errors.address} />
                             </div>
 
-                            <div className="col-span-2 bg-muted/40 p-5 rounded-lg border border-dashed border-border mt-2">
-                                <div className="flex items-center justify-between gap-4">
-                                    <div className="space-y-1">
-                                        <Label className="text-base font-bold">Account Status</Label>
-                                        <p className="text-xs text-muted-foreground italic">Suspension will disable all member access under this company.</p>
+                            {/* Status Section */}
+                            <div className="col-span-2 bg-muted/30 p-4 rounded-lg border border-border">
+                                <div className="flex items-center justify-between">
+                                    <div className="space-y-0.5">
+                                        <Label className="text-sm font-bold">Account Status</Label>
+                                        <p className="text-[12px] text-muted-foreground italic leading-none">Suspension will block all users in this company.</p>
                                     </div>
                                     <Select value={data.is_active} onValueChange={(val) => setData('is_active', val)}>
-                                        <SelectTrigger className="w-[160px] bg-background">
+                                        <SelectTrigger className="w-[140px] h-8 bg-background">
                                             <div className="flex items-center gap-2">
-                                                <Activity className="h-4 w-4 text-muted-foreground" />
+                                                <Activity className="h-3 w-3" />
                                                 <SelectValue />
                                             </div>
                                         </SelectTrigger>
@@ -204,17 +227,16 @@ export default function CompanyEdit({ company, categories }: PageProps) {
                                         </SelectContent>
                                     </Select>
                                 </div>
-                                <InputError message={errors.is_active} className="mt-2" />
                             </div>
                         </div>
 
-                        <div className="flex items-center justify-end gap-3 border-t bg-zinc-50/50 dark:bg-zinc-900/50 px-8 py-4">
-                            <Button type="button" variant="outline" asChild>
-                                <Link href="/company-management/companies">Cancel</Link>
+                        <div className="flex items-center justify-end gap-3 border-t bg-muted/10 px-8 py-4">
+                            <Button type="button" variant="ghost" asChild>
+                                <Link href="/company-management/companies">Discard Changes</Link>
                             </Button>
-                            <Button type="submit" disabled={processing} className="min-w-[140px] gap-2">
+                            <Button type="submit" disabled={processing || !isDirty} className="min-w-[140px] gap-2 shadow-sm">
                                 <Save className="h-4 w-4" /> 
-                                {processing ? 'Saving...' : 'Update Company'}
+                                {processing ? 'Updating...' : 'Save Changes'}
                             </Button>
                         </div>
                     </form>
