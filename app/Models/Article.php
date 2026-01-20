@@ -12,9 +12,6 @@ class Article extends Model
 {
     use HasFactory;
 
-    const
-        STATUS = ['draft', 'review', 'published'];
-
     protected $fillable = [
         'name',
         'tag_code',
@@ -129,16 +126,16 @@ class Article extends Model
         return $article;
     }
 
-    public function updateStatusArticle(int $id, string $status): self {
+    public function updateStatusArticle(int $id, array $data): self {
         $article = self::findOrFail($id);
-        $article->update(['status' => $status]);
+        $article->update(['status' => $data['status']]);
 
         return $article;
     }
 
-    public function updateViewCountArticle(int $id, int $count_view): self {
+    public function updateViewCountArticle(int $id, array $data): self {
         $article = self::findOrFail($id);
-        $article->update(['view_count' => $count_view]);
+        $article->update(['view_count' => $data['view_count']]);
 
         return $article;
     }

@@ -161,10 +161,10 @@ export default function ArticleEdit({ article, detail, categories = [], tinymce 
                             <Editor
                                 apiKey={`${tinymce}`}
                                 onInit={(evt, editor) => editorRef.current = editor}
+                                value={data.description}
                                 onEditorChange={(content) => {
                                     setData('description', content);
                                 }}
-                                initialValue={data.description}
                                 init={{
                                     height: 500,
                                     menubar: true,

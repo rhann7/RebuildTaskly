@@ -101,9 +101,20 @@ class ArticleController
         return redirect()->back()->with('success', 'Article created successfully.');
     }
 
+    public function updateStatusArticle(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'status' => 'required|string'
+        ]);
+
+        $articleStatus = $this->article->updateStatusArticle($id, $validated);
+
+        return redirect()->back()->with('success', 'Article updated status successfully.');
+    }
+
     public function show($id)
     {
-        $article = Article::with('detail')->findOrFail($id);
+        $article = Article::with(['detail', 'category'])->findOrFail($id);
         $categories = ArticleCategory::select('id', 'name')
             ->orderBy('name', 'asc')
             ->get();
@@ -156,7 +167,6 @@ class ArticleController
     public function destroy($id)
     {
         $article = $this->article->destroyArticle($id);
-        $articleDetail = $this->articleDetail->destroyDetail($article->id);
-        return redirect()->back()->with('success', 'Article deleted successfully.');
+        return redirect('article-management/article')->with('success', 'Article deleted successfully.');
     }
 }

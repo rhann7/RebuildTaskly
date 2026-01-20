@@ -67,7 +67,7 @@ class ArticleDetail extends Model
     {
         $articleDetail = self::findOrFail($id);
         $articleDetail->images()->delete();
-
+        
         return $articleDetail;
     }
 }

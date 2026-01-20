@@ -56,6 +56,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 ->except(['create', 'edit', 'show']);
 
             Route::resource('article', ArticleController::class);
+            Route::put('/article/{article}/status', [ArticleController::class, 'updateStatusArticle'])->name('article.status');
         });
     });
 
