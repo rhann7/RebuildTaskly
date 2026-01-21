@@ -97,7 +97,7 @@ export default function ProjectIndex({ projects, workspaces, filters, pageConfig
 
     const handleDelete = (slug: string) => {
         if (confirm('Are you sure you want to delete this project?')) {
-            router.delete(`/projects/${slug}`);
+            router.delete(`/workspaces/${workspace.slug}/projects/${slug}`);
         }
     };
 

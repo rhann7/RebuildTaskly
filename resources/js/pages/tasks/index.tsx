@@ -105,11 +105,14 @@ export default function TaskIndex({ workspace, project, tasks, filters, pageConf
     };
 
 
-    const handleDelete = (id: number) => {
+    const handleDelete = (taskSlug: string) => {
         if (confirm('Are you sure you want to delete this task?')) {
-            router.delete(`/projects/${project.slug}/tasks/${id}`);
+            router.delete(
+                `/workspaces/${workspace.slug}/projects/${project.slug}/tasks/${taskSlug}`
+            );
         }
     };
+
 
     const FilterWidget = (
         <div className="relative flex-1 max-w-sm">
@@ -182,7 +185,7 @@ export default function TaskIndex({ workspace, project, tasks, filters, pageConf
                                             </Tooltip>
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600" onClick={() => handleDelete(task.id)}>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600"   onClick={() => handleDelete(task.slug)}>
                                                         <Trash2 className="h-4 w-4" />
                                                     </Button>
                                                 </TooltipTrigger>
