@@ -10,12 +10,9 @@ return new class extends Migration
     {
         Schema::create('company_owners', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
-
+            $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('name');
-
             $table->timestamps();
-            $table->index('user_id');
         });
     }
 

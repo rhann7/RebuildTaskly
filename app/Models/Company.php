@@ -11,6 +11,7 @@ class Company extends Model
     use HasFactory, HasRoles;
 
     protected $guard_name = 'web';
+    
     protected $fillable = [
         'company_owner_id', 
         'company_category_id', 
@@ -19,18 +20,19 @@ class Company extends Model
         'email', 
         'phone', 
         'logo', 
-        'address', 
-        'is_active'
+        'address',
     ];
 
-    public function companyOwner()
-    {
-        return $this->belongsTo(CompanyOwner::class, 'company_owner_id');
-    }
+    protected $casts = ['is_active' => 'boolean'];
 
     public function companyCategory()
     {
         return $this->belongsTo(CompanyCategory::class, 'company_category_id');
+    }
+
+    public function companyOwner()
+    {
+        return $this->belongsTo(CompanyOwner::class, 'company_owner_id');
     }
 
     public function workspaces()

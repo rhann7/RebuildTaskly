@@ -13,11 +13,11 @@ class CompanyOwner extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class); 
     }
 
-    public function company()
+    public function company() 
     {
-        return $this->hasOne(Company::class, 'company_owner_id')->latestOfMany();
+        return $this->hasMany(Company::class, 'company_owner_id'); 
     }
 }

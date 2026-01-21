@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Lab404\Impersonate\Models\Impersonate;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Spatie\Permission\Traits\HasRoles;
@@ -16,16 +18,14 @@ class User extends Authenticatable
     protected $fillable = [
         'name', 
         'email', 
-        'password', 
-        'email_verified_at', 
-        'remember_token'
+        'password',
     ];
 
     protected $hidden = [
         'password', 
+        'remember_token',
         'two_factor_secret', 
-        'two_factor_recovery_codes', 
-        'remember_token'
+        'two_factor_recovery_codes',
     ];
     
     protected function casts(): array
@@ -37,28 +37,39 @@ class User extends Authenticatable
         ];
     }
 
-    public function isSuperAdmin()
+    protected static function booted()
     {
-        return $this->hasRole('super-admin');
+        static::updated(function ($user) {
+            if ($user->wasChanged('name')) {
+                DB::table('companies')
+                    ->whereIn('company_owner_id', function ($query) use ($user) {
+                        $query->select('id')
+                            ->from('company_owners')
+                            ->where('user_id', $user->id);
+                    })
+                    ->update([
+                        'name'       => $user->name,
+                        'slug'       => Str::slug($user->name),
+                        'updated_at' => now(),
+                    ]);
+            }
+        });
     }
 
-    public function canImpersonate()
-    {
-        return $this->isSuperAdmin();
-    }
-
-    public function canBeImpersonated()
-    {
-        return !$this->isSuperAdmin();
-    }
-
+    public function companyOwner() { return $this->hasOne(CompanyOwner::class); }
     public function company()
     {
-        return $this->HasOneThrough(Company::class, CompanyOwner::class, 'user_id', 'company_owner_id', 'id', 'id');
+        return $this->hasManyThrough(
+            Company::class, 
+            CompanyOwner::class, 
+            'user_id', 
+            'company_owner_id', 
+            'id', 
+            'id'
+        );
     }
 
-    public function companyOwner()
-    {
-        return $this->hasOne(CompanyOwner::class);
-    }
+    public function isSuperAdmin() { return $this->hasRole('super-admin'); }
+    public function canImpersonate() { return $this->isSuperAdmin(); }
+    public function canBeImpersonated() { return !$this->isSuperAdmin(); }
 }

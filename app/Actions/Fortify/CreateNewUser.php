@@ -35,29 +35,36 @@ class CreateNewUser implements CreatesNewUsers
                 'email'             => $input['email'],
                 'password'          => Hash::make($input['password']),
                 'email_verified_at' => now(),
-                'remember_token'    => Str::random(10),
             ])->assignRole('company');
 
-            $company = Company::create([
-                'company_owner_id'    => CompanyOwner::create([
-                    'user_id' => $user->id,
-                    'name'    => $input['company_owner_name'],
-                ])->id,
+            $owner = CompanyOwner::create([
+                'user_id' => $user->id,
+                'name'    => $input['company_owner_name'],
+            ]);
+
+            $slug = Str::slug($input['company_name']);
+            if (Company::where('slug', $slug)->exists()) {
+                $slug = $slug . '-' . Str::lower(Str::random(5));
+            }
+
+            $company = new Company();
+            $company->forceFill([
+                'company_owner_id'    => $owner->id,
                 'company_category_id' => $input['company_category_id'],
                 'name'                => $input['company_name'],
-                'slug'                => Str::slug($input['company_name']),
+                'slug'                => $slug,
                 'email'               => $input['email'],
                 'address'             => $input['company_address'],
                 'phone'               => $input['company_phone'],
                 'is_active'           => true,
-            ]);
+            ])->save();
             
             $permissions = Permission::where('type', 'general')
-                ->whereIn('scope', ['company', 'workspace'])->get();
+                ->where('isGroup', false)
+                ->whereIn('scope', ['company', 'workspace'])
+                ->get();
                 
-            if ($permissions->count() > 0) {
-                $company->givePermissionTo($permissions);
-            }
+            if ($permissions->isNotEmpty()) $company->syncPermissions($permissions);
             
             return $user;
         });
