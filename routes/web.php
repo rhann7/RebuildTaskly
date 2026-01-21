@@ -3,6 +3,7 @@
 use App\Http\Controllers\Companies\CategoryController;
 use App\Http\Controllers\Companies\CompanyController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ProjectManagement\Projects\ProjectController;
 use App\Http\Controllers\Rules\PermissionAccessController;
 use App\Http\Controllers\Rules\PermissionController;
 use App\Http\Controllers\Workspaces\WorkspaceController;
@@ -18,9 +19,7 @@ Route::get('/', function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    
     Route::impersonate();
-    
     Route::middleware('role:super-admin')->group(function () {
         Route::prefix('access-control')->name('access-control.')->group(function () {
             Route::resource('permissions', PermissionController::class);
@@ -42,12 +41,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('workspaces', WorkspaceController::class)
             ->parameters(['workspaces' => 'workspace:slug'])
             ->except(['create', 'edit']);
-    
+        Route::resource('workspaces.projects', ProjectController::class)
+            ->parameters([
+                'workspaces' => 'workspace:slug',
+                'projects' => 'project:slug'
+            ])
+            ->except([]);
+
         if (Schema::hasTable('permissions') && Schema::hasColumns('permissions', ['route_path', 'route_name'])) {
             $dynamicRoutes = cache()->remember('dynamic_routes', 3600, function () {
                 return Permission::whereNotNull('route_path')->whereNotNull('route_name')->get();
             });
-    
             foreach ($dynamicRoutes as $route) {
                 if (!Route::has($route->route_name)) {
                     Route::get($route->route_path, $route->controller_action)
@@ -58,4 +62,4 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 });
 
-require __DIR__.'/settings.php';
+require __DIR__ . '/settings.php';

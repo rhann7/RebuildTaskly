@@ -36,16 +36,22 @@ export default function WorkspaceShow({ workspace }: PageProps) {
             title: 'Projects',
             description: 'Workspace-specific projects and milestones.',
             icon: Briefcase,
+            href: `/workspaces/${workspace.slug}/projects`, // Diarahkan ke route project
+            active: true,
         },
         {
             title: 'Team Members',
             description: 'Assign people and manage their presence.',
             icon: Users,
+            href: '#',
+            active: false,
         },
         {
             title: 'Access Control',
             description: 'Permissions specific to this environment.',
             icon: ShieldAlert,
+            href: '#',
+            active: false,
         },
     ];
 
@@ -95,13 +101,14 @@ export default function WorkspaceShow({ workspace }: PageProps) {
                     </div>
                 </div>
 
+                {/* Modules Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {modules.map((module) => (
                         <Card key={module.title} className="group transition-all duration-300 shadow-sm hover:shadow-md hover:border-primary/50">
                             <CardHeader className="space-y-2 pb-4">
                                 <div className="flex items-center gap-3">
-                                    <div className="h-9 w-9 rounded-lg bg-zinc-500/10 flex items-center justify-center shrink-0">
-                                        <module.icon className="h-5 w-5 text-zinc-600 dark:text-zinc-400" />
+                                    <div className="h-9 w-9 rounded-lg bg-zinc-500/10 flex items-center justify-center shrink-0 group-hover:bg-primary/10 transition-colors">
+                                        <module.icon className="h-5 w-5 text-zinc-600 dark:text-zinc-400 group-hover:text-primary" />
                                     </div>
                                     <CardTitle className="text-xl">{module.title}</CardTitle>
                                 </div>
@@ -110,18 +117,28 @@ export default function WorkspaceShow({ workspace }: PageProps) {
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <Button variant="secondary" className="w-full opacity-60" disabled>
-                                    <span>Coming Soon</span>
-                                </Button>
+                                {module.active ? (
+                                    <Button className="w-full group/btn" asChild>
+                                        <Link href={module.href}>
+                                            <span>Manage Projects</span>
+                                            <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover/btn:translate-x-1" />
+                                        </Link>
+                                    </Button>
+                                ) : (
+                                    <Button variant="secondary" className="w-full opacity-60" disabled>
+                                        <span>Coming Soon</span>
+                                    </Button>
+                                )}
                             </CardContent>
                         </Card>
                     ))}
                 </div>
 
-                <div className="flex items-center justify-center gap-2 p-4 rounded-xl border border-dashed bg-muted/30 text-muted-foreground animate-pulse">
+                {/* Info Footer */}
+                <div className="flex items-center justify-center gap-2 p-4 rounded-xl border border-dashed bg-muted/30 text-muted-foreground">
                     <Info className="h-4 w-4" />
                     <span className="text-sm font-medium">
-                        Workspace modules (projects, members, roles) will live inside this workspace context.
+                        Akses semua modul tim dan pengaturan dalam satu workspace.
                     </span>
                 </div>
             </div>

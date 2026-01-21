@@ -52,15 +52,21 @@ class MenuService
                 'icon'     => 'Briefcase',
                 'isActive' => $request->routeIs('workspaces.index'),
             ];
+            // $menu[] = [
+            //     'title'    => 'Project Management',
+            //     'href'     => '/projects',
+            //     'icon'     => 'FolderKanban',
+            //     'isActive' => $request->routeIs('projects.*'),
+            // ];
 
             return $menu;
         }
 
         $up = $user->getAllPermissions();
-        $cp = $company 
-            ? cache()->remember("company-{$company->id}-permissions", 60, fn() => $company->getAllPermissions()) 
+        $cp = $company
+            ? cache()->remember("company-{$company->id}-permissions", 60, fn() => $company->getAllPermissions())
             : collect();
-        
+
         $permissions = $up->merge($cp)
             ->where('isMenu', true)
             ->unique('id')
@@ -69,9 +75,9 @@ class MenuService
         foreach ($permissions as $p) {
             $href = '#';
             $isActive = false;
-            
-            $groupRoutes = is_array($p->group_routes) 
-                ? $p->group_routes 
+
+            $groupRoutes = is_array($p->group_routes)
+                ? $p->group_routes
                 : json_decode($p->group_routes ?? '[]', true);
 
             if ($p->route_name && Route::has($p->route_name . '.index')) {
