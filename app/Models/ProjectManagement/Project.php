@@ -2,6 +2,7 @@
 
 namespace App\Models\ProjectManagement;
 
+use App\Models\TaskManagement\Task;
 use App\Models\Workspace;
 use Illuminate\Database\Eloquent\Model;
 
@@ -12,5 +13,10 @@ class Project extends Model
     public function workspace()
     {
         return $this->belongsTo(Workspace::class);
+    }
+
+    public function tasks()
+    {
+        return $this->hasMany(Task::class);
     }
 }

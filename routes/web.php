@@ -6,6 +6,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProjectManagement\Projects\ProjectController;
 use App\Http\Controllers\Rules\PermissionAccessController;
 use App\Http\Controllers\Rules\PermissionController;
+use App\Http\Controllers\TaskManagement\Tasks\TaskController;
 use App\Http\Controllers\Workspaces\WorkspaceController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
@@ -41,10 +42,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('workspaces', WorkspaceController::class)
             ->parameters(['workspaces' => 'workspace:slug'])
             ->except(['create', 'edit']);
+
         Route::resource('workspaces.projects', ProjectController::class)
             ->parameters([
                 'workspaces' => 'workspace:slug',
                 'projects' => 'project:slug'
+            ])
+            ->except([]);
+
+        Route::resource('workspaces.projects.tasks', TaskController::class)
+            ->parameters([
+                'workspaces' => 'workspace:slug',
+                'projects' => 'project:slug',
+                'tasks' => 'task:slug'
             ])
             ->except([]);
 
