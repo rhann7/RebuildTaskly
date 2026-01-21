@@ -1,7 +1,7 @@
 import AppLayout from '@/layouts/app-layout';
 import { Head, Link } from '@inertiajs/react';
 import { BreadcrumbItem } from '@/types';
-import { Briefcase, ArrowRight, Info, Calendar, CheckCircle } from 'lucide-react';
+import { Briefcase, ArrowRight, Info, Calendar, CheckCircle, Users } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -107,6 +107,24 @@ export default function ProjectShow({ workspace, project }: PageProps) {
                             </Button>
                         </CardContent>
                     </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Users className="h-5 w-5" />
+                                Members
+                            </CardTitle>
+                            <CardDescription>
+                                Manage team members.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <Button disabled variant="secondary" className="w-full">
+                                Coming Soon
+                            </Button>
+                        </CardContent>
+                    </Card>
+
                 </div>
 
                 {/* Footer info */}
