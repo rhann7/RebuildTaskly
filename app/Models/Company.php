@@ -12,7 +12,7 @@ class Company extends Model
 
     protected $guard_name = 'web';
     protected $fillable = [
-        'company_owner_id', 
+        'user_id', 
         'company_category_id', 
         'name', 
         'slug', 
@@ -23,12 +23,12 @@ class Company extends Model
         'is_active'
     ];
 
-    public function companyOwner()
+    public function user()
     {
-        return $this->belongsTo(CompanyOwner::class, 'company_owner_id');
+        return $this->belongsTo(User::class);
     }
 
-    public function companyCategory()
+    public function category()
     {
         return $this->belongsTo(CompanyCategory::class, 'company_category_id');
     }
@@ -38,7 +38,7 @@ class Company extends Model
         return $this->hasMany(Workspace::class);
     }
 
-    public function hasFeature(string $permissionName)
+    public function hasPermission(string $permissionName)
     {
         return $this->hasPermissionTo($permissionName);
     }
