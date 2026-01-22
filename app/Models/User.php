@@ -37,6 +37,11 @@ class User extends Authenticatable
         ];
     }
 
+    public function company()
+    {
+        return $this->hasOne(Company::class);
+    }
+
     public function isSuperAdmin()
     {
         return $this->hasRole('super-admin');
@@ -50,15 +55,5 @@ class User extends Authenticatable
     public function canBeImpersonated()
     {
         return !$this->isSuperAdmin();
-    }
-
-    public function company()
-    {
-        return $this->HasOneThrough(Company::class, CompanyOwner::class, 'user_id', 'company_owner_id', 'id', 'id');
-    }
-
-    public function companyOwner()
-    {
-        return $this->hasOne(CompanyOwner::class);
     }
 }
