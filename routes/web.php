@@ -17,11 +17,9 @@ Route::get('/', function () {
 })->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    
-    Route::impersonate();
-    
     Route::middleware('role:super-admin')->group(function () {
+        Route::impersonate();
+
         Route::prefix('access-control')->name('access-control.')->group(function () {
             Route::resource('permissions', PermissionController::class);
             Route::get('company-access', [PermissionAccessController::class, 'index'])->name('company-access.index');
@@ -34,11 +32,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 ->except(['create', 'edit', 'show']);
 
             Route::resource('companies', CompanyController::class)
-                ->parameters(['companies' => 'company:slug']);
+                ->parameters(['companies' => 'company:slug'])
+                ->except(['create', 'edit']);
         });
     });
 
-    Route::middleware('company_can')->group(function () {
+    Route::middleware(['company_status', 'company_can'])->group(function () {
+        Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
         Route::resource('workspaces', WorkspaceController::class)
             ->parameters(['workspaces' => 'workspace:slug'])
             ->except(['create', 'edit']);
