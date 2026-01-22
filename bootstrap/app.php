@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\CheckCompanyPermission;
+use App\Http\Middleware\CheckCompanyStatus;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Application;
@@ -26,9 +27,10 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->alias([
-            'role'        => RoleMiddleware::class,
-            'permission'  => PermissionMiddleware::class,
-            'company_can' => CheckCompanyPermission::class,
+            'role'           => RoleMiddleware::class,
+            'permission'     => PermissionMiddleware::class,
+            'company_can'    => CheckCompanyPermission::class,
+            'company_status' => CheckCompanyStatus::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
