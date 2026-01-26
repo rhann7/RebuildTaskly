@@ -42,6 +42,11 @@ class User extends Authenticatable
         return $this->hasOne(Company::class);
     }
 
+    public function appealLogs()
+    {
+        return $this->hasMany(CompanyAppealLog::class)->latest();
+    }
+
     public function isSuperAdmin()
     {
         return $this->hasRole('super-admin');
