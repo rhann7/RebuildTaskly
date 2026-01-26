@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Companies\CategoryController;
+use App\Http\Controllers\Companies\CompanyAppealController;
 use App\Http\Controllers\Companies\CompanyController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Rules\PermissionAccessController;
@@ -16,7 +17,11 @@ Route::get('/', function () {
     return Inertia::render('welcome', ['canRegister' => Features::enabled(Features::registration())]);
 })->name('home');
 
+
 Route::middleware(['auth', 'verified'])->group(function () {
+    Route::resource('appeals', CompanyAppealController::class)
+        ->only(['create', 'store']);
+        
     Route::middleware('role:super-admin')->group(function () {
         Route::impersonate();
 
@@ -34,6 +39,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::resource('companies', CompanyController::class)
                 ->parameters(['companies' => 'company:slug'])
                 ->except(['create', 'edit']);
+            
+            Route::resource('appeals', CompanyAppealController::class)
+                ->only(['index', 'update']);
         });
     });
 
