@@ -32,6 +32,7 @@ class MenuService
                 'items'    => [
                     ['title' => 'Categories', 'href' => '/company-management/categories', 'isActive' => $request->routeIs('company-management.categories.*')],
                     ['title' => 'Companies', 'href' => '/company-management/companies', 'isActive' => $request->routeIs('company-management.companies.*')],
+                    ['title' => 'Appeals', 'href' => '/company-management/appeals', 'isActive' => $request->routeIs('company-management.appeals.*')],
                 ]
             ];
 
