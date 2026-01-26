@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Companies;
 use App\Actions\Fortify\CreateNewUser;
 use App\Http\Controllers\Controller;
 use App\Models\Company;
+use App\Models\CompanyAppeal;
 use App\Models\CompanyCategory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -65,7 +66,7 @@ class CompanyController extends Controller
         $pw = str_replace(' ', '', strtolower($request->company_name)) . $randomSuffix;
 
         $request->merge([
-            'password' => $pw,
+            'password'              => $pw,
             'password_confirmation' => $pw,
         ]);
 
@@ -76,20 +77,40 @@ class CompanyController extends Controller
     public function show(Company $company)
     {
         return inertia('companies/show', [
-            'company' => $company->load(['category', 'user']),
-            'pageConfig' => [
-                'title' => 'Company Profile: ' . $company->name,
-            ]
+            'company'    => $company->load(['category', 'user', 'appealLogs.user']),
+            'pageConfig' => ['title' => 'Company Profile: ' . $company->name]
         ]);
     }
 
     public function update(Request $request, Company $company)
     {
-        $validated = $request->validate(['is_active' => 'required|boolean']);
-        $company->update(['is_active' => $validated['is_active']]);
+        $validated = $request->validate([
+            'is_active' => 'required|boolean',
+            'reason'    => 'required_if:is_active,false|nullable|string|max:500',
+        ]);
 
-        if ($company->wasChanged('is_active')) Cache::forget("company-{$company->id}-permissions");
-        return back()->with('success', "Company status updated to " . ($validated['is_active'] ? 'Active' : 'Inactive'));
+        $company->update([
+            'is_active' => $validated['is_active'],
+            'reason'    => $validated['is_active'] ? 'Akun telah diaktifkan kembali oleh admin.' : $validated['reason'],
+        ]);
+
+        if ($validated['is_active']) {
+            $company->updateQuietly(['reason' => null]);
+            
+            CompanyAppeal::where('company_id', $company->id)
+                ->where('status', 'pending')
+                ->update([
+                    'status' => 'approved',
+                    'reason' => 'Akun telah diaktifkan kembali oleh admin.'
+                ]);
+        }
+
+        if ($company->wasChanged('is_active')) {
+            Cache::forget("company-{$company->id}-permissions");
+        }
+
+        $statusLabel = $validated['is_active'] ? 'Active' : 'Inactive';
+        return back()->with('success', "Company status updated to {$statusLabel}");
     }
 
     public function destroy(Company $company)
