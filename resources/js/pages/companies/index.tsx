@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -20,6 +21,7 @@ interface Company {
     email: string;
     phone: string;
     is_active: boolean;
+    reason?: string;
     category?: { name: string };
     user?: { name: string; id: number };
 }
@@ -56,6 +58,7 @@ export default function CompanyIndex({ companies, filters, pageConfig }: PagePro
 
     const editForm = useForm({
         is_active: false,
+        reason: '',
     });
 
     const handleFilterChange = (search?: string, status?: string) => {
@@ -67,7 +70,10 @@ export default function CompanyIndex({ companies, filters, pageConfig }: PagePro
 
     const openEditModal = (company: Company) => {
         setSelectedCompany(company);
-        editForm.setData('is_active', !!company.is_active);
+        editForm.setData({
+            is_active: !!company.is_active,
+            reason: company.reason || '',
+        });
         setIsEditOpen(true);
     };
 
@@ -257,12 +263,39 @@ export default function CompanyIndex({ companies, filters, pageConfig }: PagePro
                             </div>
                             <Switch 
                                 checked={editForm.data.is_active} 
-                                onCheckedChange={(val) => editForm.setData('is_active', val)} 
+                                onCheckedChange={(val) => {
+                                    editForm.setData('is_active', val);
+                                    if(val) editForm.setData('reason', '');
+                                }} 
                             />
                         </div>
+
+                        {!editForm.data.is_active && (
+                            <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                                <Label htmlFor="reason" className="text-destructive font-medium flex items-center gap-2">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-destructive" />
+                                    Deactivation Reason
+                                </Label>
+                                <Textarea 
+                                    id="reason"
+                                    placeholder="Berikan alasan kenapa akun ini dinonaktifkan..."
+                                    className="min-h-[100px] resize-none border-destructive/20 focus-visible:ring-destructive"
+                                    value={editForm.data.reason}
+                                    onChange={e => editForm.setData('reason', e.target.value)}
+                                />
+                                <InputError message={editForm.errors.reason} />
+                            </div>
+                        )}
+
                         <DialogFooter>
                             <Button variant="outline" type="button" onClick={() => setIsEditOpen(false)}>Cancel</Button>
-                            <Button type="submit" disabled={editForm.processing}>Save Changes</Button>
+                            <Button 
+                                type="submit" 
+                                disabled={editForm.processing}
+                                variant={editForm.data.is_active ? 'default' : 'destructive'}
+                            >
+                                {editForm.processing ? 'Saving...' : (editForm.data.is_active ? 'Save Changes' : 'Suspend Account')}
+                            </Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>

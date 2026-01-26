@@ -1,12 +1,20 @@
 import AppLayout from '@/layouts/app-layout';
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowLeft, Mail, Phone, User, ShieldCheck, Fingerprint, Building2, Hash, Calendar, MapPin } from 'lucide-react';
+import { ArrowLeft, Mail, Phone, User, ShieldCheck, Fingerprint, Building2, Hash, Calendar, MapPin, History, Info } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
+interface AppealLog {
+    id: number;
+    status_to: 'active' | 'suspended';
+    reason: string | null;
+    created_at: string;
+    user?: { name: string };
+}
 
 interface Company {
     id: number;
@@ -17,8 +25,10 @@ interface Company {
     logo: string | null;
     address: string | null;
     is_active: boolean;
+    reason: string | null;
     category?: { name: string };
     user?: { name: string; id: number };
+    appeal_logs?: AppealLog[];
     created_at: string;
 }
 
@@ -110,10 +120,25 @@ export default function CompanyShow({ company, pageConfig }: PageProps) {
                                 </div>
                             </div>
                         </Card>
+
+                        {!company.is_active && (
+                            <Card className="border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-900">
+                                <CardHeader className="pb-2">
+                                    <CardTitle className="text-sm font-bold text-red-600 flex items-center gap-2">
+                                        <Info className="h-4 w-4" /> Alasan Penangguhan
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <p className="text-xs text-red-700 dark:text-red-400 italic font-medium leading-relaxed">
+                                        "{company.reason || 'Tidak ada alasan spesifik.'}"
+                                    </p>
+                                </CardContent>
+                            </Card>
+                        )}
                     </div>
 
                     <div className="lg:col-span-2 space-y-6">
-                        <Card className="shadow-sm border-zinc-200">
+                        <Card className="shadow-sm border-border">
                             <CardHeader className="border-b bg-zinc-50/50 dark:bg-zinc-900/50">
                                 <CardTitle className="text-lg font-bold">Informasi Bisnis</CardTitle>
                             </CardHeader>
@@ -121,13 +146,62 @@ export default function CompanyShow({ company, pageConfig }: PageProps) {
                                 <DetailItem icon={<Mail />} label="Official Email" value={company.email} />
                                 <DetailItem icon={<Phone />} label="Contact Number" value={company.phone || '—'} />
                                 <DetailItem icon={<User />} label="Account Owner" value={company.user?.name || 'No Owner Linked'} />
-                                <div className="md:col-span-2 mt-2 pt-4 border-t border-zinc-100 dark:border-zinc-800">
-                                    <DetailItem 
-                                        icon={<MapPin />} 
-                                        label="Office Address" 
-                                        value={company.address || 'No physical address registered.'} 
-                                        isAddress
-                                    />
+                                <DetailItem 
+                                    icon={<MapPin />} 
+                                    label="Office Address" 
+                                    value={company.address || 'No physical address registered.'} 
+                                    isAddress
+                                />
+                            </CardContent>
+                        </Card>
+
+                        <Card className="shadow-sm border-border overflow-hidden">
+                            <CardHeader className="border-b bg-zinc-50/50 dark:bg-zinc-900/50 flex flex-row items-center gap-2">
+                                <History className="h-4 w-4 text-zinc-500" />
+                                <CardTitle className="text-lg font-bold">Appeal Logs</CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-0">
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm text-left">
+                                        <thead className="bg-zinc-100 dark:bg-zinc-800 text-[10px] uppercase tracking-widest font-black text-muted-foreground border-b">
+                                            <tr>
+                                                <th className="px-6 py-3">Date</th>
+                                                <th className="px-6 py-3">Action</th>
+                                                <th className="px-6 py-3">System Reason</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                                            {company.appeal_logs?.length ? (
+                                                company.appeal_logs.map((log) => (
+                                                    <tr key={log.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors">
+                                                        <td className="px-6 py-4 whitespace-nowrap text-xs text-muted-foreground">
+                                                            {new Date(log.created_at).toLocaleString('id-ID', {
+                                                                dateStyle: 'medium',
+                                                                timeStyle: 'short'
+                                                            })}
+                                                        </td>
+                                                        <td className="px-6 py-4">
+                                                            <Badge 
+                                                                variant={log.status_to === 'active' ? 'outline' : 'destructive'}
+                                                                className={`text-[9px] px-2 py-0 ${log.status_to === 'active' ? 'border-green-200 text-green-600 bg-green-50' : ''}`}
+                                                            >
+                                                                {log.status_to.toUpperCase()}
+                                                            </Badge>
+                                                        </td>
+                                                        <td className="px-6 py-4 text-xs italic text-zinc-500 max-w-xs truncate">
+                                                            {log.reason || '—'}
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            ) : (
+                                                <tr>
+                                                    <td colSpan={4} className="px-6 py-12 text-center text-muted-foreground italic">
+                                                        Belum ada riwayat perubahan status.
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
                                 </div>
                             </CardContent>
                         </Card>
