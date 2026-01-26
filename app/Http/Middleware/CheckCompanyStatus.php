@@ -2,9 +2,9 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\CompanyAppeal;
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
 class CheckCompanyStatus
@@ -14,17 +14,28 @@ class CheckCompanyStatus
         $user = $request->user();
         if (!$user || $user->isSuperAdmin()) return $next($request);
 
+        if ($request->routeIs('appeals.*')) return $next($request);
+
         $user->loadMissing('company');
 
         if ($user->company && !$user->company->is_active) {
-            $message = 'Akun perusahaan "' . $user->company->name . '" telah dinonaktifkan oleh administrator.';
+            if ($request->header('X-Inertia')) {
+                return inertia()->location(route('appeals.create'));
+            }
 
-            Auth::guard('web')->logout();
+            $reason = $user->company->reason ?? 'Pelanggaran kebijakan atau masalah administratif.';
+            session()->flash('warning_message', "Akses Dibatasi: Akun Anda ditangguhkan karena: {$reason}");
 
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
+            return redirect()->route('appeals.create');
+        }
 
-            return redirect()->route('login')->withErrors(['email' => $message]);
+        $lastAppeal = CompanyAppeal::where('company_id', $user->company->id)
+            ->latest()
+            ->first();
+
+        if ($lastAppeal && $lastAppeal->status === 'approved' && !$request->session()->has('notified_approval')) {
+            session()->flash('success', "Banding Anda telah diterima. Alasan: " . ($lastAppeal->reason ?? 'Akun telah diaktifkan kembali.'));
+            session()->put('notified_approval', true);
         }
 
         return $next($request);
