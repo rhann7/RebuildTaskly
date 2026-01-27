@@ -57,25 +57,58 @@ const DataTableBase = forwardRef<any, any>(({ columns, data, options }, ref) => 
         <div className="w-full">
             <style>{`
                 .dt-paging, .dataTables_paginate, .dt-info, .dataTables_info, .dt-search, .dataTables_filter { display: none !important; }
-                table.dataTable { border-collapse: collapse !important; width: 100% !important; margin-bottom: 1rem !important; background-color: transparent !important; }
+                table.dataTable { 
+                    border-collapse: collapse !important; 
+                    width: 100% !important; 
+                    table-layout: fixed !important;
+                    margin-bottom: 1rem !important; 
+                    background-color: transparent !important; 
+                }
+
+                /* HEADER */
                 table.dataTable thead th { 
                     background: transparent !important; 
-                    color: var(--muted-foreground) !important; 
+                    color: #a1a1aa !important; /* zinc-400 */
                     font-size: 10px !important; 
                     text-transform: uppercase !important; 
                     letter-spacing: 0.2em !important; 
-                    padding: 20px !important; 
-                    border-bottom: 1px solid var(--border) !important; 
+                    padding: 24px 20px !important; 
+                    border-bottom: 1px solid #f4f4f5 !important; /* zinc-100 */
                     font-weight: 900 !important;
                     text-align: left !important;
                 }
+                .dark table.dataTable thead th {
+                    border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+                    color: #71717a !important; /* zinc-500 */
+                }
+
+                /* BODY CELLS */
                 table.dataTable tbody td { 
-                    border-bottom: 1px solid var(--border) !important; 
-                    padding: 16px 20px !important; 
-                    color: var(--foreground) !important; 
+                    border-bottom: 1px solid #f4f4f5 !important; /* zinc-100 */
+                    padding: 20px !important; 
+                    color: #18181b !important; /* zinc-900 */
                     font-size: 13px; 
                 }
-                table.dataTable tbody tr:hover { background-color: var(--muted) !important; }
+                .dark table.dataTable tbody td {
+                    border-bottom: 1px solid rgba(255,255,255,0.05) !important; 
+                    color: #ffffff !important;
+                }
+
+                /* HOVER EFFECT */
+                table.dataTable tbody tr:hover { 
+                    background-color: #fafafa !important; 
+                }
+                .dark table.dataTable tbody tr:hover { 
+                    background-color: rgba(255,255,255,0.02) !important; 
+                }
+
+                /* PAGINATION SECTION */
+                .pagination-wrapper {
+                    border-top: 1px solid #f4f4f5 !important;
+                }
+                .dark .pagination-wrapper {
+                    border-top: 1px solid rgba(255,255,255,0.05) !important;
+                }
             `}</style>
 
             <DataTable 
@@ -85,6 +118,7 @@ const DataTableBase = forwardRef<any, any>(({ columns, data, options }, ref) => 
                 options={{
                     dom: 't',
                     responsive: true,
+                    autoWidth: false,
                     pageLength: pageSize,
                     destroy: true,
                     retrieve: true,

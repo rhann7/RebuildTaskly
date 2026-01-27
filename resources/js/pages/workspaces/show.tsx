@@ -44,18 +44,12 @@ export default function WorkspaceShow({ workspace, projects }: any) {
                         </div>
 
                         {/* Table Container - FIX MELEBAR */}
-                        <div className="bg-zinc-900/20 rounded-[32px] border border-white/[0.02] overflow-x-auto w-full">
-                            <div className="min-w-full inline-block align-middle">
+                        <div className="bg-white dark:bg-zinc-900/20 rounded-[32px] border border-zinc-200 dark:border-white/[0.02] overflow-hidden w-full shadow-sm dark:shadow-none transition-all duration-300">
+                            <div className="inline-block min-w-full align-middle">
                                 {filteredProjects.length > 0 ? (
-                                    <div className="w-full">
-                                        <DataTableBase 
-                                            data={filteredProjects} 
-                                            columns={columns} 
-                                            // Tambahkan class w-full jika komponen DataTableBase mendukung props className
-                                        />
-                                    </div>
+                                    <DataTableBase data={filteredProjects} columns={columns} />
                                 ) : (
-                                    <div className="py-40 text-center uppercase tracking-widest text-zinc-600 text-[10px] font-black">
+                                    <div className="py-40 text-center uppercase tracking-widest text-zinc-400 dark:text-zinc-600 text-[10px] font-black">
                                         <Zap className="mx-auto mb-4 opacity-20" size={40} />
                                         No Sectors Detected
                                     </div>
