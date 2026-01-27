@@ -57,13 +57,8 @@ class CreateNewUser implements CreatesNewUsers
                 'is_active'           => true,
             ]);
             
-            $permissions = Permission::where('type', 'general')
-                ->where('isGroup', false)
-                ->get();
-                
-            if ($permissions->isNotEmpty()) {
-                $company->givePermissionTo($permissions);
-            }
+            $permissions = Permission::where('type', 'general')->get();
+            if ($permissions->isNotEmpty()) $company->givePermissionTo($permissions);
             
             return $user;
         });
