@@ -16,20 +16,16 @@ class PermissionAccessController extends Controller
     {
         $query = Company::query()->with('permissions');
 
-        $query->when($request->search, function ($q, $search) {
-            $q->where('name', 'like', "%{$search}%");
-        })->when($request->type, function ($q, $type) {
-            if ($type === 'unique') {
-                $q->whereHas('permissions', fn($p) => $p->where('type', 'unique'));
-            } elseif ($type === 'general') {
-                $q->whereDoesntHave('permissions', fn($p) => $p->where('type', 'unique'));
-            }
-        });
+        $query->when($request->search, fn($q, $s) => $q->where('name', 'like', "%{$s}%"))
+            ->when($request->type, function ($q, $type) {
+                if ($type === 'unique') return $q->whereHas('permissions', fn($p) => $p->where('type', 'unique'));
+                if ($type === 'general') return $q->whereDoesntHave('permissions', fn($p) => $p->where('type', 'unique'));
+            });
 
         return Inertia::render('permissions/access', [
             'companies'          => $query->orderBy('name', 'asc')->paginate(10)->withQueryString(),
-            'uniquePermissions'  => Permission::where('type', 'unique')->get(),
-            'generalPermissions' => Permission::where('type', 'general')->get(),
+            'uniquePermissions'  => Permission::where('type', 'unique')->orderBy('id')->get(),
+            'generalPermissions' => Permission::where('type', 'general')->orderBy('id')->get(),
             'filters'            => $request->only(['search', 'type']),
         ]);
     }
@@ -37,25 +33,17 @@ class PermissionAccessController extends Controller
     public function update(Request $request, Company $company)
     {
         $validated = $request->validate([
-            'permission_name' => 'required|exists:permissions,name',
-            'enabled'         => 'required|boolean',
+            'permissions'   => 'present|array',
+            'permissions.*' => 'exists:permissions,id',
         ]);
 
         return DB::transaction(function () use ($validated, $company) {
-            $permission = Permission::where('name', $validated['permission_name'])->firstOrFail();
-
-            if ($validated['enabled']) {
-                $company->givePermissionTo($permission);
-                $message = "Access '{$permission->name}' granted to {$company->name}.";
-            } else {
-                $company->revokePermissionTo($permission);
-                $message = "Access '{$permission->name}' revoked from {$company->name}.";
-            }
+            $company->syncPermissions($validated['permissions']);
 
             app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
             Cache::forget("company-{$company->id}-permissions");
 
-            return redirect()->back()->with('success', $message);
+            return redirect()->back()->with('success', "Akses diperbarui.");
         });
     }
 }
