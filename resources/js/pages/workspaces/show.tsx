@@ -1,213 +1,71 @@
-// resources/js/pages/workspaces/show.tsx
-import { useState, FormEventHandler } from 'react';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { useState, useMemo } from 'react';
+import { Head } from '@inertiajs/react';
 import WorkspaceLayout from '@/layouts/workspaces/WorkspaceLayout';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import InputError from '@/components/input-error';
-import { ExternalLink, Plus } from 'lucide-react';
+import DataTableBase from '@/components/DataTableBase';
+import { getProjectColumns } from '@/components/tabs-workspace/ProjectColumns';
+import CreateProjectModal from '@/components/tabs-workspace/CreateProjectModal'; // Import Modal baru
+import { Search, Plus, Zap } from 'lucide-react';
 
-interface Project {
-    id: number;
-    name: string;
-    slug: string;
-    description?: string | null;
-    status: 'active' | 'inactive';
-}
-
-interface Props {
-    workspace: any;
-    projects: Project[];
-}
-
-export default function WorkspaceShow({ workspace, projects }: Props) {
+export default function WorkspaceShow({ workspace, projects }: any) {
     const [activeTab, setActiveTab] = useState<'projects' | 'members' | 'settings'>('projects');
-    const [isOpen, setIsOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
-    const { data, setData, post, processing, errors, reset } = useForm({
-        name: '',
-        description: '',
-        status: 'active',
-    });
-
-    const submit: FormEventHandler = (e) => {
-        e.preventDefault();
-
-        post(`/workspaces/${workspace.slug}/projects`, {
-            onSuccess: () => {
-                reset();
-                setIsOpen(false);
-            },
-        });
-    };
+    const columns = useMemo(() => getProjectColumns(workspace.slug), [workspace.slug]);
+    
+    const filteredProjects = useMemo(() => {
+        return projects.filter((p: any) => p.name.toLowerCase().includes(searchQuery.toLowerCase()));
+    }, [projects, searchQuery]);
 
     return (
-        <WorkspaceLayout
-            workspace={workspace}
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-        >
-            <Head title={`${workspace.name} - Detail`} />
+        <WorkspaceLayout workspace={workspace} activeTab={activeTab} setActiveTab={setActiveTab}>
+            <Head title={workspace.name} />
 
-            {/* ================= PROJECT TAB ================= */}
-            {activeTab === 'projects' && (
-                <div className="animate-in fade-in duration-500 space-y-4">
-
-                    {/* HEADER */}
-                    <div className="flex items-center justify-between">
-                        <h2 className="text-xl font-bold">Projects</h2>
-
-                        <Button onClick={() => setIsOpen(true)}>
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add Project
-                        </Button>
-                    </div>
-
-                    {/* EMPTY STATE */}
-                    {projects.length === 0 ? (
-                        <div className="py-10 text-center border rounded-xl border-dashed">
-                            <p className="text-muted-foreground">
-                                Belum ada project di workspace ini.
-                            </p>
-                        </div>
-                    ) : (
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead className="w-[50px] text-center">#</TableHead>
-                                    <TableHead>Project</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead className="text-right">Action</TableHead>
-                                </TableRow>
-                            </TableHeader>
-
-                            <TableBody>
-                                {projects.map((project, i) => (
-                                    <TableRow key={project.id}>
-                                        <TableCell className="text-center text-muted-foreground">
-                                            {i + 1}
-                                        </TableCell>
-
-                                        <TableCell>
-                                            <div className="flex flex-col">
-                                                <span className="font-semibold">
-                                                    {project.name}
-                                                </span>
-                                                <span className="text-xs text-muted-foreground line-clamp-1">
-                                                    {project.description || 'No description'}
-                                                </span>
-                                            </div>
-                                        </TableCell>
-
-                                        <TableCell>
-                                            <Badge
-                                                variant={
-                                                    project.status === 'active'
-                                                        ? 'outline'
-                                                        : 'destructive'
-                                                }
-                                                className="capitalize text-[10px] h-5"
-                                            >
-                                                {project.status}
-                                            </Badge>
-                                        </TableCell>
-
-                                        <TableCell className="text-right">
-                                            <Button variant="ghost" size="icon" asChild>
-                                                <Link
-                                                    href={`/workspaces/${workspace.slug}/projects/${project.slug}`}
-                                                >
-                                                    <ExternalLink className="h-4 w-4" />
-                                                </Link>
-                                            </Button>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    )}
-                </div>
-            )}
-
-            {/* ================= MEMBERS TAB ================= */}
-            {activeTab === 'members' && (
-                <div className="animate-in fade-in duration-500 py-10 text-center border rounded-xl border-dashed">
-                    <p className="text-muted-foreground">
-                        Members management coming soon.
-                    </p>
-                </div>
-            )}
-
-            {/* ================= SETTINGS TAB ================= */}
-            {activeTab === 'settings' && (
-                <div className="animate-in fade-in duration-500">
-                    <h2 className="text-xl font-bold mb-4">Settings</h2>
-                </div>
-            )}
-
-            {/* ================= CREATE PROJECT MODAL ================= */}
-            <Dialog open={isOpen} onOpenChange={setIsOpen}>
-                <DialogContent className="sm:max-w-[500px]">
-                    <DialogHeader>
-                        <DialogTitle>Create Project</DialogTitle>
-                        <DialogDescription>
-                            Tambahkan project baru ke workspace ini.
-                        </DialogDescription>
-                    </DialogHeader>
-
-                    <form onSubmit={submit} className="space-y-4 pt-2">
-                        <div>
-                            <Label>Project Name</Label>
-                            <Input
-                                value={data.name}
-                                onChange={(e) => setData('name', e.target.value)}
-                            />
-                            <InputError message={errors.name} />
-                        </div>
-
-                        <div>
-                            <Label>Description</Label>
-                            <Textarea
-                                value={data.description}
-                                onChange={(e) => setData('description', e.target.value)}
-                            />
-                            <InputError message={errors.description} />
-                        </div>
-
-                        <DialogFooter>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => setIsOpen(false)}
+            <div className="p-8 animate-in fade-in duration-700">
+                {activeTab === 'projects' && (
+                    <div className="flex flex-col gap-8">
+                        {/* Control Bar */}
+                        <div className="flex justify-between items-center gap-4">
+                            <div className="relative w-full max-w-lg group">
+                                <Search className="absolute left-5 top-1/2 -translate-y-1/2 size-4 text-zinc-500 group-focus-within:text-red-500 transition-colors" />
+                                <input 
+                                    type="text"
+                                    placeholder="SEARCH SECTOR PROTOCOL..."
+                                    className="w-full h-14 pl-14 pr-6 bg-zinc-900/40 border border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] outline-none focus:ring-1 focus:ring-red-600/30 focus:bg-zinc-900/60 transition-all text-white"
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                />
+                            </div>
+                            <button 
+                                onClick={() => setIsModalOpen(true)}
+                                className="h-14 px-8 bg-white text-black rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-zinc-200 transition-all flex items-center gap-3 active:scale-95 shadow-xl"
                             >
-                                Cancel
-                            </Button>
-                            <Button type="submit" disabled={processing}>
-                                Create Project
-                            </Button>
-                        </DialogFooter>
-                    </form>
-                </DialogContent>
-            </Dialog>
+                                <Plus size={16} strokeWidth={4} /> Initialize Sector
+                            </button>
+                        </div>
+
+                        {/* Table */}
+                        <div className="bg-zinc-900/20 rounded-[32px] border border-white/[0.02] overflow-hidden">
+                            {filteredProjects.length > 0 ? (
+                                <DataTableBase data={filteredProjects} columns={columns} />
+                            ) : (
+                                <div className="py-40 text-center uppercase tracking-widest text-zinc-600 text-[10px] font-black">
+                                    <Zap className="mx-auto mb-4 opacity-20" size={40} />
+                                    No Sectors Detected
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+                
+                {/* Tab Members, dll nanti tinggal panggil komponennya juga di sini */}
+            </div>
+
+            {/* Panggil Modal di Sini */}
+            <CreateProjectModal 
+                isOpen={isModalOpen} 
+                setIsOpen={setIsModalOpen} 
+                workspace={workspace} 
+            />
         </WorkspaceLayout>
     );
 }

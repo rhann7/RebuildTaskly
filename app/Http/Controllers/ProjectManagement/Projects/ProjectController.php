@@ -66,7 +66,6 @@ class ProjectController extends Controller
             'name'         => 'required|string|max:255',
             'description'  => 'nullable|string',
         ]);
-
         if (!$user->isSuperAdmin()) {
             abort_if($workspace->company_id !== $company->id, 403);
         }
