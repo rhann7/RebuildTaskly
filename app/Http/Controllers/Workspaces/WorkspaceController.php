@@ -97,9 +97,14 @@ class WorkspaceController extends Controller
     public function show(Request $request, Workspace $workspace)
     {
         $this->authorizeWorkspace($request->user(), $workspace);
-        
+
+        $projects = $workspace->projects()
+            ->latest()
+            ->get();
+
         return Inertia::render('workspaces/show', [
             'workspace'    => $workspace->load('company:id,name'),
+            'projects'     => $projects,
             'isSuperAdmin' => $request->user()->isSuperAdmin(),
         ]);
     }

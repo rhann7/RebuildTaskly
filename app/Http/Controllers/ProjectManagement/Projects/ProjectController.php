@@ -57,33 +57,33 @@ class ProjectController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(Request $request, Workspace $workspace)
     {
         $user = $request->user();
-        $company = $this->resolveCompany($user); // Validasi awal company
+        $company = $this->resolveCompany($user);
 
         $validated = $request->validate([
-            'workspace_id' => 'required|exists:workspaces,id',
             'name'         => 'required|string|max:255',
             'description'  => 'nullable|string',
         ]);
 
-        // Security check: Pastikan workspace_id yang dikirim memang milik company user
         if (!$user->isSuperAdmin()) {
-            $workspace = Workspace::findOrFail($validated['workspace_id']);
             abort_if($workspace->company_id !== $company->id, 403);
         }
 
         Project::create([
-            'workspace_id' => $validated['workspace_id'],
+            'workspace_id' => $workspace->id,
             'name'         => $validated['name'],
             'slug'         => Str::slug($validated['name']) . '-' . Str::lower(Str::random(5)),
             'description'  => $validated['description'],
             'status'       => 'active',
         ]);
 
-        return back()->with('success', 'Project created successfully.');
+        return redirect()
+            ->route('workspaces.show', $workspace->slug)
+            ->with('success', 'Project created successfully.');
     }
+
 
     public function show(Request $request, Workspace $workspace, Project $project)
     {
