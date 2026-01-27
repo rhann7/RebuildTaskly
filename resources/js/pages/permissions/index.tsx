@@ -2,7 +2,7 @@ import ResourceListLayout from '@/layouts/resource/resource-list-layout';
 import { useState, FormEventHandler } from 'react';
 import { useForm, router } from '@inertiajs/react';
 import { PageConfig, type BreadcrumbItem } from '@/types';
-import { Plus, Trash2, Pencil, Search, Star, Zap, ShieldCheck, LayoutGrid } from 'lucide-react';
+import { Plus, Trash2, Pencil, Search, Star, Zap, ShieldCheck, LayoutGrid, Link } from 'lucide-react';
 
 import InputError from '@/components/input-error';
 import { Input } from '@/components/ui/input';
@@ -24,8 +24,6 @@ type Permission = {
     controller_action: string | null;
     icon: string | null;
     isMenu: boolean;
-    isGroup?: boolean;
-    group_routes?: string;
     guard_name: string;
     created_at: string;
 };
@@ -45,10 +43,6 @@ type PageProps = {
             route_name: string;
             controller_action: string;
         }>;
-        options: {
-            types: { value: string; label: string }[];
-            scopes: { value: string; label: string }[];
-        };
     };
 };
 
@@ -75,8 +69,6 @@ export default function PermissionIndex({ permissions, filters, pageConfig }: Pa
         controller_action: '',
         icon: '',
         isMenu: false,
-        isGroup: false,
-        group_routes: '',
     });
 
     const handleRouteSelect = (routeName: string) => {
@@ -120,8 +112,6 @@ export default function PermissionIndex({ permissions, filters, pageConfig }: Pa
             controller_action: p.controller_action || '',
             icon: p.icon || '',
             isMenu: p.isMenu,
-            isGroup: p.isGroup || false,
-            group_routes: p.group_routes || '',
         });
         clearErrors();
         setIsOpen(true);
@@ -130,11 +120,9 @@ export default function PermissionIndex({ permissions, filters, pageConfig }: Pa
     const handleSubmit: FormEventHandler = (e) => {
         e.preventDefault();
         const url = isEditing && currentId ? `/access-control/permissions/${currentId}` : '/access-control/permissions';
-        if (isEditing) {
-            put(url, { onSuccess: () => { setIsOpen(false); reset(); } });
-        } else {
-            post(url, { onSuccess: () => { setIsOpen(false); reset(); } });
-        }
+        const action = isEditing ? put : post;
+        
+        action(url, { onSuccess: () => { setIsOpen(false); reset(); } });
     };
 
     const handleDelete = (id: number) => {
@@ -208,8 +196,8 @@ export default function PermissionIndex({ permissions, filters, pageConfig }: Pa
                                     <div className="flex flex-col">
                                         <span className="font-medium text-foreground">{permission.name}</span>
                                         {permission.isMenu && (
-                                            <span className="text-[10px] text-zinc-500 font-bold flex items-center gap-1">
-                                                <LayoutGrid className="h-3 w-3" /> SIDEBAR MENU
+                                            <span className="text-[10px] text-zinc-500 font-bold flex items-center gap-1 uppercase tracking-tight">
+                                                <LayoutGrid className="h-3 w-3" /> Sidebar Menu
                                             </span>
                                         )}
                                     </div>
@@ -239,112 +227,83 @@ export default function PermissionIndex({ permissions, filters, pageConfig }: Pa
             </ResourceListLayout>
 
             <Dialog open={isOpen} onOpenChange={setIsOpen}>
-                <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto border-zinc-200 dark:border-zinc-800">
-                    <DialogHeader className="border-b pb-4">
+                <DialogContent className="sm:max-w-[500px] border-zinc-200 dark:border-zinc-800">
+                    <DialogHeader>
                         <DialogTitle className="text-xl font-semibold flex items-center gap-2">
                             {isEditing ? 'Edit Permission' : 'New Permission'}
                         </DialogTitle>
                         <DialogDescription>
-                            Konfigurasikan akses rute tunggal atau grup fitur untuk sistem Anda.
+                            Tentukan rute Laravel spesifik yang akan dikontrol aksesnya.
                         </DialogDescription>
                     </DialogHeader>
 
-                    <form onSubmit={handleSubmit} className="space-y-6 pt-6">
+                    <form onSubmit={handleSubmit} className="space-y-6 pt-4">
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="name" className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Permission Name (ID)</Label>
+                                <Label htmlFor="name" className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Permission Name</Label>
                                 <Input 
                                     id="name"
                                     value={data.name} 
                                     onChange={(e) => setData('name', e.target.value)} 
-                                    placeholder="e.g. access-workspaces" 
-                                    className="h-10 border-zinc-200 dark:border-zinc-800 focus:ring-zinc-500"
+                                    placeholder="e.g. view-dashboard" 
+                                    className="h-10 border-zinc-200 dark:border-zinc-800"
                                 />
                                 <InputError message={errors.name} />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="icon" className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Lucide Icon Name</Label>
+                                <Label htmlFor="icon" className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Lucide Icon</Label>
                                 <div className="relative">
                                     <Input 
                                         id="icon"
                                         value={data.icon} 
                                         onChange={(e) => setData('icon', e.target.value)} 
                                         placeholder="LayoutGrid" 
-                                        className="h-10 pl-10 border-zinc-200 dark:border-zinc-800 focus:ring-zinc-500"
+                                        className="h-10 pl-10 border-zinc-200 dark:border-zinc-800"
                                     />
                                     <LayoutGrid className="absolute left-3 top-3 h-4 w-4 text-zinc-400" />
                                 </div>
                             </div>
                         </div>
 
-                        <div className="space-y-3">
-                            <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Mode Konfigurasi</Label>
-                            <div className="flex p-1 bg-zinc-100 dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
-                                <button
-                                    type="button"
-                                    onClick={() => setData('isGroup', false)}
-                                    className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${!data.isGroup ? 'bg-white dark:bg-zinc-800 shadow-sm text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 hover:text-zinc-700'}`}
-                                >
-                                    Single Route
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setData('isGroup', true)}
-                                    className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${data.isGroup ? 'bg-white dark:bg-zinc-800 shadow-sm text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 hover:text-zinc-700'}`}
-                                >
-                                    Group Routes (Wildcard)
-                                </button>
+                        <div className="space-y-3 p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50/30 dark:bg-zinc-950/30">
+                            <div className="flex items-center gap-2 mb-1">
+                                <Link className="h-4 w-4 text-zinc-500" />
+                                <Label className="text-xs font-semibold uppercase">Route Mapping</Label>
                             </div>
                             
-                            <div className="p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
-                                {!data.isGroup ? (
-                                    <div className="space-y-4">
-                                        <div className="space-y-2">
-                                            <Label className="text-xs font-semibold">Laravel Route List</Label>
-                                            <Select value={data.route_name || ""} onValueChange={handleRouteSelect}>
-                                                <SelectTrigger className="w-full h-10 border-zinc-200 dark:border-zinc-800">
-                                                    <SelectValue placeholder="Pilih rute yang tersedia..." />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {pageConfig.routes.map(r => (
-                                                        <SelectItem key={r.route_name} value={r.route_name}>
-                                                            <div className="flex flex-col py-1">
-                                                                <span className="text-sm font-medium">{r.route_name}</span>
-                                                                <span className="text-[10px] text-zinc-500 font-mono italic">{r.route_path}</span>
-                                                            </div>
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-3 pt-2 border-t border-zinc-100 dark:border-zinc-900">
-                                            <div className="space-y-1">
-                                                <Label className="text-[10px] text-zinc-400 uppercase font-bold">Path</Label>
-                                                <p className="text-xs font-mono text-zinc-600 truncate">{data.route_path || '-'}</p>
-                                            </div>
-                                            <div className="space-y-1">
-                                                <Label className="text-[10px] text-zinc-400 uppercase font-bold">Action</Label>
-                                                <p className="text-xs font-mono text-zinc-600 truncate">{data.controller_action || '-'}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-3">
-                                        <Label className="text-xs font-semibold">Wildcard Patterns</Label>
-                                        <Input
-                                            placeholder="e.g. workspaces.*, settings.*"
-                                            value={data.group_routes || ''}
-                                            onChange={(e) => setData('group_routes', e.target.value)}
-                                            className="h-10 border-zinc-200 dark:border-zinc-800"
-                                        />
-                                        <p className="text-[11px] text-zinc-500 italic">* Gunakan koma untuk pemisah.</p>
-                                        <InputError message={errors.group_routes} />
-                                    </div>
-                                )}
+                            <div className="space-y-2">
+                                <Select value={data.route_name || ""} onValueChange={handleRouteSelect}>
+                                    <SelectTrigger className="w-full h-10 bg-background border-zinc-200 dark:border-zinc-800">
+                                        <SelectValue placeholder="Pilih rute Laravel..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {pageConfig.routes.map(r => (
+                                            <SelectItem key={r.route_name} value={r.route_name}>
+                                                <div className="flex flex-col py-0.5">
+                                                    <span className="text-sm font-medium">{r.route_name}</span>
+                                                    <span className="text-[10px] text-zinc-500 font-mono italic">{r.route_path}</span>
+                                                </div>
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </div>
+
+                            {data.route_name && (
+                                <div className="grid grid-cols-2 gap-4 pt-2 mt-2 border-t border-zinc-100 dark:border-zinc-900">
+                                    <div className="space-y-1">
+                                        <Label className="text-[10px] text-zinc-400 uppercase font-bold tracking-tight">Current Path</Label>
+                                        <p className="text-[11px] font-mono text-zinc-600 truncate">{data.route_path}</p>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label className="text-[10px] text-zinc-400 uppercase font-bold tracking-tight">Controller Action</Label>
+                                        <p className="text-[11px] font-mono text-zinc-600 truncate">{data.controller_action}</p>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4 border-t pt-6">
+                        <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Scope Access</Label>
                                 <Select value={data.scope} onValueChange={(val) => setData('scope', val)}>
@@ -356,12 +315,12 @@ export default function PermissionIndex({ permissions, filters, pageConfig }: Pa
                                 </Select>
                             </div>
                             <div className="space-y-2">
-                                <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Category</Label>
+                                <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Permission Type</Label>
                                 <Select value={data.type} onValueChange={(val) => setData('type', val)}>
                                     <SelectTrigger className="h-10 border-zinc-200 dark:border-zinc-800"><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="general">General</SelectItem>
-                                        <SelectItem value="unique">Unique</SelectItem>
+                                        <SelectItem value="general">General (Free)</SelectItem>
+                                        <SelectItem value="unique">Unique (Paid)</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -385,15 +344,15 @@ export default function PermissionIndex({ permissions, filters, pageConfig }: Pa
                         <div className="flex items-center justify-between p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-lg border border-zinc-200 dark:border-zinc-800 border-dashed">
                             <div className="space-y-0.5">
                                 <Label htmlFor="is-menu" className="text-sm font-semibold">Tampilkan di Sidebar</Label>
-                                <p className="text-[11px] text-zinc-500">Munculkan rute utama fitur ini di menu navigasi samping.</p>
+                                <p className="text-[11px] text-zinc-500">Gunakan rute ini sebagai menu navigasi utama.</p>
                             </div>
                             <Switch id="is-menu" checked={data.isMenu} onCheckedChange={(val) => setData('isMenu', val)} />
                         </div>
 
-                        <DialogFooter className="gap-2 pt-2">
-                            <Button type="button" variant="outline" onClick={() => setIsOpen(false)} className="h-10 border-zinc-200 dark:border-zinc-800">Batal</Button>
-                            <Button type="submit" disabled={processing} className="h-10 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:opacity-90 transition-opacity px-8">
-                                {isEditing ? 'Simpan Perubahan' : 'Buat Permission'}
+                        <DialogFooter className="gap-2 pt-2 border-t mt-4">
+                            <Button type="button" variant="ghost" onClick={() => setIsOpen(false)}>Batal</Button>
+                            <Button type="submit" disabled={processing} className="px-8 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900">
+                                {isEditing ? 'Update Permission' : 'Create Permission'}
                             </Button>
                         </DialogFooter>
                     </form>
