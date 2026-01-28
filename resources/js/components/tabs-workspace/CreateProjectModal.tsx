@@ -28,49 +28,61 @@ export default function CreateProjectModal({ isOpen, setIsOpen, workspace }: Pro
 
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogContent className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-white/10 rounded-[40px] p-10 sm:max-w-[500px] outline-none shadow-2xl transition-colors duration-300">
-                <DialogHeader className="mb-8 text-left">
-                    <DialogTitle className="text-2xl font-black uppercase tracking-tighter text-zinc-900 dark:text-white flex items-center gap-3">
-                        <div className="size-10 rounded-xl bg-red-600 flex items-center justify-center shadow-lg shadow-red-600/20">
+            <DialogContent className="bg-card border border-border rounded-xl p-8 sm:max-w-[500px] outline-none shadow-2xl transition-all duration-300">
+                <DialogHeader className="mb-6 text-left">
+                    <DialogTitle className="text-2xl font-black uppercase tracking-tighter text-foreground flex items-center gap-3">
+                        {/* Icon menggunakan Sada Red sesuai @theme */}
+                        <div className="size-10 rounded-lg bg-sada-red flex items-center justify-center shadow-lg shadow-sada-red/20">
                             <Plus size={20} strokeWidth={4} color="white" />
                         </div>
-                        New Project Sector
+                        Add New Project
                     </DialogTitle>
-                    <DialogDescription className="text-[10px] uppercase tracking-[0.2em] font-bold text-zinc-400 dark:text-zinc-500 pt-2">
-                        Deploying unit to {workspace.name}
+                    <DialogDescription className="text-[10px] uppercase tracking-[0.2em] font-bold text-muted-foreground pt-2">
+                        Deploying new project to <span className="text-foreground">{workspace.name}</span>
                     </DialogDescription>
                 </DialogHeader>
 
                 <form onSubmit={submit} className="space-y-6 text-left">
+                    {/* Input Sector Name */}
                     <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500 ml-1">Sector Nomenclature</label>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                            Project Name
+                        </label>
                         <input
                             type="text"
                             required
-                            className="w-full h-14 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-white/5 rounded-2xl px-6 text-zinc-900 dark:text-white font-bold text-sm focus:ring-1 focus:ring-red-600 outline-none transition-all placeholder:text-zinc-300 dark:placeholder:text-zinc-700"
-                            placeholder="E.G. OPERATION OVERLORD"
+                            className="w-full h-12 bg-muted/30 border border-border rounded-lg px-5 text-foreground font-bold text-sm focus:ring-2 focus:ring-sada-red/20 focus:border-sada-red outline-none transition-all placeholder:text-muted-foreground/30"
+                            placeholder="Project Name"
                             value={data.name}
                             onChange={e => setData('name', e.target.value)}
                         />
-                        {errors.name && <p className="text-red-500 text-[9px] font-bold uppercase mt-2">{errors.name}</p>}
+                        {errors.name && (
+                            <p className="text-sada-red text-[9px] font-black uppercase mt-1 ml-1 tracking-wider">
+                                {errors.name}
+                            </p>
+                        )}
                     </div>
 
+                    {/* Input Brief Brief */}
                     <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500 ml-1">Operational Brief</label>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                            Project Description
+                        </label>
                         <textarea
-                            className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-white/5 rounded-2xl p-6 text-zinc-900 dark:text-white font-medium text-sm focus:ring-1 focus:ring-red-600 outline-none transition-all min-h-[120px] resize-none placeholder:text-zinc-300 dark:placeholder:text-zinc-700"
-                            placeholder="Define objectives..."
+                            className="w-full bg-muted/30 border border-border rounded-lg p-5 text-foreground font-medium text-sm focus:ring-2 focus:ring-sada-red/20 focus:border-sada-red outline-none transition-all min-h-[120px] resize-none placeholder:text-muted-foreground/30"
+                            placeholder="Project Description"
                             value={data.description}
                             onChange={e => setData('description', e.target.value)}
                         />
                     </div>
 
+                    {/* Submit Button - High Contrast */}
                     <button 
                         type="submit" 
                         disabled={processing}
-                        className="w-full h-14 rounded-2xl bg-zinc-900 dark:bg-white text-white dark:text-black font-black text-[10px] uppercase tracking-[0.2em] hover:bg-black dark:hover:bg-zinc-200 transition-all active:scale-95 shadow-xl disabled:opacity-50"
+                        className="w-full h-12 rounded-lg bg-primary text-primary-foreground font-black text-[11px] uppercase tracking-[0.2em] hover:bg-primary/90 transition-all active:scale-[0.98] shadow-xl disabled:opacity-50 cursor-pointer"
                     >
-                        {processing ? 'INITIALIZING...' : 'CONFIRM DEPLOYMENT'}
+                        {processing ? 'LOADING...' : 'CREATE PROJECT'}
                     </button>
                 </form>
             </DialogContent>

@@ -22,7 +22,7 @@ export default function WorkspaceShowLayout({ children, workspace, activeTab, se
             <div className="mx-auto w-full max-w-[1600px] flex flex-col gap-6 p-6 md:p-10 min-h-screen">
 
                 {/* Header Bagian Atas */}
-                <WorkspaceHeader workspace={workspace} />
+                <WorkspaceHeader workspace={workspace} projectCount={0} />
 
                 {/* Tab Navigation - Dibungkus div agar kontrol posisi lebih mudah */}
                 <SimpleTabs

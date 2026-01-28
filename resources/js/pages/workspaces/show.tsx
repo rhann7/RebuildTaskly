@@ -4,12 +4,9 @@ import WorkspaceLayout from '@/layouts/workspaces/WorkspaceLayout';
 import DataTableBase from '@/components/DataTableBase';
 import { getProjectColumns } from '@/components/tabs-workspace/ProjectColumns';
 import CreateProjectModal from '@/components/tabs-workspace/CreateProjectModal';
-// 1. IMPORT WorkspaceSettings yang sudah kita buat tadi
-import WorkspaceSettings from '@/components/tabs-workspace/WorkspaceSettings'; 
-import { Search, Plus, Zap, Users2 } from 'lucide-react';
+import { Search, Plus, Zap, Users2, Settings } from 'lucide-react';
 
-// 2. TANGKAP isSuperAdmin dan companies di sini
-export default function WorkspaceShow({ workspace, projects, isSuperAdmin, companies }: any) {
+export default function WorkspaceShow({ workspace, projects }: any) {
     const [activeTab, setActiveTab] = useState<'projects' | 'members' | 'settings'>('projects');
     const [searchQuery, setSearchQuery] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -24,11 +21,13 @@ export default function WorkspaceShow({ workspace, projects, isSuperAdmin, compa
         <WorkspaceLayout workspace={workspace} activeTab={activeTab} setActiveTab={setActiveTab}>
             <Head title={workspace.name} />
 
+            {/* Container Utama dengan standar p-6 md:p-10 agar luas */}
             <div className="mx-auto w-full max-w-[1600px] flex flex-col gap-8 p-6 md:p-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
                 
-                {/* TAB PROJECTS */}
                 {activeTab === 'projects' && (
                     <div className="flex flex-col gap-6 w-full">
+                        
+                        {/* Control Bar: Search & Action */}
                         <div className="flex flex-col sm:flex-row justify-between items-center gap-4 w-full">
                             <div className="relative w-full max-w-lg group">
                                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-muted-foreground group-focus-within:text-sada-red transition-colors" />
@@ -48,6 +47,7 @@ export default function WorkspaceShow({ workspace, projects, isSuperAdmin, compa
                             </button>
                         </div>
 
+                        {/* Table Container dengan style rounded-xl sesuai config @theme */}
                         <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden w-full transition-all duration-300">
                             <div className="min-w-full align-middle">
                                 {filteredProjects.length > 0 ? (
@@ -65,7 +65,6 @@ export default function WorkspaceShow({ workspace, projects, isSuperAdmin, compa
                     </div>
                 )}
 
-                {/* TAB MEMBERS */}
                 {activeTab === 'members' && (
                     <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
                         <div className="py-32 text-center border border-dashed border-border rounded-xl bg-muted/5">
@@ -77,14 +76,14 @@ export default function WorkspaceShow({ workspace, projects, isSuperAdmin, compa
                     </div>
                 )}
 
-                {/* TAB SETTINGS - KITA BALIKIN LAGI KE COMPONENT KITA */}
                 {activeTab === 'settings' && (
-                    <div className="animate-in fade-in slide-in-from-bottom-2 duration-500 flex flex-col items-center">
-                        <WorkspaceSettings 
-                            workspace={workspace} 
-                            isSuperAdmin={isSuperAdmin} 
-                            companies={companies} 
-                        />
+                    <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+                        <div className="py-32 text-center border border-dashed border-border rounded-xl bg-muted/5">
+                            <Settings className="mx-auto mb-4 text-muted-foreground/20" size={48} />
+                            <p className="uppercase tracking-[0.3em] text-muted-foreground text-[10px] font-black">
+                                Workspace Settings Restricted
+                            </p>
+                        </div>
                     </div>
                 )}
             </div>

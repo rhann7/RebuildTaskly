@@ -38,7 +38,7 @@ export default function WorkspaceSettings({ workspace, isSuperAdmin, companies }
                     status: updatedWorkspace.status as 'active' | 'inactive',
                     company_id: updatedWorkspace.company_id
                 });
-                alert('PROTOCOL UPDATED SUCCESSFULLY');
+                alert('WORKSPACE UPDATED SUCCESSFULLY');
             },
             onError: (errors) => {
                 // Sekarang lo bisa liat error validasi langsung di alert kalau ada yang kurang
@@ -59,9 +59,9 @@ export default function WorkspaceSettings({ workspace, isSuperAdmin, companies }
             <div className="bg-white dark:bg-zinc-900/40 border border-zinc-200 dark:border-white/5 rounded-[32px] overflow-hidden">
                 <div className="p-8 border-b border-zinc-100 dark:border-white/5">
                     <h3 className="text-sm font-black uppercase tracking-[0.2em] text-zinc-900 dark:text-white">
-                        General Protocol
+                        General Workspace
                     </h3>
-                    <p className="text-[10px] text-zinc-500 uppercase mt-1 italic">
+                    <p className="text-[10px] text-zinc-500 uppercase mt-1 ">
                         Update workspace configuration
                     </p>
                 </div>
@@ -70,7 +70,7 @@ export default function WorkspaceSettings({ workspace, isSuperAdmin, companies }
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         {/* INPUT NAME */}
                         <div className="space-y-3">
-                            <label className="text-[10px] font-black uppercase text-zinc-400 italic">
+                            <label className="text-[10px] font-black uppercase text-zinc-400 ">
                                 Workspace Name
                             </label>
                             <input
@@ -83,7 +83,7 @@ export default function WorkspaceSettings({ workspace, isSuperAdmin, companies }
 
                         {/* SELECT STATUS */}
                         <div className="space-y-3">
-                            <label className="text-[10px] font-black uppercase text-zinc-400 italic">
+                            <label className="text-[10px] font-black uppercase text-zinc-400 ">
                                 Operational Status
                             </label>
                             <div className="relative">
@@ -92,38 +92,17 @@ export default function WorkspaceSettings({ workspace, isSuperAdmin, companies }
                                     onChange={e => setData('status', e.target.value as 'active' | 'inactive')}
                                     className="w-full h-14 bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200 dark:border-white/5 rounded-2xl px-6 text-zinc-900 dark:text-white font-bold outline-none appearance-none cursor-pointer"
                                 >
-                                    <option value="active">ACTIVE PROTOCOL</option>
+                                    <option value="active">ACTIVE Workspace</option>
                                     <option value="inactive">INACTIVE / STANDBY</option>
                                 </select>
                                 <ShieldCheck className="absolute right-6 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" size={18} />
                             </div>
                         </div>
-
-                        {/* KHUSUS SUPER ADMIN: Pilih Company */}
-                        {isSuperAdmin && (
-                            <div className="space-y-3 md:col-span-2 animate-in slide-in-from-top-2 duration-500">
-                                <label className="text-[10px] font-black uppercase text-red-500 italic">
-                                    Assign to Company (Super Admin Only)
-                                </label>
-                                <select
-                                    value={data.company_id}
-                                    onChange={e => setData('company_id', e.target.value)}
-                                    className="w-full h-14 bg-red-50/10 dark:bg-red-900/5 border border-red-200/50 dark:border-red-900/20 rounded-2xl px-6 text-zinc-900 dark:text-white font-bold outline-none focus:ring-1 focus:ring-red-500"
-                                >
-                                    <option value="">Select Company</option>
-                                    {companies?.map((company: any) => (
-                                        <option key={company.id} value={company.id}>
-                                            {company.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                        )}
                     </div>
 
                     <div className="space-y-3">
-                        <label className="text-[10px] font-black uppercase text-zinc-400 italic">
-                            Briefing
+                        <label className="text-[10px] font-black uppercase text-zinc-400 ">
+                            Workspace Description
                         </label>
                         <textarea
                             value={data.description}
@@ -138,7 +117,7 @@ export default function WorkspaceSettings({ workspace, isSuperAdmin, companies }
                             disabled={updating}
                             className="h-14 px-10 bg-zinc-900 dark:bg-white text-white dark:text-black rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:opacity-90 disabled:opacity-50 transition-all flex items-center gap-3"
                         >
-                            <Save size={16} /> {updating ? 'Saving...' : 'Update Protocol'}
+                            <Save size={16} /> {updating ? 'Saving...' : 'Update Workspace'}
                         </button>
                     </div>
                 </form>
@@ -147,7 +126,7 @@ export default function WorkspaceSettings({ workspace, isSuperAdmin, companies }
             <div className="bg-red-500/[0.03] border border-red-500/20 rounded-[32px] p-8 flex flex-col sm:flex-row items-center justify-between gap-6">
                 <div className="max-w-md text-left">
                     <h4 className="text-[11px] font-black text-red-500 uppercase">
-                        Destroy Entire Sector
+                        Delete Entire Workspace
                     </h4>
                     <p className="text-[10px] text-zinc-500 mt-2 font-medium">
                         Semua data yang sudah dihapus tidak dapat dipulihkan dari mainframe.
@@ -159,7 +138,7 @@ export default function WorkspaceSettings({ workspace, isSuperAdmin, companies }
                     disabled={deleting}
                     className="h-14 px-8 border-2 border-red-500/30 text-red-500 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-red-500 hover:text-white transition-all flex items-center gap-3 shrink-0"
                 >
-                    <Trash2 size={16} /> Terminate Sector
+                    <Trash2 size={16} /> {deleting ? 'Deleting...' : 'Delete Workspace'}
                 </button>
             </div>
         </div>
