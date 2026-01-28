@@ -57,109 +57,104 @@ const DataTableBase = forwardRef<any, any>(({ columns, data, options }, ref) => 
         <div className="w-full">
             <style>{`
                 .dt-paging, .dataTables_paginate, .dt-info, .dataTables_info, .dt-search, .dataTables_filter { display: none !important; }
+                
                 table.dataTable { 
                     border-collapse: collapse !important; 
                     width: 100% !important; 
                     table-layout: fixed !important;
-                    margin-bottom: 1rem !important; 
+                    margin-bottom: 0 !important; 
                     background-color: transparent !important; 
                 }
 
-                /* HEADER */
+                /* HEADER STYLE */
                 table.dataTable thead th { 
                     background: transparent !important; 
-                    color: #a1a1aa !important; /* zinc-400 */
+                    color: var(--muted-foreground) !important;
                     font-size: 10px !important; 
                     text-transform: uppercase !important; 
                     letter-spacing: 0.2em !important; 
                     padding: 24px 20px !important; 
-                    border-bottom: 1px solid #f4f4f5 !important; /* zinc-100 */
+                    border-bottom: 1px solid var(--border) !important;
                     font-weight: 900 !important;
                     text-align: left !important;
                 }
-                .dark table.dataTable thead th {
-                    border-bottom: 1px solid rgba(255,255,255,0.05) !important;
-                    color: #71717a !important; /* zinc-500 */
-                }
 
-                /* BODY CELLS */
+                /* BODY CELLS STYLE */
                 table.dataTable tbody td { 
-                    border-bottom: 1px solid #f4f4f5 !important; /* zinc-100 */
+                    border-bottom: 1px solid var(--border) !important;
                     padding: 20px !important; 
-                    color: #18181b !important; /* zinc-900 */
+                    color: var(--foreground) !important;
                     font-size: 13px; 
                 }
-                .dark table.dataTable tbody td {
-                    border-bottom: 1px solid rgba(255,255,255,0.05) !important; 
-                    color: #ffffff !important;
+
+                /* HOVER & DARK STATE */
+                table.dataTable tbody tr {
+                    background-color: transparent !important;
+                    transition: background-color 0.2s ease;
                 }
 
-                /* HOVER EFFECT */
                 table.dataTable tbody tr:hover { 
-                    background-color: #fafafa !important; 
-                }
-                .dark table.dataTable tbody tr:hover { 
-                    background-color: rgba(255,255,255,0.02) !important; 
+                    background-color: var(--muted) !important; 
                 }
 
-                /* PAGINATION SECTION */
-                .pagination-wrapper {
-                    border-top: 1px solid #f4f4f5 !important;
-                }
-                .dark .pagination-wrapper {
-                    border-top: 1px solid rgba(255,255,255,0.05) !important;
+                /* RESPONSIVE CHILD ROW */
+                table.dataTable.dtr-inline.collapsed > tbody > tr > td.dtr-control:before {
+                    background-color: var(--sada-red) !important;
                 }
             `}</style>
 
-            <DataTable 
-                ref={internalRef}
-                data={data}
-                columns={columns} 
-                options={{
-                    dom: 't',
-                    responsive: true,
-                    autoWidth: false,
-                    pageLength: pageSize,
-                    destroy: true,
-                    retrieve: true,
-                    drawCallback: () => updatePageInfo(),
-                    initComplete: () => updatePageInfo(),
-                    ...options
-                }} 
-                className="w-full text-foreground"
-            />
+            <div className="overflow-hidden rounded-t-[radius-lg]">
+                <DataTable 
+                    ref={internalRef}
+                    data={data}
+                    columns={columns} 
+                    options={{
+                        dom: 't',
+                        responsive: true,
+                        autoWidth: false,
+                        pageLength: pageSize,
+                        destroy: true,
+                        retrieve: true,
+                        drawCallback: () => updatePageInfo(),
+                        initComplete: () => updatePageInfo(),
+                        ...options
+                    }} 
+                    className="w-full"
+                />
+            </div>
 
             {/* Pagination Controls */}
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-8 px-2 border-t border-border pt-6 pb-4">
-                <div className="flex items-center gap-4">
-                    <div className="relative flex items-center">
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-0 px-6 py-6 border-t border-border bg-card/50 rounded-b-[radius-lg]">
+                <div className="flex items-center gap-6">
+                    <div className="relative flex items-center group">
                         <select 
                             value={pageSize}
                             onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-                            className="bg-muted/50 border border-border rounded-lg pl-3 pr-8 py-1.5 text-[11px] font-black text-foreground focus:outline-none focus:ring-1 focus:ring-red-500/50 transition-all cursor-pointer appearance-none"
+                            className="bg-muted/50 border border-border rounded-lg pl-3 pr-8 py-2 text-[11px] font-black text-foreground focus:outline-none focus:ring-2 focus:ring-sada-red/20 transition-all cursor-pointer appearance-none min-w-[70px]"
                         >
                             {[5, 10, 25, 50].map((size) => (
-                                <option key={size} value={size} className="bg-background">{size}</option>
+                                <option key={size} value={size} className="bg-background text-foreground">{size}</option>
                             ))}
                         </select>
-                        <ChevronDown size={12} className="absolute right-2.5 pointer-events-none text-muted-foreground" />
+                        <ChevronDown size={12} className="absolute right-2.5 pointer-events-none text-muted-foreground group-hover:text-foreground transition-colors" />
                     </div>
-                    <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">
-                        Showing <span className="text-foreground">{pageInfo.start}</span> to <span className="text-foreground">{pageInfo.end}</span> of <span className="text-foreground">{pageInfo.total}</span> entries
+                    
+                    <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.15em]">
+                        Showing <span className="text-foreground font-black">{pageInfo.start}</span> to <span className="text-foreground font-black">{pageInfo.end}</span> of <span className="text-foreground font-black">{pageInfo.total}</span>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
                     <button
                         type="button"
                         onClick={() => handlePageClick(pageInfo.current - 1)}
                         disabled={pageInfo.current === 0}
-                        className="flex items-center gap-2 h-10 px-4 rounded-xl border border-border bg-card text-[12px] font-bold text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-20 transition-all"
+                        className="flex items-center gap-2 h-10 px-4 rounded-xl border border-border bg-background text-[11px] font-black uppercase tracking-widest text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-20 transition-all cursor-pointer"
                     >
-                        <ChevronLeft size={16} /> Prev
+                        <ChevronLeft size={14} strokeWidth={3} /> Prev
                     </button>
 
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1.5">
                         {(() => {
                             const pages = [];
                             const totalPages = pageInfo.pages;
@@ -172,17 +167,17 @@ const DataTableBase = forwardRef<any, any>(({ columns, data, options }, ref) => 
                                             key={i}
                                             type="button"
                                             onClick={() => handlePageClick(i)}
-                                            className={`size-10 flex items-center justify-center rounded-xl text-[12px] font-black transition-all border ${
+                                            className={`size-10 flex items-center justify-center rounded-xl text-[11px] font-black transition-all border cursor-pointer ${
                                                 current === i 
-                                                ? 'bg-red-600 border-red-600 text-white shadow-lg shadow-red-600/20' 
-                                                : 'border-border bg-card text-muted-foreground hover:border-muted-foreground/50'
+                                                ? 'bg-sada-red border-sada-red text-white shadow-lg shadow-sada-red/30' 
+                                                : 'border-border bg-background text-muted-foreground hover:border-muted-foreground/50'
                                             }`}
                                         >
                                             {i + 1}
                                         </button>
                                     );
                                 } else if ((i === current - delta - 1 && i > 0) || (i === current + delta + 1 && i < totalPages - 1)) {
-                                    pages.push(<span key={i} className="px-2 text-muted-foreground/50 font-bold">...</span>);
+                                    pages.push(<span key={i} className="px-1 text-muted-foreground/30 font-black">...</span>);
                                 }
                             }
                             return pages;
@@ -193,9 +188,9 @@ const DataTableBase = forwardRef<any, any>(({ columns, data, options }, ref) => 
                         type="button"
                         onClick={() => handlePageClick(pageInfo.current + 1)}
                         disabled={pageInfo.current >= pageInfo.pages - 1 || pageInfo.pages === 0}
-                        className="flex items-center gap-2 h-10 px-4 rounded-xl border border-border bg-card text-[12px] font-bold text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-20 transition-all"
+                        className="flex items-center gap-2 h-10 px-4 rounded-xl border border-border bg-background text-[11px] font-black uppercase tracking-widest text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-20 transition-all cursor-pointer"
                     >
-                        Next <ChevronRight size={16} />
+                        Next <ChevronRight size={14} strokeWidth={3} />
                     </button>
                 </div>
             </div>

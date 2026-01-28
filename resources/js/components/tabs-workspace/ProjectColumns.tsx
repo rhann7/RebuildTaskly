@@ -9,7 +9,7 @@ export const getProjectColumns = (workspaceSlug: string) => [
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></svg>
                 </div>
                 <div class="flex flex-col">
-                    <a href="/workspaces/${workspaceSlug}/projects/${row.slug}" class="font-black text-[13px] uppercase tracking-tight text-zinc-900 dark:text-white line-clamp-1 hover:text-red-500 transition-colors italic">
+                    <a href="/workspaces/${workspaceSlug}/projects/${row.slug}" class="font-black text-[13px] uppercase tracking-tight text-zinc-900 dark:text-white line-clamp-1 hover:text-red-500 transition-colors ">
                         ${row.name}
                     </a>
                     <p class="text-[10px] text-zinc-500 font-medium line-clamp-1 lowercase first-letter:uppercase">
@@ -29,7 +29,7 @@ export const getProjectColumns = (workspaceSlug: string) => [
         render: (data: any) => `
             <div class="flex items-center justify-center gap-2">
                 <div class="size-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-                <span class="text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest italic">${data || 'ONLINE'}</span>
+                <span class="text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">${data || 'ONLINE'}</span>
             </div>
         `
     },

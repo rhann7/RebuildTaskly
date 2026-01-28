@@ -18,16 +18,22 @@ export default function WorkspaceShowLayout({ children, workspace, activeTab, se
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <div className="max-w-6xl mx-auto py-8 px-4 space-y-8">
+            {/* Gunakan max-w-[1600px] agar layout lega dan tidak berubah ukuran */}
+            <div className="mx-auto w-full max-w-[1600px] flex flex-col gap-6 p-6 md:p-10 min-h-screen">
+
+                {/* Header Bagian Atas */}
                 <WorkspaceHeader workspace={workspace} />
 
+                {/* Tab Navigation - Dibungkus div agar kontrol posisi lebih mudah */}
                 <SimpleTabs
                     tabs={tabs}
                     activeTab={activeTab}
                     setActiveTab={setActiveTab}
                 />
 
-                <div className="mt-6">
+
+                {/* Main Content Area */}
+                <div className="w-full flex-1">
                     {children}
                 </div>
             </div>

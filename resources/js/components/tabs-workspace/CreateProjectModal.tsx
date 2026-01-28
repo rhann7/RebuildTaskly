@@ -30,7 +30,7 @@ export default function CreateProjectModal({ isOpen, setIsOpen, workspace }: Pro
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogContent className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-white/10 rounded-[40px] p-10 sm:max-w-[500px] outline-none shadow-2xl transition-colors duration-300">
                 <DialogHeader className="mb-8 text-left">
-                    <DialogTitle className="text-2xl font-black uppercase italic tracking-tighter text-zinc-900 dark:text-white flex items-center gap-3">
+                    <DialogTitle className="text-2xl font-black uppercase tracking-tighter text-zinc-900 dark:text-white flex items-center gap-3">
                         <div className="size-10 rounded-xl bg-red-600 flex items-center justify-center shadow-lg shadow-red-600/20">
                             <Plus size={20} strokeWidth={4} color="white" />
                         </div>
