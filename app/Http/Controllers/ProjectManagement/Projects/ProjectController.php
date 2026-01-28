@@ -92,6 +92,7 @@ class ProjectController extends Controller
 
         return Inertia::render('projects/show', [
             'workspace' => $workspace,
+            'tasks' => $project->tasks()->latest()->get(),
             'project' => $project,
         ]);
     }

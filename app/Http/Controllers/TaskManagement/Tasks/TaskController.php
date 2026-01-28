@@ -82,17 +82,17 @@ class TaskController extends Controller
     }
 
 
-    public function show(Request $request, Workspace $workspace, Project $project, Task $task)
+    public function show(Request $request, Workspace $workspace, Project $project)
     {
         abort_if($project->workspace_id !== $workspace->id, 404);
-        abort_if($task->project_id !== $project->id, 404);
-
         $this->authorizeProject($request->user(), $project);
 
-        return Inertia::render('tasks/show', [
+        return Inertia::render('projects/show', [
             'workspace' => $workspace,
-            'project' => $project,
-            'task' => $task,
+            'project'   => $project,
+            // Ambil data task untuk tabel
+            'tasks' => $project->tasks()->latest()->get(),
+            'isSuperAdmin' => $request->user()->isSuperAdmin(),
         ]);
     }
 
