@@ -22,7 +22,7 @@ export default function WorkspaceShow({ workspace, projects, auth, companies }: 
     }, [projects, searchQuery]);
 
     return (
-        <WorkspaceLayout workspace={workspace} activeTab={activeTab} setActiveTab={setActiveTab}>
+        <WorkspaceLayout workspace={workspace} activeTab={activeTab} setActiveTab={setActiveTab} projects={projects}>
             <Head title={workspace.name} />
 
             {/* Container: px-0 agar lurus vertikal dengan teks menu di Tabs Layout */}

@@ -3,7 +3,7 @@ import { LayoutGrid, Users2, Settings } from 'lucide-react';
 import { WorkspaceHeader } from './partials/WorkspaceShowHeader';
 import { SimpleTabs } from '@/components/custom/SimpleTabs';
 
-export default function WorkspaceShowLayout({ children, workspace, activeTab, setActiveTab }: any) {
+export default function WorkspaceShowLayout({ children, workspace, projects, activeTab, setActiveTab }: any) {
     const tabs = [
         { id: 'projects', label: 'Projects', icon: LayoutGrid },
         { id: 'members', label: 'Members', icon: Users2 },
@@ -22,7 +22,7 @@ export default function WorkspaceShowLayout({ children, workspace, activeTab, se
             <div className="mx-auto w-full max-w-[1600px] flex flex-col gap-6 p-6 md:p-10 min-h-screen">
 
                 {/* Header Bagian Atas */}
-                <WorkspaceHeader workspace={workspace} projectCount={0} />
+                <WorkspaceHeader workspace={workspace} projectCount={projects?.length || 0} />
 
                 {/* Tab Navigation - Dibungkus div agar kontrol posisi lebih mudah */}
                 <SimpleTabs

@@ -46,7 +46,8 @@ export const WorkspaceHeader = ({ workspace, projectCount }: HeaderProps) => (
                     <div className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
                         <LayoutGrid size={14} className="text-sada-red" />
                         <span className="text-[10px] font-bold uppercase tracking-wider">
-                            {workspace.projects?.length || 0} Projects
+                            {/* PAKAI PROP projectCount DI SINI, JANGAN workspace.projects */}
+                            {projectCount || 0} Projects 
                         </span>
                     </div>
                 </div>

@@ -90,7 +90,6 @@ class TaskController extends Controller
         return Inertia::render('projects/show', [
             'workspace' => $workspace,
             'project'   => $project,
-            // Ambil data task untuk tabel
             'tasks' => $project->tasks()->latest()->get(),
             'isSuperAdmin' => $request->user()->isSuperAdmin(),
         ]);
