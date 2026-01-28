@@ -51,7 +51,7 @@ export default function CreateTaskModal({ isOpen, setIsOpen, project, workspace 
             <DialogContent className="sm:max-w-[550px] border-none bg-card p-0 overflow-hidden rounded-[32px] shadow-2xl">
                 <div className="bg-zinc-900 p-8 text-white relative">
                     <Zap className="absolute right-6 top-6 opacity-20 size-12" />
-                    <DialogTitle className="text-3xl font-black uppercase tracking-tighter italic">
+                    <DialogTitle className="text-3xl font-black uppercase tracking-tighter">
                         Initialize Task
                     </DialogTitle>
                 </div>
@@ -76,7 +76,7 @@ export default function CreateTaskModal({ isOpen, setIsOpen, project, workspace 
                             <Textarea 
                                 value={data.description}
                                 onChange={e => setData('description', e.target.value)}
-                                className="min-h-[100px] rounded-xl border-border bg-muted/30 font-medium italic"
+                                className="min-h-[100px] rounded-xl border-border bg-muted/30 font-medium"
                             />
                             <InputError message={errors.description} />
                         </div>

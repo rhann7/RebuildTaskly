@@ -7,6 +7,7 @@ import { BreadcrumbItem } from '@/types';
 import TaskTableTab from '@/components/tabs-project/TaskTableTab';
 import ProjectSettingsTab from '@/components/tabs-project/ProjectSettingsTab';
 import { Users2, CheckCircle2, Settings2 } from 'lucide-react';
+import { ProjectDetailHeader } from '@/layouts/projects/partials/ProjectHeader';
 
 export default function ProjectShow({ workspace, project, tasks, isSuperAdmin }: any) {
     const [activeTab, setActiveTab] = useState<'tasks' | 'members' | 'settings'>('tasks');
@@ -25,7 +26,7 @@ export default function ProjectShow({ workspace, project, tasks, isSuperAdmin }:
                 
                 {/* Header Style SADA */}
                 <div className="flex flex-col gap-4">
-                    <h1 className="text-4xl font-black uppercase tracking-tighter italic">{project.name}</h1>
+                    <ProjectDetailHeader project={project} onAddTask={() => setActiveTab('tasks')} />
                     
                     {/* Tabs Navigation Identik Workspace */}
                     <div className="flex gap-1 bg-muted/30 p-1 rounded-xl w-fit border border-border">
