@@ -24,4 +24,9 @@ class Workspace extends Model
     {
         return $this->hasMany(Task::class);
     }
+
+    public function getRouteKeyName()
+    {
+    return 'slug';
+    }
 }

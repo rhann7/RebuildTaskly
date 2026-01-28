@@ -109,8 +109,10 @@ class WorkspaceController extends Controller
         ]);
     }
 
-    public function update(Request $request, Workspace $workspace)
+    public function update(Request $request, $slug)
     {
+        $workspace = Workspace::where('slug', $slug)->firstOrFail();
+
         $this->authorizeWorkspace($request->user(), $workspace);
 
         $validated = $request->validate([
@@ -120,7 +122,10 @@ class WorkspaceController extends Controller
             'company_id'  => $request->user()->isSuperAdmin() ? 'required|exists:companies,id' : 'nullable',
         ]);
 
-        $workspace->update($validated);
+        $updated = $workspace->update($validated);
+
+        \Log::info('Update Result for Slug '.$slug.': ' . ($updated ? 'Success' : 'Failed'));
+
         return back()->with('success', 'Workspace updated successfully.');
     }
 
