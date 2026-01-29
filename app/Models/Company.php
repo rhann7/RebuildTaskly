@@ -25,6 +25,10 @@ class Company extends Model
         'reason'
     ];
 
+    protected $casts = [
+        'is_active' => 'boolean'
+    ];
+
     public function user()
     {
         return $this->belongsTo(User::class);
