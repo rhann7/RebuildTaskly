@@ -1,6 +1,6 @@
 import ResourceListLayout from '@/layouts/resource/resource-list-layout';
 import { useState, FormEventHandler } from 'react';
-import { useForm, router } from '@inertiajs/react';
+import { useForm, usePage, router } from '@inertiajs/react';
 import { Building2, Search, Plus, Pencil, Trash2, Fingerprint, Phone, MapPin, Eye } from 'lucide-react';
 
 import InputError from '@/components/input-error';
@@ -44,6 +44,7 @@ const breadcrumbs = [
 ];
 
 export default function CompanyIndex({ companies, filters, pageConfig }: PageProps) {
+    const { flash } = usePage().props as any;
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
@@ -53,7 +54,7 @@ export default function CompanyIndex({ companies, filters, pageConfig }: PagePro
     const createForm = useForm({
         company_name: '',
         email: '',
-        category_id: '',
+        company_category_id: '',
     });
 
     const editForm = useForm({
@@ -134,6 +135,19 @@ export default function CompanyIndex({ companies, filters, pageConfig }: PagePro
 
     return (
         <>
+            {flash.success && (
+                <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-3xl animate-in fade-in slide-in-from-top-4 duration-500">
+                    <div className="p-4 border border-emerald-200 bg-white/80 dark:bg-zinc-900/90 dark:border-emerald-500/30 rounded-lg text-emerald-800 dark:text-emerald-400 shadow-2xl backdrop-blur-md">
+                        <div className="flex items-center justify-center gap-3">
+                            <div className="h-2 w-2 flex-shrink-0 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
+                            <p className="text-sm font-medium tracking-wide whitespace-nowrap">
+                                {flash.success}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <ResourceListLayout
                 title={pageConfig.title}
                 description={pageConfig.description}
@@ -230,7 +244,10 @@ export default function CompanyIndex({ companies, filters, pageConfig }: PagePro
                         </div>
                         <div className="space-y-2">
                             <Label>Category</Label>
-                            <Select onValueChange={val => createForm.setData('category_id', val)}>
+                            <Select 
+                                value={createForm.data.company_category_id}
+                                onValueChange={val => createForm.setData('company_category_id', val)}
+                            >
                                 <SelectTrigger><SelectValue placeholder="Select Category" /></SelectTrigger>
                                 <SelectContent>
                                     {pageConfig.options?.categories?.map((c: any) => (
@@ -238,7 +255,7 @@ export default function CompanyIndex({ companies, filters, pageConfig }: PagePro
                                     ))}
                                 </SelectContent>
                             </Select>
-                            <InputError message={createForm.errors.category_id} />
+                            <InputError message={createForm.errors.company_category_id} />
                         </div>
                         <DialogFooter className="pt-2">
                             <Button type="submit" className="w-full" disabled={createForm.processing}>Create Company</Button>
