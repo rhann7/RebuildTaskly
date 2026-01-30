@@ -126,6 +126,6 @@ class CompanyController extends Controller
             if ($user) $user->delete();
         });
         
-        return back()->with('success', 'Company and associated user account have been permanently deleted.');
+        return back()->with('success', 'Company deleted successfully.');
     }
 }
