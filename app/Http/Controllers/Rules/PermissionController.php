@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Rules;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Rules\PermissionRequest;
 use App\Models\Company;
-use App\Models\Module;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -19,7 +18,7 @@ class PermissionController extends Controller
 {
     public function index(Request $request)
     {
-        $permissions = Permission::with('module')
+        $permissions = Permission::query()
             ->when($request->search, fn($q, $s) => $q->where('name', 'like', "%{$s}%"))
             ->when($request->type && $request->type !== 'all', fn($q) => $q->where('type', $request->type))
             ->when($request->scope && $request->scope !== 'all', fn($q) => $q->where('scope', $request->scope))
@@ -31,7 +30,6 @@ class PermissionController extends Controller
         return Inertia::render('permissions/index', [
             'permissions' => $this->transformPermissions($permissions),
             'filters'     => $request->only(['search', 'type', 'scope', 'isMenu']),
-            'modules'     => Module::select('id', 'name')->orderBy('name')->get(),
             'pageConfig'  => $this->getPageConfig($request),
         ]);
     }
@@ -53,7 +51,6 @@ class PermissionController extends Controller
     public function update(PermissionRequest $request, Permission $permission)
     {
         DB::transaction(function () use ($request, $permission) {
-
             $oldType = $permission->type;
             $permission->update($request->validated());
 
@@ -68,7 +65,6 @@ class PermissionController extends Controller
     public function destroy(Permission $permission)
     {
         $permission->delete();
-
         $this->clearCache();
         return redirect()->route('access-control.permissions.index')->with('success', 'Permission Deleted');
     }
@@ -77,7 +73,7 @@ class PermissionController extends Controller
     {
         return [
             'title'       => 'Manage Permissions',
-            'description' => 'Control access levels and module mapping.',
+            'description' => 'Control access levels and dynamic routing.',
             'can_manage'  => $request->user()->isSuperAdmin(),
             'routes'      => $this->getAvailableRoutes(),
             'options'     => [
@@ -97,25 +93,11 @@ class PermissionController extends Controller
         ];
     }
 
-    private function getAvailableRoutes()
-    {
-        return collect(Route::getRoutes())
-            ->map(fn($r) => [
-                'route_path' => '/' . ltrim($r->uri(), '/'),
-                'route_name' => $r->getName(),
-                'controller_action' => $r->getActionName(),
-            ])
-            ->whereNotNull('route_name')
-            ->values();
-    }
-
     private function transformPermissions($pagination)
     {
         $pagination->getCollection()->transform(fn($p) => [
             'id'                => $p->id,
             'name'              => $p->name,
-            'module_id'         => $p->module_id,
-            'module_name'       => $p->module?->name ?? 'Unassigned',
             'type'              => $p->type,
             'scope'             => $p->scope,
             'price_raw'         => $p->price,
@@ -146,5 +128,17 @@ class PermissionController extends Controller
     {
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
         Cache::forget('dynamic_routes');
+    }
+
+    private function getAvailableRoutes()
+    {
+        return collect(Route::getRoutes())
+            ->map(fn($r) => [
+                'route_path' => '/' . ltrim($r->uri(), '/'),
+                'route_name' => $r->getName(),
+                'controller_action' => $r->getActionName(),
+            ])
+            ->whereNotNull('route_name')
+            ->values();
     }
 }

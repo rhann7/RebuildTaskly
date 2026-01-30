@@ -2,7 +2,7 @@ import ResourceListLayout from '@/layouts/resource/resource-list-layout';
 import { useState, FormEventHandler } from 'react';
 import { useForm, router } from '@inertiajs/react';
 import { PageConfig, type BreadcrumbItem } from '@/types';
-import { Plus, Trash2, Pencil, Search, Star, Zap, ShieldCheck, LayoutGrid, Link as LinkIcon, Box } from 'lucide-react';
+import { Plus, Trash2, Pencil, Search, Star, Zap, ShieldCheck, LayoutGrid, Link as LinkIcon } from 'lucide-react';
 
 import InputError from '@/components/input-error';
 import { Input } from '@/components/ui/input';
@@ -16,8 +16,6 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 type Permission = {
     id: number;
     name: string;
-    module_id: number | null;
-    module_name: string;
     type: 'general' | 'unique';
     scope: 'company' | 'workspace';
     price_raw: number;
@@ -38,7 +36,6 @@ type PageProps = {
         total: number;
     };
     filters: { search?: string; type?: string; scope?: string; };
-    modules: Array<{ id: number; name: string }>;
     pageConfig: PageConfig & {
         routes: Array<{
             route_path: string;
@@ -53,7 +50,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Permissions List', href: route('access-control.permissions.index') },
 ];
 
-export default function PermissionIndex({ permissions, filters, modules, pageConfig }: PageProps) {
+export default function PermissionIndex({ permissions, filters, pageConfig }: PageProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [currentId, setCurrentId] = useState<number | null>(null);
@@ -61,7 +58,6 @@ export default function PermissionIndex({ permissions, filters, modules, pageCon
 
     const { data, setData, post, put, processing, errors, reset, clearErrors } = useForm({
         name: '',
-        module_id: '' as string | number,
         type: 'general',
         scope: 'company',
         price: '',
@@ -105,7 +101,6 @@ export default function PermissionIndex({ permissions, filters, modules, pageCon
         setCurrentId(p.id);
         setData({
             name: p.name,
-            module_id: p.module_id || '',
             type: p.type,
             scope: p.scope,
             price: p.price_raw.toString(),
@@ -183,7 +178,7 @@ export default function PermissionIndex({ permissions, filters, modules, pageCon
                     <TableHeader>
                         <TableRow className="hover:bg-transparent bg-zinc-50/50 dark:bg-zinc-900/50">
                             <TableHead className="w-[50px] text-center">#</TableHead>
-                            <TableHead>Permission & Module</TableHead>
+                            <TableHead>Permission Name</TableHead>
                             <TableHead>Scope</TableHead>
                             <TableHead>Type</TableHead>
                             <TableHead>Price</TableHead>
@@ -198,16 +193,13 @@ export default function PermissionIndex({ permissions, filters, modules, pageCon
                                 <TableCell>
                                     <div className="flex flex-col">
                                         <span className="font-medium text-foreground">{permission.name}</span>
-                                        <div className="flex items-center gap-2 mt-0.5">
-                                            <span className="text-[10px] bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 px-1.5 py-0.5 rounded font-medium flex items-center gap-1">
-                                                <Box className="h-2.5 w-2.5" /> {permission.module_name}
-                                            </span>
-                                            {permission.isMenu && (
+                                        {permission.isMenu && (
+                                            <div className="flex items-center gap-1 mt-0.5">
                                                 <span className="text-[10px] text-zinc-500 font-bold flex items-center gap-1 uppercase tracking-tight">
                                                     <LayoutGrid className="h-3 w-3" /> Sidebar Menu
                                                 </span>
-                                            )}
-                                        </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </TableCell>
                                 <TableCell><span className="capitalize text-xs font-mono bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded border border-zinc-200 dark:border-zinc-700">{permission.scope}</span></TableCell>
@@ -236,25 +228,10 @@ export default function PermissionIndex({ permissions, filters, modules, pageCon
                 <DialogContent className="sm:max-w-[500px] border-zinc-200 dark:border-zinc-800">
                     <DialogHeader>
                         <DialogTitle className="text-xl font-semibold">{isEditing ? 'Edit Permission' : 'New Permission'}</DialogTitle>
-                        <DialogDescription>Tentukan modul dan rute Laravel yang akan dikontrol aksesnya.</DialogDescription>
+                        <DialogDescription>Kelola rute Laravel dan kontrol akses aplikasi secara spesifik.</DialogDescription>
                     </DialogHeader>
 
                     <form onSubmit={handleSubmit} className="space-y-5 pt-4">
-                        <div className="space-y-2">
-                            <Label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Module Association</Label>
-                            <Select value={data.module_id?.toString()} onValueChange={(val) => setData('module_id', val)}>
-                                <SelectTrigger className="h-10 border-zinc-200 dark:border-zinc-800 bg-zinc-50/50">
-                                    <SelectValue placeholder="Pilih modul fitur..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {modules.map((m) => (
-                                        <SelectItem key={m.id} value={m.id.toString()}>{m.name}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <InputError message={errors.module_id} />
-                        </div>
-
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="name" className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Permission Name</Label>

@@ -19,7 +19,6 @@ class PermissionRequest extends FormRequest
 
         return [
             'name'              => ['required', 'string', 'max:255', Rule::unique('permissions')->ignore($id)],
-            'module_id'         => ['required', 'exists:modules,id'],
             'type'              => ['required', 'in:general,unique'],
             'scope'             => ['required', 'in:company,workspace'],
             'price'             => ['required', 'numeric', 'min:0'],
