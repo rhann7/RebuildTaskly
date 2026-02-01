@@ -36,13 +36,32 @@ export interface NavItem {
     }[];
 }
 
+export interface PaginatedData<T> {
+    data: T[];
+    links: { url: string | null; label: string; active: boolean }[];
+    from: number;
+    to: number;
+    total: number;
+    current_page: number;
+    last_page: number;
+    per_page: number;
+}
+
+export interface SelectOption {
+    label: string;
+    value: string | number;
+}
+
+export interface FilterParams {
+    search?: string;
+    [key: string]: string | undefined;
+}
+
 export interface PageConfig {
     title: string;
     description: string;
     can_manage: boolean;
-    options: {
-        [key: string]: { label: string; value: string | number }[];
-    };
+    options?: Record<string, SelectOption[]>;
 }
 
 export interface SharedData {
