@@ -4,6 +4,7 @@ use App\Http\Controllers\Companies\CategoryController;
 use App\Http\Controllers\Companies\CompanyAppealController;
 use App\Http\Controllers\Companies\CompanyController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Modules\ModuleController;
 use App\Http\Controllers\Rules\PermissionAccessController;
 use App\Http\Controllers\Rules\PermissionController;
 use App\Http\Controllers\Workspaces\WorkspaceController;
@@ -29,6 +30,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::resource('permissions', PermissionController::class);
             Route::get('company-access', [PermissionAccessController::class, 'index'])->name('company-access.index');
             Route::post('company-access/{company}', [PermissionAccessController::class, 'update'])->name('company-access.update');
+        });
+
+        Route::prefix('product-management')->name('product-management.')->group(function () {
+            Route::resource('modules', ModuleController::class)
+                ->parameters(['modules' => 'module:slug']);
+            
+            Route::post('modules/{module}/permissions', [ModuleController::class, 'assignPermissions'])
+                ->name('modules.permissions.assign');
+            Route::delete('permissions/{permission}/detach', [ModuleController::class, 'removePermission'])
+                ->name('modules.permissions.remove');
         });
 
         Route::prefix('company-management')->name('company-management.')->group(function () {
