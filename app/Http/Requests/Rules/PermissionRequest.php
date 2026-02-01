@@ -14,8 +14,7 @@ class PermissionRequest extends FormRequest
 
     public function rules(): array
     {
-        $permission = $this->route('permission');
-        $id = $permission instanceof \Spatie\Permission\Models\Permission ? $permission->id : $permission;
+        $id = $this->route('permission')?->id;
 
         return [
             'name'              => ['required', 'string', 'max:255', Rule::unique('permissions')->ignore($id)],
@@ -23,8 +22,6 @@ class PermissionRequest extends FormRequest
             'scope'             => ['required', 'in:company,workspace'],
             'price'             => ['required', 'numeric', 'min:0'],
             'route_name'        => ['required', 'string'],
-            'route_path'        => ['required', 'string'],
-            'controller_action' => ['required', 'string'],
             'icon'              => ['nullable', 'string'],
             'isMenu'            => ['boolean'],
         ];
