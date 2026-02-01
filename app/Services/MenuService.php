@@ -52,6 +52,15 @@ class MenuService
                 ]
             ],
             [
+                'title'    => 'Product Management',
+                'href'     => '#',
+                'icon'     => 'Gem',
+                'isActive' => $request->routeIs('product-management.*'),
+                'items'    => [
+                    ['title' => 'Modules', 'href' => url('/product-management/modules'), 'isActive' => $request->routeIs('product-management.modules.*')],
+                ]
+            ],
+            [
                 'title'    => 'Workspaces Management', 
                 'href'     => '/workspaces', 
                 'icon'     => 'Briefcase', 
