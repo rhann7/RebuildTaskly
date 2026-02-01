@@ -28,33 +28,26 @@ class ModuleController extends Controller
         ]);
     }
 
-    public function show(Module $module)
+    public function show(Request $request, Module $module)
     {
         $module->load(['permissions' => function($query) {
             $query->orderBy('name', 'asc');
         }]);
 
         return Inertia::render('modules/show', [
-            'module' => [
-                'id'          => $module->id,
-                'name'        => $module->name,
-                'slug'        => $module->slug,
-                'type'        => $module->type,
-                'permissions' => $module->permissions->map(fn($p) => [
-                    'id'   => $p->id,
-                    'name' => $p->name,
-                ]),
-            ],
+            'module' => $this->transformSingleModule($module),
             'homeless_permissions' => Permission::homeless()->get(['id', 'name']),
+            'pageConfig' => [
+                'title'       => 'Module Management',
+                'description' => 'Manage commercial feature sets.',
+                'can_manage'  => $request->user()->isSuperAdmin(),
+            ]
         ]);
     }
 
     public function store(ModuleRequest $moduleRequest)
     {
-        $validated = $moduleRequest->validated();
-        $validated['price'] = 0;
-
-        Module::create($validated);
+        Module::create($moduleRequest->validated());
         return redirect()->back()->with('success', 'Module Created Successfully');
     }
 
@@ -66,6 +59,7 @@ class ModuleController extends Controller
 
     public function destroy(Module $module)
     {
+        $module->permissions()->update(['module_id' => null]);
         $module->delete();
         return redirect()->route('product-management.modules.index')->with('success', 'Module Deleted');
     }
@@ -87,39 +81,42 @@ class ModuleController extends Controller
 
     private function transformModules($pagination)
     {
-        $pagination->getCollection()->transform(fn($m) => [
-            'id'   => $m->id,
-            'name' => $m->name,
-            'slug' => $m->slug,
-            'ui'   => [
-                'type_label' => ucfirst($m->type),
-                'type_color' => $m->type === 'addon' 
-                    ? 'text-amber-600 border-amber-200 bg-amber-50' 
-                    : 'text-zinc-500 border-zinc-200 bg-zinc-50',
-                'type_icon' => $m->type === 'addon' ? 'Zap' : 'Box',
-                
-                'status_label' => $m->is_active ? 'Active' : 'Inactive',
-                'status_color' => $m->is_active ? 'text-green-600' : 'text-zinc-400',
-                
-                'price_fmt' => 'Rp ' . number_format($m->price, 0, ',', '.'),
-                'permissions_count' => $m->permissions_count ?? 0,
-            ],
-            'form_default' => [
-                'name'        => $m->name,
-                'type'        => $m->type,
-                'description' => $m->description ?? '',
-                'is_active'   => (bool)$m->is_active,
-            ]
-        ]);
-
+        $pagination->getCollection()->transform(fn($m) => $this->transformSingleModule($m));
         return $pagination;
+    }
+
+    private function transformSingleModule(Module $module)
+    {
+        return [
+            'id'                => $module->id,
+            'name'              => $module->name,
+            'slug'              => $module->slug,
+            'type'              => $module->type,
+            'price'             => $module->price,
+            'price_fmt'         => 'Rp ' . number_format($module->price, 0, ',', '.'), // Tambahkan ini agar konsisten
+            'is_active'         => (bool) $module->is_active,
+            'description'       => $module->description,
+            'permissions_count' => $module->permissions_count ?? $module->permissions->count(),
+            'permissions'       => $module->relationLoaded('permissions') 
+                ? $module->permissions->map(fn($p) => [
+                    'id'        => $p->id,
+                    'name'      => $p->name,
+                    'type'      => $p->type,
+                    'price'     => $p->price,
+                    'price_fmt' => 'Rp ' . number_format($p->price, 0, ',', '.'),
+                ]) : [],
+            'form_default'    => [
+                'name'        => $module->name,
+                'type'        => $module->type,
+                'description' => $module->description ?? '',
+                'is_active'   => (bool)$module->is_active,
+            ]
+        ];
     }
 
     private function recalculateModulePrice(Module $module)
     {
-        $totalPrice = $module->permissions()->sum('price');
-        $finalPrice = $totalPrice * 0.95;
-        $module->update(['price' => $finalPrice]);
+        $module->update(['price' => $module->permissions()->sum('price')]);
     }
 
     public function assignPermissions(Request $request, Module $module)
