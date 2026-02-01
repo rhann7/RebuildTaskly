@@ -14,19 +14,28 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 
+const MODULE_UI_CONFIG = {
+    standard: {
+        label: 'Standard',
+        color: 'bg-blue-50 text-blue-700 border-blue-200',
+        icon: Box
+    },
+    addon: {
+        label: 'Add-on',
+        color: 'bg-purple-50 text-purple-700 border-purple-200',
+        icon: Zap
+    }
+} as const;
+
 type Module = {
     id: number;
     name: string;
     slug: string;
-    ui: {
-        type_label: string;
-        type_color: string;
-        type_icon: string;
-        status_label: string;
-        status_color: string;
-        price_fmt: string;
-        permissions_count: number;
-    };
+    type: 'standard' | 'addon';
+    price: number;
+    price_fmt: string;
+    is_active: boolean;
+    permissions_count: number;
     form_default: {
         name: string;
         type: string;
@@ -156,51 +165,56 @@ export default function ModuleIndex({ modules, filters, pageConfig }: PageProps)
                             <TableHead className="w-[50px] text-center">#</TableHead>
                             <TableHead>Nama Modul</TableHead>
                             <TableHead>Tipe</TableHead>
-                            <TableHead>Harga (Disc 5%)</TableHead>
+                            <TableHead>Harga Akumulasi</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead className="text-right px-6">Aksi</TableHead>
                         </TableRow>
                     </TableHeader>
 
                     <TableBody>
-                        {modules.data.map((module, i) => (
-                            <TableRow key={module.id} className="group hover:bg-muted/30">
-                                <TableCell className="text-center text-muted-foreground tabular-nums">
-                                    {modules.from + i}
-                                </TableCell>
-                                <TableCell>
-                                    <div className="flex flex-col">
-                                        <span className="font-medium">{module.name}</span>
-                                        <span className="text-[10px] font-mono text-muted-foreground uppercase">{module.slug}</span>
-                                    </div>
-                                </TableCell>
-                                <TableCell>
-                                    <span className={`inline-flex items-center gap-1 rounded border px-2 py-0.5 text-[11px] font-medium ${module.ui.type_color}`}>
-                                        {module.ui.type_icon === 'Zap' ? <Zap className="h-3 w-3" /> : <Box className="h-3 w-3" />}
-                                        {module.ui.type_label}
-                                    </span>
-                                </TableCell>
-                                <TableCell className="font-mono text-sm">{module.ui.price_fmt}</TableCell>
-                                <TableCell>
-                                    <span className={`text-[10px] font-bold uppercase tracking-widest ${module.ui.status_color}`}>
-                                        {module.ui.status_label}
-                                    </span>
-                                </TableCell>
-                                <TableCell className="text-right px-6 space-x-1">
-                                    <Link href={route('product-management.modules.show', { module: module.slug })}>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600" title="Kelola Permissions">
-                                            <Settings2 className="h-3.5 w-3.5" />
+                        {modules.data.map((module, i) => {
+                            const ui = MODULE_UI_CONFIG[module.type];
+                            const Icon = ui.icon;
+
+                            return (
+                                <TableRow key={module.id} className="group hover:bg-muted/30">
+                                    <TableCell className="text-center text-muted-foreground tabular-nums">
+                                        {modules.from + i}
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex flex-col">
+                                            <span className="font-medium">{module.name}</span>
+                                            <span className="text-[10px] font-mono text-muted-foreground uppercase">{module.slug}</span>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <span className={`inline-flex items-center gap-1 rounded border px-2 py-0.5 text-[11px] font-medium ${ui.color}`}>
+                                            <Icon className="h-3 w-3" />
+                                            {ui.label}
+                                        </span>
+                                    </TableCell>
+                                    <TableCell className="font-mono text-sm">{module.price_fmt}</TableCell>
+                                    <TableCell>
+                                        <span className={`text-[10px] font-bold uppercase tracking-widest ${module.is_active ? 'text-green-600' : 'text-zinc-400'}`}>
+                                            {module.is_active ? 'Active' : 'Draft'}
+                                        </span>
+                                    </TableCell>
+                                    <TableCell className="text-right px-6 space-x-1">
+                                        <Link href={route('product-management.modules.show', { module: module.slug })}>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600" title="Kelola Permissions">
+                                                <Settings2 className="h-3.5 w-3.5" />
+                                            </Button>
+                                        </Link>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditModal(module)}>
+                                            <Pencil className="h-3.5 w-3.5" />
                                         </Button>
-                                    </Link>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditModal(module)}>
-                                        <Pencil className="h-3.5 w-3.5" />
-                                    </Button>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-red-600" onClick={() => handleDelete(module.id)}>
-                                        <Trash2 className="h-3.5 w-3.5" />
-                                    </Button>
-                                </TableCell>
-                            </TableRow>
-                        ))}
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-red-600" onClick={() => handleDelete(module.id)}>
+                                            <Trash2 className="h-3.5 w-3.5" />
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            );
+                        })}
                     </TableBody>
                 </Table>
             </ResourceListLayout>
