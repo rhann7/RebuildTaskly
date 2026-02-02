@@ -47,6 +47,7 @@ class TaskController extends Controller
         $tasks = Task::query()
             ->where('project_id', $project->id)
             ->when($request->search, fn($q, $s) => $q->where('title', 'like', "%{$s}%"))
+            ->when($request->status, fn($q, $status) => $q->where('status', $status))
             ->latest()
             ->paginate(10)
             ->withQueryString();
@@ -55,7 +56,7 @@ class TaskController extends Controller
             'workspace' => $workspace,
             'project' => $project,
             'tasks' => $tasks,
-            'filters' => $request->only(['search']),
+            'filters' => $request->only(['search', 'status']),
         ]);
     }
 
@@ -68,6 +69,8 @@ class TaskController extends Controller
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'status' => 'required|in:todo,in_progress,done',
+            'priority' => 'required|in:low,medium,high',
+            'due_date' => 'nullable|date',
         ]);
         Task::create([
             'project_id'  => $project->id,
@@ -75,6 +78,8 @@ class TaskController extends Controller
             'slug'        => Str::slug($validated['title']) . '-' . Str::lower(Str::random(5)),
             'description' => $validated['description'],
             'status'      => $validated['status'],
+            'priority' => $validated['priority'],
+            'due_date' => $validated['due_date'],
         ]);
 
 
