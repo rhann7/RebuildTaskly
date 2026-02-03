@@ -49,5 +49,37 @@ export const getProjectColumns = (workspaceSlug: string) => [
                 <span class="text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">${data || 'ONLINE'}</span>
             </div>
         `     
-    } 
+    },
+    {
+        data: 'priority',
+        title: 'LEVEL',
+        width: '15%',
+        className: 'text-left align-middle px-6',
+        render: (data: string) => {
+            const colors: any = {
+                high: 'text-sada-red bg-sada-red/10 border-sada-red/20',
+                medium: 'text-amber-500 bg-amber-500/10 border-amber-500/20',
+                low: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20'
+            };
+            return `
+                <span class="px-3 py-1 rounded-full border text-[9px] font-black uppercase tracking-widest ${colors[data] || 'text-muted-foreground border-border'}">
+                    ${data || 'MEDIUM'}
+                </span>
+            `;
+        }
+    },
+    {
+        data: 'due_date',
+        title: 'DEADLINE',
+        width: '20%',
+        className: 'text-left align-middle px-6',
+        render: (data: string) => `
+            <div class="flex flex-col">
+                <span class="text-[11px] font-black text-foreground uppercase tracking-tight">
+                    ${data ? new Date(data).toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric'}) : 'NOT SET'}
+                </span>
+                <span class="text-[9px] text-muted-foreground uppercase font-bold tracking-tighter">Operational Limit</span>
+            </div>
+        `     
+    }
 ];

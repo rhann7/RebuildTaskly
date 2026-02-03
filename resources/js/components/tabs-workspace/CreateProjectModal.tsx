@@ -13,6 +13,8 @@ export default function CreateProjectModal({ isOpen, setIsOpen, workspace }: Pro
     const { data, setData, post, processing, errors, reset } = useForm({
         name: '',
         description: '',
+        priority: 'medium', // Default
+        due_date: '',       // Default empty
     });
 
     const submit: FormEventHandler = (e) => {
@@ -75,7 +77,29 @@ export default function CreateProjectModal({ isOpen, setIsOpen, workspace }: Pro
                             onChange={e => setData('description', e.target.value)}
                         />
                     </div>
-
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Priority</label>
+                            <select 
+                                value={data.priority}
+                                onChange={e => setData('priority', e.target.value)}
+                                className="w-full h-12 bg-muted/30 border border-border rounded-lg px-4 text-foreground font-bold text-sm outline-none"
+                            >
+                                <option value="low">LOW</option>
+                                <option value="medium">MEDIUM</option>
+                                <option value="high">HIGH</option>
+                            </select>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Deadline</label>
+                            <input 
+                                type="date"
+                                value={data.due_date}
+                                onChange={e => setData('due_date', e.target.value)}
+                                className="w-full h-12 bg-muted/30 border border-border rounded-lg px-4 text-foreground font-bold text-sm outline-none"
+                            />
+                        </div>
+                    </div>
                     {/* Submit Button - High Contrast */}
                     <button 
                         type="submit" 

@@ -65,6 +65,8 @@ class ProjectController extends Controller
         $validated = $request->validate([
             'name'         => 'required|string|max:255',
             'description'  => 'nullable|string',
+            'priority'    => 'required|in:low,medium,high', // Tambah ini
+            'due_date'    => 'nullable|date',
         ]);
         if (!$user->isSuperAdmin()) {
             abort_if($workspace->company_id !== $company->id, 403);
@@ -76,6 +78,8 @@ class ProjectController extends Controller
             'slug'         => Str::slug($validated['name']) . '-' . Str::lower(Str::random(5)),
             'description'  => $validated['description'],
             'status'       => 'active',
+            'priority'     => $validated['priority'],
+            'due_date'     => $validated['due_date'],
         ]);
 
         return redirect()
@@ -107,6 +111,8 @@ class ProjectController extends Controller
             'name'        => 'required|string|max:255',
             'description' => 'nullable|string',
             'status'      => 'required|in:active,inactive',
+            'priority'    => 'required|in:low,medium,high', // Tambah ini
+            'due_date'    => 'nullable|date',
         ]);
 
         $project->update($validated);

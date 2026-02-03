@@ -12,6 +12,8 @@ interface Project {
     description?: string;
     status: 'active' | 'inactive';
     slug: string;
+    priority: 'low' | 'medium' | 'high'; // Tambahkan ini
+    due_date?: string;
 }
 
 interface Workspace {
@@ -39,6 +41,8 @@ export default function ProjectSettingsTab({
         name: project.name ?? '',
         description: project.description ?? '',
         status: project.status ?? 'active',
+        priority: project.priority ?? 'medium', // Initialize
+        due_date: project.due_date ?? '',       // Initialize
     });
 
     // Form Khusus Deletion
@@ -112,6 +116,34 @@ export default function ProjectSettingsTab({
                                 </select>
                                 <ShieldCheck className="absolute right-6 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-sada-red pointer-events-none transition-colors" size={18} />
                             </div>
+                        </div>
+                        {/* TAMBAHKAN PRIORITY */}
+                        <div className="space-y-3">
+                                <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest ml-1">
+                                Priority Level
+                                </label>
+                                <select
+                                    value={data.priority}
+                                    onChange={e => setData('priority', e.target.value as any)}
+                                    className="w-full h-14 bg-muted/30 border border-border rounded-xl px-6 text-foreground font-bold outline-none appearance-none cursor-pointer focus:ring-2 focus:ring-sada-red/20 transition-all uppercase">
+                                    <option value="low">Low Priority</option>
+                                     <option value="medium">Medium Priority</option>
+                                    <option value="high">High Priority</option>
+                                 </select>
+                            <InputError message={errors.priority} />
+                        </div>
+                        {/* TAMBAHKAN DUE DATE */}
+                        <div className="space-y-3">
+                            <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest ml-1">
+                                Deadline / Due Date
+                            </label>
+                            <input
+                                type="date"
+                                value={data.due_date}
+                                onChange={e => setData('due_date', e.target.value)}
+                                className="w-full h-14 bg-muted/30 border border-border rounded-xl px-6 text-foreground font-bold outline-none focus:ring-2 focus:ring-sada-red/20 transition-all"
+                            />
+                            <InputError message={errors.due_date} />
                         </div>
                     </div>
 
