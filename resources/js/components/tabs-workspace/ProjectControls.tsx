@@ -68,7 +68,7 @@ export const ProjectControls = ({
                         }`}
                     >
                         <Filter size={16} />
-                        {isFilterOpen ? 'HIDE FILTERS' : 'TACTICAL FILTERS'}
+                        {isFilterOpen ? 'HIDE FILTERS' : 'FILTERS'}
                     </button>
                 </div>
             </div>
@@ -118,7 +118,7 @@ export const ProjectControls = ({
                     {/* Footer Panel */}
                     <div className="mt-8 pt-6 border-t border-border/50 flex justify-between items-center">
                         <p className="text-[9px] font-bold text-muted-foreground uppercase italic tracking-widest">
-                            {statusFilter.length + priorityFilter.length} Active tactical parameters
+                            {statusFilter.length + priorityFilter.length} Active Filter parameters
                         </p>
                         {(statusFilter.length > 0 || priorityFilter.length > 0) && (
                             <button 

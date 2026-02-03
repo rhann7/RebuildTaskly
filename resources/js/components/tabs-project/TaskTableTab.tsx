@@ -239,7 +239,7 @@ export default function TaskTableTab({
                     <div className="py-40 flex flex-col items-center justify-center text-center border border-dashed border-border rounded-[32px] bg-muted/5">
                         <Zap className="size-16 text-muted-foreground/10 mb-6 animate-pulse" />
                         <h3 className="text-[11px] font-black uppercase tracking-[0.4em] text-muted-foreground">No Task Found</h3>
-                        <p className="text-[9px] text-muted-foreground/50 mt-2 uppercase tracking-widest italic">Try adjusting your tactical parameters</p>
+                        <p className="text-[9px] text-muted-foreground/50 mt-2 uppercase tracking-widest italic">Try adjusting your search parameters</p>
                     </div>
                 )}
             </div>
