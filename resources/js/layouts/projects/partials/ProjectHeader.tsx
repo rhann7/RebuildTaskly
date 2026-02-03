@@ -2,7 +2,7 @@ import { FolderKanban, Plus, Target, Zap } from 'lucide-react';
 
 interface ProjectDetailHeaderProps {
     project: any;
-    onAddTask: () => void; // Fungsi untuk membuka modal/form task baru
+    onAddTask: () => void; // Fungsi ini sekarang wajib jalan buat buka modal
 }
 
 export const ProjectDetailHeader = ({ project, onAddTask }: ProjectDetailHeaderProps) => (
@@ -12,7 +12,7 @@ export const ProjectDetailHeader = ({ project, onAddTask }: ProjectDetailHeaderP
         <div className="absolute top-0 right-0 w-32 h-32 bg-sada-red/5 blur-[80px] -mr-16 -mt-16 pointer-events-none" />
 
         <div className="flex items-center gap-6">
-            {/* Project Icon dengan Dynamic Color Gradient */}
+            {/* Project Icon */}
             <div className={`size-16 flex items-center justify-center rounded-xl bg-gradient-to-br ${project.color || 'from-sada-red to-red-950'} shadow-xl shadow-sada-red/10 border border-white/10 ring-1 ring-white/5 shrink-0 transition-transform group-hover:scale-105 duration-500`}>
                 <FolderKanban className="size-8 text-white drop-shadow-md" />
             </div>
@@ -33,7 +33,6 @@ export const ProjectDetailHeader = ({ project, onAddTask }: ProjectDetailHeaderP
                         "{project.description || 'No operational brief provided for this sector...'}"
                     </p>
                     
-                    {/* Stats Singkat: Task Progress */}
                     <div className="flex items-center gap-4 mt-1">
                         <div className="flex items-center gap-1.5">
                             <Target size={12} className="text-sada-red" />
@@ -50,6 +49,17 @@ export const ProjectDetailHeader = ({ project, onAddTask }: ProjectDetailHeaderP
                     </div>
                 </div>
             </div>
+        </div>
+
+        {/* ACTION ZONE: Gantiin progress bar lama */}
+        <div className="relative z-10 w-full lg:w-auto">
+            <button 
+                onClick={onAddTask}
+                className="w-full lg:w-auto h-14 px-8 bg-sada-red text-white rounded-xl font-black text-[11px] uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-red-700 transition-all shadow-[0_0_20px_rgba(239,68,68,0.3)] active:scale-95 group/btn"
+            >
+                <Plus size={18} strokeWidth={3} className="transition-transform group-hover/btn:rotate-90" />
+                Add New Task
+            </button>
         </div>
     </div>
 );

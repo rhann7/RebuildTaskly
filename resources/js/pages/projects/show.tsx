@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react'; // Hapus useMemo kalau gak kepake di sini
 import { Head } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
@@ -11,9 +11,8 @@ import { ProjectDetailHeader } from '@/layouts/projects/partials/ProjectHeader';
 export default function ProjectShow({ workspace, project, tasks, isSuperAdmin }: any) {
     const [activeTab, setActiveTab] = useState<'tasks' | 'members' | 'settings'>('tasks');
     
-    // State tambahan untuk kontrol tampilan
-    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-    const [searchQuery, setSearchQuery] = useState('');
+    // 1. PINDAHKAN STATE MODAL KE SINI (Jadi Remote Control)
+    const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },
@@ -22,6 +21,12 @@ export default function ProjectShow({ workspace, project, tasks, isSuperAdmin }:
         { title: project.name, href: '#' },
     ];
 
+    // 2. FUNGSI UNTUK MEMBUKA MODAL
+    const handleAddTask = () => {
+        setActiveTab('tasks'); // Pastikan tab objectives aktif
+        setIsTaskModalOpen(true); // Buka modalnya
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`${project.name} - Project`} />
@@ -29,7 +34,11 @@ export default function ProjectShow({ workspace, project, tasks, isSuperAdmin }:
             <div className="mx-auto w-full max-w-[1600px] flex flex-col gap-8 p-6 md:p-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
                 
                 <div className="flex flex-col gap-6">
-                    <ProjectDetailHeader project={project} onAddTask={() => setActiveTab('tasks')} />
+                    {/* 3. SAMBUNGKAN FUNGSI KE HEADER */}
+                    <ProjectDetailHeader 
+                        project={project} 
+                        onAddTask={handleAddTask} 
+                    />
                     
                     <div className="flex gap-1 bg-muted/30 p-1 rounded-xl w-fit border border-border">
                         {[
@@ -58,14 +67,13 @@ export default function ProjectShow({ workspace, project, tasks, isSuperAdmin }:
                         project={project} 
                         tasks={tasks} 
                         workspace={workspace}
-                        viewMode={viewMode}
-                        setViewMode={setViewMode}
-                        searchQuery={searchQuery}
-                        setSearchQuery={setSearchQuery}
+                        // 4. LEMPAR STATE MODAL KE KOMPONEN ANAK
+                        isExternalModalOpen={isTaskModalOpen}
+                        setIsExternalModalOpen={setIsTaskModalOpen}
                     />
                 )}
 
-                {/* Tab Members & Settings tetep sama */}
+                {/* Tab Personnel */}
                 {activeTab === 'members' && (
                     <div className="py-32 text-center border border-dashed border-border rounded-[32px] bg-muted/5">
                         <Users2 className="mx-auto mb-4 text-muted-foreground/20" size={48} />

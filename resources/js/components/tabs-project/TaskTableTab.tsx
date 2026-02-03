@@ -1,11 +1,18 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react'; // Tambah useEffect
 import DataTableBase from '@/components/DataTableBase';
 import { getTaskColumns } from '@/components/tabs-project/TaskColumns'; 
 import { Search, Plus, Zap, Filter, X, Calendar, LayoutGrid, List } from 'lucide-react';
 import CreateTaskModal from '@/components/tabs-project/CreateTaskModal';
 import TaskGridCard from '@/components/tabs-project/TaskGridCard';
 
-export default function TaskTableTab({ project, tasks = [], workspace }: any) {
+// Tambahkan props isExternalModalOpen dan setIsExternalModalOpen
+export default function TaskTableTab({ 
+    project, 
+    tasks = [], 
+    workspace, 
+    isExternalModalOpen, 
+    setIsExternalModalOpen 
+}: any) {
     // 1. States untuk Filtering
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilters, setStatusFilters] = useState<string[]>([]);
@@ -14,9 +21,12 @@ export default function TaskTableTab({ project, tasks = [], workspace }: any) {
     const [dateTo, setDateTo] = useState('');
     
     // 2. States untuk UI
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    // Gunakan props dari parent jika ada, kalau tidak ada (fallback) pakai state lokal
+    const isModalOpen = isExternalModalOpen;
+    const setIsModalOpen = setIsExternalModalOpen;
+
     const [showFilters, setShowFilters] = useState(false);
-    const [viewMode, setViewMode] = useState<'grid' | 'list'>('list'); // Default ke list atau grid sesuai selera
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
 
     // 3. Columns Memoization
     const columns = useMemo(() => 
@@ -105,16 +115,11 @@ export default function TaskTableTab({ project, tasks = [], workspace }: any) {
                         {showFilters ? 'Hide Filters' : 'Tactical Filters'}
                     </button>
 
-                    <button 
-                        onClick={() => setIsModalOpen(true)}
-                        className="h-12 px-8 bg-sada-red text-white rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center gap-3 hover:bg-red-700 transition-all shadow-lg shadow-sada-red/20 active:scale-95 whitespace-nowrap"
-                    >
-                        <Plus size={16} strokeWidth={3} /> Add New Objective
-                    </button>
+                    {/* TOMBOL "ADD NEW TASK" DI SINI SUDAH DIHAPUS KARENA PINDAH KE HEADER ATAS */}
                 </div>
             </div>
 
-            {/* COLLAPSIBLE TACTICAL FILTER PANEL */}
+            {/* COLLAPSIBLE TACTICAL FILTER PANEL (Kode tetep sama) */}
             {showFilters && (
                 <div className="bg-card border border-border rounded-[32px] p-8 space-y-8 animate-in slide-in-from-top-4 duration-300 shadow-2xl relative overflow-hidden">
                     <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
