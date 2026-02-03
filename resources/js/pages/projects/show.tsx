@@ -16,6 +16,7 @@ export default function ProjectShow({ workspace, project, tasks, isSuperAdmin }:
     const [searchQuery, setSearchQuery] = useState('');
 
     const breadcrumbs: BreadcrumbItem[] = [
+        { title: 'Dashboard', href: '/dashboard' },
         { title: 'Workspaces', href: '/workspaces' },
         { title: workspace.name, href: `/workspaces/${workspace.slug}` },
         { title: project.name, href: '#' },
