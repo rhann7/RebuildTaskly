@@ -24,20 +24,20 @@ export const ProjectDetailHeader = ({ project, onAddTask }: ProjectDetailHeaderP
                     </h1>
                     <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
                         <div className="size-1 rounded-full bg-emerald-500 animate-pulse" />
-                        <span className="text-[8px] font-black text-emerald-500 uppercase tracking-widest">Active Sector</span>
+                        <span className="text-[8px] font-black text-emerald-500 uppercase tracking-widest">Active Project</span>
                     </div>
                 </div>
                 
                 <div className="flex flex-col gap-1">
                     <p className="text-xs text-muted-foreground font-medium max-w-md line-clamp-1 italic opacity-70">
-                        "{project.description || 'No operational brief provided for this sector...'}"
+                        "{project.description || 'No operational brief provided for this project...'}"
                     </p>
                     
                     <div className="flex items-center gap-4 mt-1">
                         <div className="flex items-center gap-1.5">
                             <Target size={12} className="text-sada-red" />
                             <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">
-                                {project.tasks_count || 0} Objectives
+                                {project.tasks_count || 0} Tasks
                             </span>
                         </div>
                         <div className="flex items-center gap-1.5">

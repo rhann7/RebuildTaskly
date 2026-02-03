@@ -1,7 +1,7 @@
 export const getTaskColumns = (workspaceSlug: string, projectSlug: string) => [
     {
         data: "title",
-        title: "OBJECTIVE DETAILS",
+        title: "TASK DETAILS",
         width: '40%',
         className: "text-left align-middle px-6 group", 
         render: (data: any, type: any, row: any) => `

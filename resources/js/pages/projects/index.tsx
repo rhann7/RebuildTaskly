@@ -37,7 +37,7 @@ export default function ProjectIndex({ projects, workspaces, filters, pageConfig
                 {/* Header SADA Style */}
                 <div className="flex flex-col gap-2">
                     <h1 className="text-4xl font-black uppercase tracking-tighter italic">
-                        Sector Registry
+                        Project Operations
                     </h1>
                     <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">
                         Active operations within {workspace.name}
@@ -63,7 +63,7 @@ export default function ProjectIndex({ projects, workspaces, filters, pageConfig
                             onClick={() => setIsModalOpen(true)}
                             className="h-12 px-8 bg-sada-red hover:bg-sada-red-hover text-white rounded-xl font-black text-[11px] uppercase tracking-widest shadow-lg shadow-sada-red/20 transition-all active:scale-95"
                         >
-                            <Plus className="size-4 mr-2" strokeWidth={3} /> Add New Sector
+                            <Plus className="size-4 mr-2" strokeWidth={3} /> Add New Project
                         </Button>
                     )}
                 </div>

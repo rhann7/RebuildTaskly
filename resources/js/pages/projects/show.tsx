@@ -23,7 +23,7 @@ export default function ProjectShow({ workspace, project, tasks, isSuperAdmin }:
 
     // 2. FUNGSI UNTUK MEMBUKA MODAL
     const handleAddTask = () => {
-        setActiveTab('tasks'); // Pastikan tab objectives aktif
+        setActiveTab('tasks'); // Pastikan tab Tasks aktif
         setIsTaskModalOpen(true); // Buka modalnya
     };
 
@@ -42,7 +42,7 @@ export default function ProjectShow({ workspace, project, tasks, isSuperAdmin }:
                     
                     <div className="flex gap-1 bg-muted/30 p-1 rounded-xl w-fit border border-border">
                         {[
-                            { id: 'tasks', label: 'Objectives', icon: CheckCircle2 },
+                            { id: 'tasks', label: 'Tasks', icon: CheckCircle2 },
                             { id: 'members', label: 'Personnel', icon: Users2 },
                             { id: 'settings', label: 'Configuration', icon: Settings2 },
                         ].map((tab) => (

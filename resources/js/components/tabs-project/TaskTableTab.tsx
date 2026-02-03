@@ -81,7 +81,7 @@ export default function TaskTableTab({
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-muted-foreground group-focus-within:text-sada-red transition-colors" />
                     <input 
                         type="text"
-                        placeholder="SEARCH OBJECTIVE..."
+                        placeholder="SEARCH TASK..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="w-full h-12 pl-12 pr-6 bg-transparent text-[11px] font-black tracking-[0.2em] outline-none uppercase placeholder:text-muted-foreground/30"
@@ -112,14 +112,14 @@ export default function TaskTableTab({
                         }`}
                     >
                         <Filter size={14} strokeWidth={2.5} /> 
-                        {showFilters ? 'Hide Filters' : 'Tactical Filters'}
+                        {showFilters ? 'Hide Filters' : 'Filters'}
                     </button>
 
                     {/* TOMBOL "ADD NEW TASK" DI SINI SUDAH DIHAPUS KARENA PINDAH KE HEADER ATAS */}
                 </div>
             </div>
 
-            {/* COLLAPSIBLE TACTICAL FILTER PANEL (Kode tetep sama) */}
+            {/* COLLAPSIBLE FILTER PANEL (Kode tetep sama) */}
             {showFilters && (
                 <div className="bg-card border border-border rounded-[32px] p-8 space-y-8 animate-in slide-in-from-top-4 duration-300 shadow-2xl relative overflow-hidden">
                     <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
@@ -238,7 +238,7 @@ export default function TaskTableTab({
                 ) : (
                     <div className="py-40 flex flex-col items-center justify-center text-center border border-dashed border-border rounded-[32px] bg-muted/5">
                         <Zap className="size-16 text-muted-foreground/10 mb-6 animate-pulse" />
-                        <h3 className="text-[11px] font-black uppercase tracking-[0.4em] text-muted-foreground">No Objectives Found</h3>
+                        <h3 className="text-[11px] font-black uppercase tracking-[0.4em] text-muted-foreground">No Task Found</h3>
                         <p className="text-[9px] text-muted-foreground/50 mt-2 uppercase tracking-widest italic">Try adjusting your tactical parameters</p>
                     </div>
                 )}

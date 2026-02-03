@@ -45,7 +45,7 @@ export default function CreateProjectModal({ isOpen, setIsOpen, workspace }: Pro
                 </DialogHeader>
 
                 <form onSubmit={submit} className="space-y-6 text-left">
-                    {/* Input Sector Name */}
+                    {/* Input Project Name */}
                     <div className="space-y-2">
                         <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
                             Project Name

@@ -50,7 +50,7 @@ export default function CreateTaskModal({ isOpen, setIsOpen, project, workspace 
                     <div className="grid gap-4">
                         {/* Title */}
                         <div className="space-y-1.5">
-                            <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Objective Title</Label>
+                            <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Task Title</Label>
                             <Input 
                                 value={data.title}
                                 onChange={e => setData('title', e.target.value)}
@@ -108,7 +108,7 @@ export default function CreateTaskModal({ isOpen, setIsOpen, project, workspace 
 
                         {/* Due Date */}
                         <div className="space-y-1.5">
-                            <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Objective Deadline</Label>
+                            <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Task Deadline</Label>
                             <div className="relative">
                                 <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
                                 <Input 

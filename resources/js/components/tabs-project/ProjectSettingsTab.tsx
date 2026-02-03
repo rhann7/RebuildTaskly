@@ -52,7 +52,7 @@ export default function ProjectSettingsTab({
         e.preventDefault();
         patch(`/workspaces/${workspace.slug}/projects/${project.slug}`, {
             preserveScroll: true,
-            onSuccess: () => alert('SECTOR PARAMETERS UPDATED'),
+            onSuccess: () => alert('PROJECT PARAMETERS UPDATED'),
         });
     };
 
@@ -155,7 +155,7 @@ export default function ProjectSettingsTab({
                         <textarea
                             value={data.description}
                             onChange={e => setData('description', e.target.value)}
-                            placeholder="Describe objectives..."
+                            placeholder="Describe your project..."
                             className="w-full bg-muted/30 border border-border rounded-xl p-6 text-foreground font-medium min-h-[140px] outline-none focus:ring-2 focus:ring-sada-red/20 focus:border-sada-red transition-all italic placeholder:opacity-20"
                         />
                         <InputError message={errors.description} />
@@ -185,7 +185,7 @@ export default function ProjectSettingsTab({
                             DANGER ZONE
                         </h4>
                         <p className="text-[10px] text-muted-foreground mt-1 font-bold leading-relaxed">
-                            Once a project is purged, all objectives and data associated with it are lost forever.
+                            Once a project is purged, all its tasks and data associated with it are lost forever.
                         </p>
                     </div>
                 </div>

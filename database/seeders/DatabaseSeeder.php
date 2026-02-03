@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
 
         Role::firstOrCreate(['name' => 'super-admin']);
         Role::firstOrCreate(['name' => 'company']);
+        Role::firstOrCreate(['name' => 'employee']);
 
         $superAdmin = User::firstOrCreate(
             ['email' => 'superadmin@taskly.com'],
