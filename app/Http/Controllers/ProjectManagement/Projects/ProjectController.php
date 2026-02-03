@@ -104,7 +104,6 @@ class ProjectController extends Controller
         abort_if($project->workspace_id !== $workspace->id, 404);
 
         $validated = $request->validate([
-            'workspace_id' => 'required|exists:workspaces,id',
             'name'        => 'required|string|max:255',
             'description' => 'nullable|string',
             'status'      => 'required|in:active,inactive',
