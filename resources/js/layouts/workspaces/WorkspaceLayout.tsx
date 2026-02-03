@@ -1,9 +1,14 @@
 import AppLayout from '@/layouts/app-layout';
 import { LayoutGrid, Users2, Settings } from 'lucide-react';
-import { WorkspaceHeader } from './partials/WorkspaceShowHeader';
+import { WorkspaceHeader } from './partials/WorkspaceShowHeader'; // Pastikan path file header lo bener
 import { SimpleTabs } from '@/components/custom/SimpleTabs';
+import CreateProjectModal from '@/components/tabs-workspace/CreateProjectModal'; // Import modalnya di sini
+import { useState } from 'react';
 
 export default function WorkspaceShowLayout({ children, workspace, projects, activeTab, setActiveTab }: any) {
+    // State modal kita pindah ke layout atau pastikan sinkron dengan halaman
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
     const tabs = [
         { id: 'projects', label: 'Projects', icon: LayoutGrid },
         { id: 'members', label: 'Members', icon: Users2 },
@@ -18,25 +23,34 @@ export default function WorkspaceShowLayout({ children, workspace, projects, act
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            {/* Gunakan max-w-[1600px] agar layout lega dan tidak berubah ukuran */}
             <div className="mx-auto w-full max-w-[1600px] flex flex-col gap-6 p-6 md:p-10 min-h-screen">
 
-                {/* Header Bagian Atas */}
-                <WorkspaceHeader workspace={workspace} projectCount={projects?.length || 0} />
+                {/* Header: Sekarang nerima prop onAddProject */}
+                <WorkspaceHeader 
+                    workspace={workspace} 
+                    projectCount={projects?.length || 0} 
+                    onAddProject={() => setIsModalOpen(true)} 
+                />
 
-                {/* Tab Navigation - Dibungkus div agar kontrol posisi lebih mudah */}
+                {/* Tab Navigation */}
                 <SimpleTabs
                     tabs={tabs}
                     activeTab={activeTab}
                     setActiveTab={setActiveTab}
                 />
 
-
                 {/* Main Content Area */}
                 <div className="w-full flex-1">
                     {children}
                 </div>
             </div>
+
+            {/* Modal ditaruh di level layout biar bisa dipicu dari header manapun */}
+            <CreateProjectModal 
+                isOpen={isModalOpen} 
+                setIsOpen={setIsModalOpen} 
+                workspace={workspace} 
+            />
         </AppLayout>
     );
 }
