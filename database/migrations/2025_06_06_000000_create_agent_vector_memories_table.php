@@ -52,7 +52,7 @@ return new class extends Migration
             // This will be the vector column for pgvector, or JSON for other databases
             if ($connection->getDriverName() === 'pgsql') {
                 // For PostgreSQL with pgvector extension
-                $table->addColumn('vector', 'embedding', ['dimensions' => 1536]); // Default OpenAI dimensions
+                $table->addColumn('vector', 'embedding', ['dimensions' => 768]); // Default OpenAI dimensions
             } else {
                 // For other databases, store as JSON (less efficient but compatible)
                 $table->json('embedding_vector');

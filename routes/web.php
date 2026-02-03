@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Agentic\AgentController;
 use App\Http\Controllers\Articles\ArticleCategoryController;
 use App\Http\Controllers\Articles\ArticleController;
 use App\Http\Controllers\Chatbot\ChatbotController;
@@ -33,26 +34,33 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::impersonate();
     
     Route::middleware('role:super-admin')->group(function () {
+        
         Route::prefix('access-control')->name('access-control.')->group(function () {
             Route::resource('permissions', PermissionController::class);
             Route::get('company-access', [PermissionAccessController::class, 'index'])->name('company-access.index');
             Route::post('company-access/{company}', [PermissionAccessController::class, 'update'])->name('company-access.update');
         });
-
+        
         Route::prefix('company-management')->name('company-management.')->group(function () {
             Route::resource('categories', CategoryController::class)
-                ->parameters(['categories' => 'category:slug'])
-                ->except(['create', 'edit', 'show']);
-
+            ->parameters(['categories' => 'category:slug'])
+            ->except(['create', 'edit', 'show']);
+            
             Route::resource('companies', CompanyController::class)
-                ->parameters(['companies' => 'company:slug']);
+            ->parameters(['companies' => 'company:slug']);
         });
-
+            
         Route::prefix('article-management')->name('article-management.')->group(function () {
+            Route::post('/sync', [ArticleController::class, 'syncDocArticle']);
+
+            Route::get('/sync-info', [ArticleController::class, 'getSyncInfo']);
+            Route::get('/sync-history', [ArticleController::class, 'getSyncHistory']);
+            Route::get('/unsynced', [ArticleController::class, 'getUnsyncedArticles']);
+
             Route::resource('category', ArticleCategoryController::class)
-                ->names('category')
-                ->parameters(['category' => 'category'])
-                ->except(['create', 'edit', 'show']);
+            ->names('category')
+            ->parameters(['category' => 'category'])
+            ->except(['create', 'edit', 'show']);
 
             Route::resource('article', ArticleController::class);
             Route::put('/article/{article}/status', [ArticleController::class, 'updateStatusArticle'])->name('article.status');

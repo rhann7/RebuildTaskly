@@ -70,4 +70,8 @@ class ArticleDetail extends Model
         
         return $articleDetail;
     }
+
+    public function scopeSyncQuery() {
+        
+    }
 }

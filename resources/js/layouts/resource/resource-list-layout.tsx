@@ -2,7 +2,8 @@ import AppLayout from '@/layouts/app-layout';
 import { Head, Link } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 import { ReactNode } from 'react';
-import { Loader2, ChevronLeft, ChevronRight, Inbox } from 'lucide-react';
+import { Loader2, ChevronLeft, ChevronRight, Inbox, RefreshCcw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface PaginationProps {
     data: any[];
@@ -14,11 +15,13 @@ interface PaginationProps {
 
 interface LayoutConfig {
     showFilter?: boolean;
+    showsSyncArticle?: boolean
     showPagination?: boolean;
     showPaginationInfo?: boolean;
     showHeaderActions?: boolean;
     showShadow?: boolean;
     showBorder?: boolean;
+    showAlert?:  boolean
     containerClassName?: string;
     emptyStateIcon?: ReactNode;
     emptyStateTitle?: string;
@@ -31,6 +34,8 @@ interface ResourceListLayoutProps {
     breadcrumbs: BreadcrumbItem[];
     headerActions?: ReactNode;
     filterWidget?: ReactNode;
+    syncWidget?: ReactNode
+    alertWidget?:ReactNode
     pagination?: PaginationProps;
     children: ReactNode;
     isEmpty?: boolean;
@@ -45,6 +50,8 @@ export default function ResourceListLayout({
     breadcrumbs,
     headerActions,
     filterWidget,
+    syncWidget,
+    alertWidget,
     pagination,
     children,
     isEmpty = false,
@@ -82,9 +89,22 @@ export default function ResourceListLayout({
                     )}
                 </div>
 
+                <div className="flex flex-col md:flex-row gap-3 items-center rounded-xl border border-border bg-sidebar p-4 shadow-sm">
                 {layoutConfig.showFilter && filterWidget && (
-                    <div className="flex flex-col md:flex-row gap-3 items-center rounded-xl border border-border bg-sidebar p-4 shadow-sm">
+                    <div>
                         {filterWidget}
+                    </div>
+                )}
+                {layoutConfig.showsSyncArticle && syncWidget && (
+                    <div>
+                        {syncWidget}
+                    </div>
+                )}
+                </div>
+
+                {layoutConfig.showAlert && alertWidget && (
+                    <div>
+                        {alertWidget}
                     </div>
                 )}
 

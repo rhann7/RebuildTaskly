@@ -34,31 +34,7 @@ class MenuService
                     ['title' => 'Companies', 'href' => '/company-management/companies', 'isActive' => $request->routeIs('company-management.companies.*')],
                 ]
             ];
-
-            $menu[] = [
-                'title' => 'Article(s)',
-                'href'  => '#',
-                'icon'  => 'Newspaper',
-                'isActive' => $request->routeIs('article-management.*'),
-                'items' => [
-                    [
-                        'title' => 'Article',
-                        'href'  => '/article-management/article',
-                        'isActive' => $request->routeIs('article-management.article.*'),
-                    ],
-                    [
-                        'title' => 'Article Category',
-                        'href'  => '/article-management/category',
-                        'isActive' => $request->routeIs('article-management.category.*'),
-                    ],
-                    [
-                        'title' => 'Article Analytics',
-                        'href'  => '/article-management/analytics',
-                        'isActive' => $request->routeIs('article-management.analytics.*'),
-                    ]
-                ]
-            ];
-
+            
             $menu[] = [
                 'title' => 'Article(s)',
                 'href'  => '#',

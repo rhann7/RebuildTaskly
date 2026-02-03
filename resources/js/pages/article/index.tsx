@@ -1,5 +1,5 @@
 import ResourceListLayout from '@/layouts/resource/resource-list-layout';
-import { useState, FormEventHandler } from 'react';
+import { useState, FormEventHandler, useEffect } from 'react';
 import { useForm, router } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 
@@ -9,10 +9,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trash2, Pencil, Search, FileText, Grid3x3, List, Eye, Tag } from 'lucide-react';
+import { Plus, Trash2, Pencil, Search, FileText, Grid3x3, List, Eye, Tag, RefreshCcw, InfoIcon, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 type Article = {
     id: number;
@@ -46,6 +47,41 @@ type PageProps = {
     categories?: Category[];
 };
 
+// Type untuk response dari API
+type SyncInfo = {
+    sync_status: {
+        needs_sync: boolean;
+        reason: string;
+        recommendation: string;
+    };
+    last_sync: {
+        synced_at: string | null;
+        pdf_file: string | null;
+        total_articles_synced: number;
+        vector_memories_count: number;
+        time_ago: string;
+    };
+    current_state: {
+        total_articles_now: number;
+        unsynced_count: number;
+        unsynced_articles_preview: Array<{
+            id: number;
+            title: string;
+            created_at: string;
+            updated_at: string;
+        }>;
+        vector_memory_stats: {
+            total_memories: number;
+            namespace: string;
+        };
+    };
+    statistics: {
+        total_sync_history: number;
+        successful_syncs: number;
+        failed_syncs: number;
+    };
+};
+
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
     { title: 'Article Management', href: '#' },
@@ -67,6 +103,55 @@ export default function ArticleIndex({ articles, filters, categories = [] }: Pag
     const [categoryFilter, setCategoryFilter] = useState(filters.category_id || '');
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
+    // State untuk sync info
+    const [syncInfo, setSyncInfo] = useState<SyncInfo | null>(null);
+    const [isSyncing, setIsSyncing] = useState(false);
+    const [isLoadingSyncInfo, setIsLoadingSyncInfo] = useState(true);
+
+    // Fetch sync info saat component mount dan setiap 30 detik
+    useEffect(() => {
+        const fetchSyncInfo = async () => {
+            try {
+                setIsLoadingSyncInfo(true);
+                const res = await fetch('/article-management/sync-info');
+
+                if (res.ok) {
+                    const data: SyncInfo = await res.json();
+                    setSyncInfo(data);
+                    console.log('Sync Info:', data);
+                } else {
+                    console.error('Failed to fetch sync info:', res.statusText);
+                }
+            } catch (e) {
+                console.error('Error fetching sync info:', e);
+            } finally {
+                setIsLoadingSyncInfo(false);
+            }
+        };
+
+        // Fetch pertama kali
+        fetchSyncInfo();
+
+        // Auto refresh setiap 30 detik
+        const interval = setInterval(fetchSyncInfo, 30000);
+
+        // Cleanup
+        return () => clearInterval(interval);
+    }, []);
+
+    // Refresh sync info setelah create/update/delete article
+    const refreshSyncInfo = async () => {
+        try {
+            const res = await fetch('/article-management/sync-info');
+            if (res.ok) {
+                const data: SyncInfo = await res.json();
+                setSyncInfo(data);
+            }
+        } catch (e) {
+            console.error('Error refreshing sync info:', e);
+        }
+    };
+
     const { data, setData, post, put, processing, errors, reset, clearErrors } = useForm({
         name: '',
         description: '',
@@ -83,7 +168,41 @@ export default function ArticleIndex({ articles, filters, categories = [] }: Pag
 
     const handleDelete = (id: number) => {
         if (confirm('Are you sure you want to delete this article?')) {
-            router.delete(`/article-management/article/${id}`);
+            router.delete(`/article-management/article/${id}`, {
+                onSuccess: () => {
+                    // Refresh sync info setelah delete
+                    refreshSyncInfo();
+                }
+            });
+        }
+    };
+
+    const handleSync = async () => {
+        if (!confirm('Are you sure you want to sync articles to AI Agent?')) {
+            return;
+        }
+
+        setIsSyncing(true);
+
+        try {
+            router.post('/article-management/sync', {}, {
+                onSuccess: (page) => {
+                    // Refresh sync info setelah sync berhasil
+                    setTimeout(() => {
+                        refreshSyncInfo();
+                    }, 1000);
+                },
+                onError: (errors) => {
+                    console.error('Sync failed:', errors);
+                    alert('Failed to sync articles. Please try again.');
+                },
+                onFinish: () => {
+                    setIsSyncing(false);
+                }
+            });
+        } catch (e) {
+            console.error('Sync error:', e);
+            setIsSyncing(false);
         }
     };
 
@@ -98,6 +217,8 @@ export default function ArticleIndex({ articles, filters, categories = [] }: Pag
             onSuccess: () => {
                 setIsOpen(false);
                 reset();
+                // Refresh sync info setelah create/update
+                refreshSyncInfo();
             }
         });
     };
@@ -164,6 +285,111 @@ export default function ArticleIndex({ articles, filters, categories = [] }: Pag
         </div>
     );
 
+    const syncWidget = (
+        <div className="flex items-center gap-2">
+            <Button
+                variant="secondary"
+                disabled={isSyncing || isLoadingSyncInfo || !syncInfo?.sync_status.needs_sync}
+                onClick={handleSync}
+                className="relative"
+            >
+                <RefreshCcw className={`h-4 w-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
+                {isSyncing ? 'Syncing...' : 'Sync to AI'}
+                {syncInfo?.current_state.unsynced_count > 0 && (
+                    <Badge className="ml-2 bg-red-500 text-white text-xs px-1.5 py-0">
+                        {syncInfo.current_state.unsynced_count}
+                    </Badge>
+                )}
+            </Button>
+        </div>
+    );
+
+    const alertWidget = (
+        <div className="space-y-3">
+            {/* Loading state */}
+            {isLoadingSyncInfo && (
+                <Alert className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+                    <RefreshCcw className="h-4 w-4 animate-spin" />
+                    <AlertTitle className="text-blue-900 dark:text-blue-100">
+                        Loading sync information...
+                    </AlertTitle>
+                    <AlertDescription className="text-blue-800 dark:text-blue-200">
+                        Please wait while we check for unsynced articles.
+                    </AlertDescription>
+                </Alert>
+            )}
+
+            {/* Needs sync - Warning alert (HANYA MUNCUL JIKA ADA YANG PERLU SYNC) */}
+            {!isLoadingSyncInfo && syncInfo?.sync_status.needs_sync && (
+                <Alert className="bg-yellow-50 dark:bg-yellow-950 border-yellow-300 dark:border-yellow-700">
+                    <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+                    <AlertTitle className="text-lg font-bold text-yellow-900 dark:text-yellow-100">
+                        {syncInfo.current_state.unsynced_count} Article{syncInfo.current_state.unsynced_count > 1 ? 's' : ''} Need{syncInfo.current_state.unsynced_count === 1 ? 's' : ''} to be Synced
+                    </AlertTitle>
+                    <AlertDescription className="text-yellow-800 dark:text-yellow-200 space-y-2">
+                        <p className="font-medium">{syncInfo.sync_status.reason}</p>
+                        <p className="text-sm">{syncInfo.sync_status.recommendation}</p>
+
+                        {/* Last sync info */}
+                        {syncInfo.last_sync.synced_at && (
+                            <p className="text-xs mt-2 pt-2 border-t border-yellow-200 dark:border-yellow-800">
+                                Last synced: {syncInfo.last_sync.time_ago}
+                                {' '}({syncInfo.last_sync.total_articles_synced} articles)
+                            </p>
+                        )}
+
+                        {/* Preview unsynced articles */}
+                        {syncInfo.current_state.unsynced_articles_preview.length > 0 && (
+                            <div className="mt-3 pt-3 border-t border-yellow-200 dark:border-yellow-800">
+                                <p className="text-sm font-semibold mb-2">Recent unsynced articles:</p>
+                                <ul className="text-xs space-y-1 ml-4 list-disc">
+                                    {syncInfo.current_state.unsynced_articles_preview.slice(0, 5).map((article) => (
+                                        <li key={article.id} className="truncate">
+                                            {article.title}
+                                            <span className="text-yellow-600 dark:text-yellow-400 ml-2">
+                                                ({new Date(article.updated_at).toLocaleDateString()})
+                                            </span>
+                                        </li>
+                                    ))}
+                                    {syncInfo.current_state.unsynced_articles_preview.length > 5 && (
+                                        <li className="italic">
+                                            ... and {syncInfo.current_state.unsynced_articles_preview.length - 5} more
+                                        </li>
+                                    )}
+                                </ul>
+                            </div>
+                        )}
+
+                    </AlertDescription>
+                </Alert>
+            )}
+
+            {/* Up to date - Hanya tampilkan info sederhana (TIDAK PAKAI ALERT BOX) */}
+            {!isLoadingSyncInfo && syncInfo && !syncInfo.sync_status.needs_sync && syncInfo.last_sync.synced_at && (
+                <div className="text-sm text-muted-foreground flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+                    <span>
+                        Last synced: <span className="font-medium">{syncInfo.last_sync.time_ago}</span>
+                        {' '}({syncInfo.last_sync.total_articles_synced} articles)
+                    </span>
+                </div>
+            )}
+
+            {/* Sync in progress */}
+            {isSyncing && (
+                <Alert className="bg-blue-50 dark:bg-blue-950 border-blue-300 dark:border-blue-700">
+                    <RefreshCcw className="h-5 w-5 text-blue-600 dark:text-blue-400 animate-spin" />
+                    <AlertTitle className="text-lg font-bold text-blue-900 dark:text-blue-100">
+                        Syncing Articles...
+                    </AlertTitle>
+                    <AlertDescription className="text-blue-800 dark:text-blue-200">
+                        Please wait while we sync your articles to the AI Agent. This may take a few moments.
+                    </AlertDescription>
+                </Alert>
+            )}
+        </div>
+    );
+
     const HeaderActions = (
         <div className="flex items-center gap-2">
             <div className="flex items-center border rounded-md">
@@ -198,25 +424,31 @@ export default function ArticleIndex({ articles, filters, categories = [] }: Pag
                 description="Manage your articles and content."
                 breadcrumbs={breadcrumbs}
                 filterWidget={FilterWidget}
+                syncWidget={syncWidget}
+                alertWidget={alertWidget}
                 headerActions={HeaderActions}
                 pagination={articles}
                 isEmpty={articles.data.length === 0}
                 config={{
                     showFilter: true,
+                    showsSyncArticle: true,
                     showPagination: true,
                     showPaginationInfo: true,
                     showHeaderActions: true,
                     showShadow: true,
                     showBorder: true,
+                    showAlert: true,
                     emptyStateIcon: <FileText className="h-6 w-6 text-muted-foreground/60" />,
                     emptyStateTitle: 'No articles found',
                     emptyStateDescription: 'Create your first article to get started.',
                 }}
             >
+                {/* Grid/List view code tetap sama seperti sebelumnya */}
                 {viewMode === 'grid' ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
                         {articles.data.map((article) => (
                             <Card key={article.id} className="group hover:shadow-md transition-shadow">
+                                {/* Card content tetap sama */}
                                 <CardHeader className="pb-3">
                                     <div className="flex items-start justify-between gap-2">
                                         <div className="flex-1 min-w-0">
@@ -345,6 +577,7 @@ export default function ArticleIndex({ articles, filters, categories = [] }: Pag
                 )}
             </ResourceListLayout>
 
+            {/* Dialog tetap sama */}
             <Dialog open={isOpen} onOpenChange={setIsOpen}>
                 <DialogContent className="sm:max-w-[500px]">
                     <DialogHeader>

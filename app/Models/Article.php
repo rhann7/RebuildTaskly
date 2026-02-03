@@ -148,4 +148,5 @@ class Article extends Model
 
         return $article;
     }
+
 }
