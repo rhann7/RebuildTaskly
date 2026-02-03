@@ -45,6 +45,9 @@ class ProjectController extends Controller
         $projects = Project::query()
             ->where('workspace_id', $workspace->id)
             ->when($request->search, fn($q, $s) => $q->where('name', 'like', "%{$s}%"))
+            // Pake whereIn karena datanya berupa array
+            ->when($request->status, fn($q, $s) => $q->whereIn('status', (array)$s))
+            ->when($request->priority, fn($q, $p) => $q->whereIn('priority', (array)$p))
             ->latest()
             ->paginate(10)
             ->withQueryString();
@@ -52,7 +55,7 @@ class ProjectController extends Controller
         return Inertia::render('projects/index', [
             'workspace' => $workspace,
             'projects'  => $projects,
-            'filters'   => $request->only(['search']),
+            'filters'   => $request->only(['search', 'status', 'priority']),
             'pageConfig' => $this->getPageConfig($request),
         ]);
     }

@@ -6,23 +6,38 @@ import { getProjectColumns } from '@/components/tabs-workspace/ProjectColumns';
 import CreateProjectModal from '@/components/tabs-workspace/CreateProjectModal';
 import WorkspaceSettings from '@/components/tabs-workspace/WorkspaceSettings';
 import ProjectGridCard from '@/components/tabs-workspace/ProjectGridCard';
-import { ProjectControls } from '@/components/tabs-workspace/ProjectControls'; // Import kontrol baru
-import { Plus, Zap, Users2 } from 'lucide-react';
+import { ProjectControls } from '@/components/tabs-workspace/ProjectControls';
+import { Zap } from 'lucide-react';
 
 export default function WorkspaceShow({ workspace, projects, auth, companies }: any) {
     const [activeTab, setActiveTab] = useState<'projects' | 'members' | 'settings'>('projects');
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+    
+    // State Filter
     const [searchQuery, setSearchQuery] = useState('');
+    const [statusFilter, setStatusFilter] = useState<string[]>([]);
+    const [priorityFilter, setPriorityFilter] = useState<string[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     const columns = useMemo(() => getProjectColumns(workspace.slug), [workspace.slug]);
     
+    // Tactical Multi-Filter Logic
     const filteredProjects = useMemo(() => {
-        if (!Array.isArray(projects)) return [];
-        return projects.filter((p: any) => 
-            p.name.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-    }, [projects, searchQuery]);
+        // Cek apakah projects itu object pagination atau array langsung
+        const dataArray = Array.isArray(projects) ? projects : (projects.data || []);
+        
+        return dataArray.filter((p: any) => {
+            const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
+            
+            // Filter Status (jika kosong berarti semua diperbolehkan)
+            const matchesStatus = statusFilter.length === 0 || statusFilter.includes(p.status?.toLowerCase());
+            
+            // Filter Priority (jika kosong berarti semua diperbolehkan)
+            const matchesPriority = priorityFilter.length === 0 || priorityFilter.includes(p.priority?.toLowerCase());
+
+            return matchesSearch && matchesStatus && matchesPriority;
+        });
+    }, [projects, searchQuery, statusFilter, priorityFilter]);
 
     return (
         <WorkspaceLayout workspace={workspace} activeTab={activeTab} setActiveTab={setActiveTab} projects={projects}>
@@ -32,13 +47,15 @@ export default function WorkspaceShow({ workspace, projects, auth, companies }: 
                 
                 {activeTab === 'projects' && (
                     <div className="flex flex-col w-full">
-                        {/* Tactical Controls (The component from your friend) */}
                         <ProjectControls 
                             viewMode={viewMode}
                             setViewMode={setViewMode}
                             searchQuery={searchQuery}
                             setSearchQuery={setSearchQuery}
-                            onFilterClick={() => console.log('Open Filter Panel')}
+                            statusFilter={statusFilter}
+                            setStatusFilter={setStatusFilter}
+                            priorityFilter={priorityFilter}
+                            setPriorityFilter={setPriorityFilter}
                         />
 
                         {/* Content Area */}
@@ -63,7 +80,7 @@ export default function WorkspaceShow({ workspace, projects, auth, companies }: 
                                 <div className="py-32 text-center border border-dashed border-border rounded-[32px] bg-muted/5">
                                     <Zap className="mx-auto mb-4 text-muted-foreground/20" size={48} />
                                     <p className="uppercase tracking-[0.3em] text-muted-foreground text-[10px] font-black italic">
-                                        No Projects Detected in This Workspace
+                                        No Projects Located with Current Parameters
                                     </p>
                                 </div>
                             )}
@@ -71,8 +88,7 @@ export default function WorkspaceShow({ workspace, projects, auth, companies }: 
                     </div>
                 )}
 
-                {/* Tab Members & Settings tetep sama... */}
-                {activeTab === 'members' && ( <div className="py-32 text-center">... Personnel Module Offline ...</div> )}
+                {activeTab === 'members' && ( <div className="py-32 text-center border border-dashed border-border rounded-[32px]">... Personnel Module Offline ...</div> )}
                 {activeTab === 'settings' && ( <WorkspaceSettings workspace={workspace} isSuperAdmin={auth.user.roles?.includes('super-admin')} companies={companies} /> )}
             </div>
 
