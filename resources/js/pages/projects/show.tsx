@@ -52,8 +52,6 @@ export default function ProjectShow({ workspace, project, tasks, isSuperAdmin }:
                 </div>
 
                 {/* --- CONTENT TABS --- */}
-                
-                {/* TAB TASKS (Mirip Tab Projects di Workspace) */}
                 {activeTab === 'tasks' && (
                     <TaskTableTab project={project} tasks={tasks} workspace={workspace} />
                 )}
