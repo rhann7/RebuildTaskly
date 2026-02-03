@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react';
 import DataTableBase from '@/components/DataTableBase';
 import { getTaskColumns } from '@/components/tabs-project/TaskColumns'; 
-import { Search, Plus, Zap, Filter, X, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, Plus, Zap, Filter, X, Calendar, LayoutGrid, List } from 'lucide-react';
 import CreateTaskModal from '@/components/tabs-project/CreateTaskModal';
+import TaskGridCard from '@/components/tabs-project/TaskGridCard';
 
 export default function TaskTableTab({ project, tasks = [], workspace }: any) {
     // 1. States untuk Filtering
@@ -15,6 +16,7 @@ export default function TaskTableTab({ project, tasks = [], workspace }: any) {
     // 2. States untuk UI
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [showFilters, setShowFilters] = useState(false);
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('list'); // Default ke list atau grid sesuai selera
 
     // 3. Columns Memoization
     const columns = useMemo(() => 
@@ -36,16 +38,10 @@ export default function TaskTableTab({ project, tasks = [], workspace }: any) {
         if (!Array.isArray(tasks)) return [];
         
         return tasks.filter((t: any) => {
-            // Search Match
             const matchesSearch = t.title?.toLowerCase().includes(searchQuery.toLowerCase());
-            
-            // Status Multi-select Match
             const matchesStatus = statusFilters.length === 0 || statusFilters.includes(t.status);
-            
-            // Priority Multi-select Match
             const matchesPriority = priorityFilters.length === 0 || priorityFilters.includes(t.priority);
             
-            // Date Range Match
             const taskDate = t.due_date ? new Date(t.due_date).getTime() : null;
             const from = dateFrom ? new Date(dateFrom).getTime() : null;
             const to = dateTo ? new Date(dateTo).getTime() : null;
@@ -70,7 +66,7 @@ export default function TaskTableTab({ project, tasks = [], workspace }: any) {
         <div className="flex flex-col gap-6 w-full animate-in fade-in duration-500">
             
             {/* TOP BAR: SEARCH & PRIMARY ACTIONS */}
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-card/40 p-4 rounded-[24px] border border-border backdrop-blur-sm">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-card/40 p-4 rounded-[24px] border border-border backdrop-blur-sm shadow-sm">
                 <div className="relative flex-1 w-full group">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-muted-foreground group-focus-within:text-sada-red transition-colors" />
                     <input 
@@ -83,6 +79,22 @@ export default function TaskTableTab({ project, tasks = [], workspace }: any) {
                 </div>
                 
                 <div className="flex items-center gap-3 w-full md:w-auto">
+                    {/* VIEW SWITCHER */}
+                    <div className="flex bg-muted/50 p-1 rounded-xl border border-border shrink-0">
+                        <button 
+                            onClick={() => setViewMode('grid')}
+                            className={`p-2.5 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-card text-sada-red shadow-sm ring-1 ring-black/5' : 'text-muted-foreground hover:text-foreground'}`}
+                        >
+                            <LayoutGrid size={16} />
+                        </button>
+                        <button 
+                            onClick={() => setViewMode('list')}
+                            className={`p-2.5 rounded-lg transition-all ${viewMode === 'list' ? 'bg-card text-sada-red shadow-sm ring-1 ring-black/5' : 'text-muted-foreground hover:text-foreground'}`}
+                        >
+                            <List size={16} />
+                        </button>
+                    </div>
+
                     <button 
                         onClick={() => setShowFilters(!showFilters)}
                         className={`h-12 px-6 rounded-xl border font-black text-[10px] uppercase tracking-widest transition-all flex items-center gap-3 active:scale-95 ${
@@ -90,8 +102,7 @@ export default function TaskTableTab({ project, tasks = [], workspace }: any) {
                         }`}
                     >
                         <Filter size={14} strokeWidth={2.5} /> 
-                        {showFilters ? 'Hide System Filters' : 'Tactical Filters'}
-                        {showFilters ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                        {showFilters ? 'Hide Filters' : 'Tactical Filters'}
                     </button>
 
                     <button 
@@ -111,7 +122,7 @@ export default function TaskTableTab({ project, tasks = [], workspace }: any) {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-12 relative z-10">
-                        {/* Status Multi-Select */}
+                        {/* Status Filter */}
                         <div className="space-y-4">
                             <label className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground flex items-center gap-2">
                                 <div className="size-1.5 bg-sada-red" /> Filter by Status
@@ -134,7 +145,7 @@ export default function TaskTableTab({ project, tasks = [], workspace }: any) {
                             </div>
                         </div>
 
-                        {/* Priority Multi-Select */}
+                        {/* Priority Filter */}
                         <div className="space-y-4">
                             <label className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground flex items-center gap-2">
                                 <div className="size-1.5 bg-sada-red" /> Filter by Priority
@@ -157,7 +168,7 @@ export default function TaskTableTab({ project, tasks = [], workspace }: any) {
                             </div>
                         </div>
 
-                        {/* Date Range Selector */}
+                        {/* Date Filter */}
                         <div className="space-y-4">
                             <label className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground flex items-center gap-2">
                                 <div className="size-1.5 bg-sada-red" /> Filter by Deadline
@@ -186,7 +197,7 @@ export default function TaskTableTab({ project, tasks = [], workspace }: any) {
                         </div>
                     </div>
 
-                    {/* Footer Panel */}
+                    {/* Footer Panel Filter */}
                     <div className="flex justify-between items-center pt-6 border-t border-border/50">
                         <div className="flex items-center gap-4">
                             <p className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em] italic">
@@ -205,20 +216,29 @@ export default function TaskTableTab({ project, tasks = [], workspace }: any) {
                 </div>
             )}
 
-            {/* DATA TABLE AREA */}
-            <div className="bg-card rounded-[32px] border border-border shadow-sm overflow-hidden min-h-[400px]">
+            {/* DATA AREA: SWITCHER LOGIC */}
+            <div className="w-full min-h-[400px]">
                 {filteredTasks.length > 0 ? (
-                    <DataTableBase data={filteredTasks} columns={columns} />
+                    viewMode === 'list' ? (
+                        <div className="bg-card rounded-[32px] border border-border shadow-sm overflow-hidden animate-in fade-in duration-500">
+                            <DataTableBase data={filteredTasks} columns={columns} />
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in zoom-in-95 duration-500">
+                            {filteredTasks.map((task: any) => (
+                                <TaskGridCard key={task.id} task={task} />
+                            ))}
+                        </div>
+                    )
                 ) : (
-                    <div className="py-40 flex flex-col items-center justify-center text-center">
+                    <div className="py-40 flex flex-col items-center justify-center text-center border border-dashed border-border rounded-[32px] bg-muted/5">
                         <Zap className="size-16 text-muted-foreground/10 mb-6 animate-pulse" />
                         <h3 className="text-[11px] font-black uppercase tracking-[0.4em] text-muted-foreground">No Objectives Found</h3>
-                        <p className="text-[9px] text-muted-foreground/50 mt-2 uppercase tracking-widest">Adjust your tactical filters to locate tasks</p>
+                        <p className="text-[9px] text-muted-foreground/50 mt-2 uppercase tracking-widest italic">Try adjusting your tactical parameters</p>
                     </div>
                 )}
             </div>
 
-            {/* MODAL */}
             <CreateTaskModal 
                 isOpen={isModalOpen} 
                 setIsOpen={setIsModalOpen} 
