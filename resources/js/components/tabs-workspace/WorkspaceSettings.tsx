@@ -1,6 +1,6 @@
 import React from 'react';
 import { useForm } from '@inertiajs/react';
-import { Trash2, Save, ShieldCheck } from 'lucide-react';
+import { Trash2, Save, ShieldCheck, AlertCircle } from 'lucide-react';
 
 // 1. Tambahkan company_id di tipe data biar TS nggak komplain
 type WorkspaceFormData = {
@@ -14,7 +14,7 @@ type EmptyForm = Record<string, never>;
 
 // 2. Terima props isSuperAdmin dan list companies dari WorkspaceShow
 export default function WorkspaceSettings({ workspace, isSuperAdmin, companies }: any) {
-    
+
     const { data, setData, put, processing: updating } = useForm<WorkspaceFormData>({
         name: workspace.name || '',
         description: workspace.description || '',
@@ -123,22 +123,27 @@ export default function WorkspaceSettings({ workspace, isSuperAdmin, companies }
                 </form>
             </div>
 
-            <div className="bg-red-500/[0.03] border border-red-500/20 rounded-[32px] p-8 flex flex-col sm:flex-row items-center justify-between gap-6">
-                <div className="max-w-md text-left">
-                    <h4 className="text-[11px] font-black text-red-500 uppercase">
-                        Delete Entire Workspace
-                    </h4>
-                    <p className="text-[10px] text-zinc-500 mt-2 font-medium">
-                        Semua data yang sudah dihapus tidak dapat dipulihkan dari mainframe.
-                    </p>
+            <div className="bg-red-500/[0.02] border border-red-500/20 rounded-[32px] p-8 flex flex-col sm:flex-row items-center justify-between gap-6 transition-all hover:bg-red-500/[0.04]">
+                <div className="max-w-md text-left flex gap-4">
+                    <div className="size-10 bg-red-500/10 rounded-xl flex items-center justify-center shrink-0 mt-1">
+                        <AlertCircle className="text-red-500" size={20} />
+                    </div>
+                    <div>
+                        <h4 className="text-[11px] font-black text-red-500 uppercase tracking-widest">
+                            Danger Zone / Termination
+                        </h4>
+                        <p className="text-[10px] text-zinc-500 mt-2 font-bold uppercase leading-relaxed">
+                            Semua data yang sudah dihapus tidak dapat dipulihkan dari mainframe. Protokol ini bersifat permanen.
+                        </p>
+                    </div>
                 </div>
                 <button
                     type="button"
                     onClick={handleDelete}
                     disabled={deleting}
-                    className="h-14 px-8 border-2 border-red-500/30 text-red-500 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-red-500 hover:text-white transition-all flex items-center gap-3 shrink-0"
+                    className="h-14 px-8 border-2 border-red-500/30 text-red-500 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-red-500 hover:text-white transition-all flex items-center gap-3 shrink-0 active:scale-95"
                 >
-                    <Trash2 size={16} /> {deleting ? 'Deleting...' : 'Delete Workspace'}
+                    <Trash2 size={16} /> {deleting ? 'Terminating...' : 'Terminate Workspace'}
                 </button>
             </div>
         </div>
