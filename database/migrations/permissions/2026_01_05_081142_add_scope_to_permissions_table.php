@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('permissions', function (Blueprint $table) {
-            $table->string('scope')->after('type')->default('system');
+            $table->string('scope')->after('price')->default('system');
         });
     }
 

@@ -1,8 +1,10 @@
 <?php
 
 use App\Http\Controllers\Companies\CategoryController;
+use App\Http\Controllers\Companies\CompanyAppealController;
 use App\Http\Controllers\Companies\CompanyController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Modules\ModuleController;
 use App\Http\Controllers\Rules\PermissionAccessController;
 use App\Http\Controllers\Rules\PermissionController;
 use App\Http\Controllers\Workspaces\WorkspaceController;
@@ -16,16 +18,28 @@ Route::get('/', function () {
     return Inertia::render('welcome', ['canRegister' => Features::enabled(Features::registration())]);
 })->name('home');
 
+
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    
-    Route::impersonate();
-    
+    Route::resource('appeals', CompanyAppealController::class)
+        ->only(['create', 'store']);
+        
     Route::middleware('role:super-admin')->group(function () {
+        Route::impersonate();
+
         Route::prefix('access-control')->name('access-control.')->group(function () {
             Route::resource('permissions', PermissionController::class);
             Route::get('company-access', [PermissionAccessController::class, 'index'])->name('company-access.index');
             Route::post('company-access/{company}', [PermissionAccessController::class, 'update'])->name('company-access.update');
+        });
+
+        Route::prefix('product-management')->name('product-management.')->group(function () {
+            Route::resource('modules', ModuleController::class)
+                ->parameters(['modules' => 'module:slug']);
+            
+            Route::post('modules/{module}/permissions', [ModuleController::class, 'assignPermissions'])
+                ->name('modules.permissions.assign');
+            Route::delete('permissions/{permission}/detach', [ModuleController::class, 'removePermission'])
+                ->name('modules.permissions.remove');
         });
 
         Route::prefix('company-management')->name('company-management.')->group(function () {
@@ -34,11 +48,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 ->except(['create', 'edit', 'show']);
 
             Route::resource('companies', CompanyController::class)
-                ->parameters(['companies' => 'company:slug']);
+                ->parameters(['companies' => 'company:slug'])
+                ->except(['create', 'edit']);
+            
+            Route::resource('appeals', CompanyAppealController::class)
+                ->only(['index', 'update']);
         });
     });
 
-    Route::middleware('company_can')->group(function () {
+    Route::middleware(['company_status', 'company_can'])->group(function () {
+        Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
         Route::resource('workspaces', WorkspaceController::class)
             ->parameters(['workspaces' => 'workspace:slug'])
             ->except(['create', 'edit']);

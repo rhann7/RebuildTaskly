@@ -1,4 +1,14 @@
 import { LucideIcon } from 'lucide-react';
+import { Config, RouteName, RouteParams } from 'ziggy-js';
+
+declare global {
+    var route: (
+        name?: RouteName,
+        params?: RouteParams<RouteName>,
+        absolute?: boolean,
+        config?: Config
+    ) => string;
+}
 
 export interface Auth {
     user: User;
@@ -26,13 +36,32 @@ export interface NavItem {
     }[];
 }
 
+export interface PaginatedData<T> {
+    data: T[];
+    links: { url: string | null; label: string; active: boolean }[];
+    from: number;
+    to: number;
+    total: number;
+    current_page: number;
+    last_page: number;
+    per_page: number;
+}
+
+export interface SelectOption {
+    label: string;
+    value: string | number;
+}
+
+export interface FilterParams {
+    search?: string;
+    [key: string]: string | undefined;
+}
+
 export interface PageConfig {
     title: string;
     description: string;
     can_manage: boolean;
-    options: {
-        [key: string]: { label: string; value: string | number }[];
-    };
+    options?: Record<string, SelectOption[]>;
 }
 
 export interface SharedData {

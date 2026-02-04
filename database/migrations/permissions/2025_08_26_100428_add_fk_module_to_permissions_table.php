@@ -9,15 +9,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('permissions', function (Blueprint $table) {
-            $table->boolean('isGroup')->after('isMenu')->nullable();
-            $table->json('group_routes')->after('isGroup')->nullable();
+            $table->foreignId('module_id')->after('id')->nullable()->constrained('modules')->nullOnDelete();
         });
     }
 
     public function down(): void
     {
         Schema::table('permissions', function (Blueprint $table) {
-            $table->dropColumn(['isGroup', 'group_routes']);
+            $table->dropForeign(['module_id']);
+            $table->dropColumn('module_id');
         });
     }
 };

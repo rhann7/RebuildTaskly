@@ -9,10 +9,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('permissions', function (Blueprint $table) {
-            $table->string('route_path')->after('name')->nullable();
-            $table->string('route_name')->after('route_path')->nullable();
-            $table->string('controller_action')->after('route_name')->nullable();
-            $table->string('icon')->after('controller_action')->nullable();
+            $table->string('route_name')->after('scope')->nullable();
+            $table->string('icon')->after('route_name')->nullable();
             $table->boolean('isMenu')->default(false)->after('icon');
         });
     }

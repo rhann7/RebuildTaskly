@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\CompanyCategory;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -16,6 +17,22 @@ class DatabaseSeeder extends Seeder
 
         Role::firstOrCreate(['name' => 'super-admin']);
         Role::firstOrCreate(['name' => 'company']);
+
+        $categories = [
+            'Finance',
+            'Design',
+            'Technology',
+            'Healthcare',
+            'Construction',
+            'Digital Marketing',
+        ];
+
+        foreach ($categories as $category) {
+            CompanyCategory::firstOrCreate([
+                'name' => $category,
+                'slug' => Str::slug($category),
+            ]);
+        }
 
         $superAdmin = User::firstOrCreate(
             ['email' => 'superadmin@taskly.com'],

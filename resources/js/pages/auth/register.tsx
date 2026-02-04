@@ -1,12 +1,12 @@
 import { Head, useForm } from '@inertiajs/react';
-import { FormEventHandler } from 'react';
+import { FormEventHandler, useState, ChangeEvent } from 'react';
 
+import TextLink from '@/components/text-link';
 import AuthLayout from '@/layouts/auth-layout';
 import InputError from '@/components/input-error';
-import TextLink from '@/components/text-link';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -16,9 +16,10 @@ type Category = {
 };
 
 export default function Register({ categories }: { categories: Category[] }) {
+    const [logoPreview, setLogoPreview] = useState<string | null>(null);
     
     const { data, setData, post, processing, errors, reset } = useForm({
-        company_owner_name: '',
+        company_logo: null as File | null,
         company_name: '',
         company_phone: '',
         company_address: '',
@@ -28,9 +29,25 @@ export default function Register({ categories }: { categories: Category[] }) {
         password_confirmation: '',
     });
 
+    const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0] || null;
+        setData('company_logo', file);
+
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setLogoPreview(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        } else {
+            setLogoPreview(null);
+        }
+    }
+
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
         post('/register', {
+            forceFormData: true,
             onFinish: () => reset('password', 'password_confirmation'),
         });
     };
@@ -43,19 +60,33 @@ export default function Register({ categories }: { categories: Category[] }) {
             <Head title="Register" />
 
             <form onSubmit={submit} className="space-y-6">
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div className="grid gap-2">
-                        <Label htmlFor="company_owner_name">Company Owner Name</Label>
-                        <Input
-                            id="company_owner_name"
-                            value={data.company_owner_name}
-                            onChange={(e) => setData('company_owner_name', e.target.value)}
-                            required
-                            autoFocus
-                            placeholder="e.g. John Doe"
-                        />
-                        <InputError message={errors.company_owner_name} />
+                <div className="flex flex-col items-center gap-4 space-y-2">
+                    <Label htmlFor="company_logo" className="self-start">Company Logo (Optional)</Label>
+                    <div className="flex w-full items-center gap-4">
+                        <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg border-2 border-dashed border-muted">
+                            {logoPreview ? (
+                                <img src={logoPreview} alt="Preview" className="h-full w-full object-cover" />
+                            ) : (
+                                <span className="text-xs text-muted-foreground text-center p-1">No Logo</span>
+                            )}
+                        </div>
+                        <div className="grid w-full gap-1.5">
+                            <Input
+                                id="company_logo"
+                                type="file"
+                                accept="image/*"
+                                onChange={handleFileChange}
+                                className="cursor-pointer"
+                            />
+                            <p className="text-[0.8rem] text-muted-foreground">
+                                JPG, PNG (Max. 2MB)
+                            </p>
+                        </div>
                     </div>
+                    <InputError message={errors.company_logo} className="self-start" />
+                </div>
+
+                <div className="grid gap-2">
                     <div className="grid gap-2">
                         <Label htmlFor="company_name">Company Name</Label>
                         <Input
@@ -63,6 +94,7 @@ export default function Register({ categories }: { categories: Category[] }) {
                             value={data.company_name}
                             onChange={(e) => setData('company_name', e.target.value)}
                             required
+                            autoFocus
                             placeholder="Legal company name"
                         />
                         <InputError message={errors.company_name} />
@@ -109,12 +141,8 @@ export default function Register({ categories }: { categories: Category[] }) {
                                         {category.name}
                                     </SelectItem>
                                 ))}
-                                {categories?.length === 0 && (
-                                    <SelectItem value="none" disabled>No categories found</SelectItem>
-                                )}
                             </SelectContent>
                         </Select>
-
                         <InputError message={errors.company_category_id} />
                     </div>
                 </div>

@@ -2,19 +2,17 @@
 
 namespace App\Http\Controllers\Companies;
 
+use App\Actions\Fortify\CreateNewUser;
 use App\Http\Controllers\Controller;
 use App\Models\Company;
+use App\Models\CompanyAppeal;
 use App\Models\CompanyCategory;
-use App\Models\CompanyOwner;
-use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
-use Illuminate\Validation\Rule;
-use Spatie\Permission\Models\Permission;
 
 class CompanyController extends Controller
 {
@@ -26,7 +24,8 @@ class CompanyController extends Controller
             'can_manage'  => $request->user()->isSuperAdmin(),
             'options'     => [
                 'categories' => CompanyCategory::select(['id', 'name'])
-                    ->orderBy('id')->get()
+                    ->orderBy('id')
+                    ->get()
                     ->map(fn($c) => ['label' => $c->name, 'value' => $c->id]),
                 
                 'status' => [
@@ -40,19 +39,17 @@ class CompanyController extends Controller
     public function index(Request $request)
     {
         $companies = Company::query()
-            ->with(['companyOwner.user'])
+            ->with(['user', 'category'])
             ->when($request->search, function ($query, $search) {
-                $query->where(function ($searchQuery) use ($search) {
-                    $searchQuery->where('name', 'like', "%{$search}%")
-                        ->orWhereHas('companyOwner.user', function ($userQuery) use ($search) {
-                            $userQuery->where('email', 'like', "%{$search}%");
-                        });
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%");
                 });
             })
-            ->when($request->status && $request->status !== 'all', function ($q) use ($request) {
+            ->when($request->status !== null && $request->status !== 'all', function ($q) use ($request) {
                 $q->where('is_active', $request->status);
             })
-            ->orderBy('id')
+            ->latest()
             ->paginate(10)
             ->withQueryString();
 
@@ -63,138 +60,72 @@ class CompanyController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(Request $request, CreateNewUser $createNewUser)
     {
-        $validated = $request->validate([
-            'email'               => ['required', 'string', 'email', 'max:255', Rule::unique(User::class)],
-            'company_owner_name'  => ['required', 'string', 'max:255'],
-            'company_name'        => ['required', 'string', 'max:255'],
-            'company_address'     => ['required', 'string', 'max:255'],
-            'company_phone'       => ['required', 'string', 'max:20'],
-            'company_category_id' => ['required', 'exists:company_categories,id'],
+        $randomSuffix = Str::lower(Str::random(5));
+        $pw = str_replace(' ', '', strtolower($request->company_name)) . $randomSuffix;
+
+        $request->merge([
+            'password'              => $pw,
+            'password_confirmation' => $pw,
         ]);
 
-        return DB::transaction (function () use ($validated) {
-            $pw = str_replace(' ', '', strtolower($validated['company_name']));
-
-            $user = User::create([
-                'name'              => $validated['company_name'],
-                'email'             => $validated['email'],
-                'password'          => Hash::make($pw),
-                'email_verified_at' => now(),
-                'remember_token'    => Str::random(10),
-            ])->assignRole('company');
-
-            $company = Company::create([
-                'company_owner_id'    => CompanyOwner::create([
-                    'user_id' => $user->id,
-                    'name'    => $validated['company_owner_name'],
-                ])->id,
-                'company_category_id' => $validated['company_category_id'],
-                'name'                => $validated['company_name'],
-                'slug'                => Str::slug($validated['company_name']),
-                'email'               => $validated['email'],
-                'address'             => $validated['company_address'],
-                'phone'               => $validated['company_phone'],
-                'is_active'           => true,
-            ]);
-
-            $permissions = Permission::where('type', 'general')
-                ->where('isGroup', false)
-                ->whereIn('scope', ['company', 'workspace'])
-                ->pluck('id');
-
-            if ($permissions->isNotEmpty()) $company->syncPermissions($permissions);
-
-            return redirect()->route('company-management.companies.index')->with('success', "Company created. Default password: {$pw}");
-        });
-    }
-
-    public function create()
-    {
-        return Inertia::render('companies/create', [
-            'categories' => CompanyCategory::query()->select(['id', 'name'])->orderBy('id')->get(),
-        ]);
+        $createNewUser->create($request->all());
+        return back()->with('success', "Company berhasil dibuat. Password default: {$pw}");
     }
 
     public function show(Company $company)
     {
-        $company->load([
-            'companyOwner', 
-            'companyCategory', 
-            'workspaces' => function($query) {
-                $query->select('id', 'company_id', 'name', 'slug', 'created_at');
-            }
-        ]);
-
-        return inertia('companies/show', ['company' => $company]);
-    }
-
-    public function edit(Company $company)
-    {
-        return Inertia::render('companies/edit', [
-            'company'    => $company->load('companyCategory', 'companyOwner.user'),
-            'categories' => CompanyCategory::select(['id', 'name'])->get(),
+        return inertia('companies/show', [
+            'company'    => $company->load(['category', 'user', 'appealLogs.user']),
+            'pageConfig' => ['title' => 'Company Profile: ' . $company->name]
         ]);
     }
 
     public function update(Request $request, Company $company)
     {
-        $owner = $company->companyOwner->user ?? null;
-
         $validated = $request->validate([
-            'company_owner_name'  => 'required|string|max:255',
-            'company_category_id' => 'required|exists:company_categories,id',
-            'name'                => 'required|string|max:255',
-            'email'               => ['required', 'email', Rule::unique('users')->ignore($owner?->id)],
-            'phone'               => 'required|string|max:20',
-            'address'             => 'required|string|max:255',
-            'is_active'           => 'required|boolean',
+            'is_active' => 'required|boolean',
+            'reason'    => 'required_if:is_active,false|nullable|string|max:500',
         ]);
 
-        DB::transaction(function () use ($owner, $validated, $company) {
-            if ($owner) {
-                $owner->update([
-                    'name'  => $validated['name'],
-                    'email' => $validated['email'],
-                ]);
-            }
+        $company->update([
+            'is_active' => $validated['is_active'],
+            'reason'    => $validated['is_active'] ? 'Akun telah diaktifkan kembali oleh admin.' : $validated['reason'],
+        ]);
 
-            if ($company->companyOwner) {
-                $company->companyOwner->update([
-                    'name' => $validated['company_owner_name']
-                ]);
-            }
-
-            $oldStatus = $company->is_active;
+        if ($validated['is_active']) {
+            $company->updateQuietly(['reason' => null]);
             
-            $company->update([
-                'name'                => $validated['name'],
-                'slug'                => Str::slug($validated['name']), 
-                'email'               => $validated['email'],
-                'phone'               => $validated['phone'],
-                'address'             => $validated['address'],
-                'company_category_id' => $validated['company_category_id'],
-                'is_active'           => $validated['is_active'],
-            ]);
+            CompanyAppeal::where('company_id', $company->id)
+                ->where('status', 'pending')
+                ->update([
+                    'status' => 'approved',
+                    'reason' => 'Akun telah diaktifkan kembali oleh admin.'
+                ]);
+        }
 
-            if ($oldStatus == 1 && $company->is_active == 0) Cache::forget("company-{$company->id}-permissions");
-        });
+        if ($company->wasChanged('is_active')) {
+            Cache::forget("company-{$company->id}-permissions");
+        }
 
-        return redirect()->route('company-management.companies.show', $company->slug)->with('success', "Company updated successfully.");
+        $statusLabel = $validated['is_active'] ? 'Active' : 'Inactive';
+        return back()->with('success', "Company status updated to {$statusLabel}");
     }
 
     public function destroy(Company $company)
     {
         DB::transaction(function () use ($company) {
-            $user = $company->companyOwner->user ?? null;
+            $user = $company->user;
 
             Cache::forget("company-{$company->id}-permissions");
-            
+
+            if ($company->logo) Storage::disk('public')->delete('logos/' . $company->logo);
+
             $company->delete(); 
             if ($user) $user->delete();
         });
         
-        return redirect()->route('company-management.companies.index')->with('success', 'Company and associated user account have been permanently deleted.');
+        return back()->with('success', 'Company deleted successfully.');
     }
 }

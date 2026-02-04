@@ -3,8 +3,8 @@
 namespace App\Actions\Fortify;
 
 use App\Models\Company;
-use App\Models\CompanyOwner;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -22,10 +22,10 @@ class CreateNewUser implements CreatesNewUsers
         Validator::make($input, [
             'email'               => ['required', 'string', 'email', 'max:255', Rule::unique(User::class)],
             'password'            => $this->passwordRules(),
-            'company_owner_name'  => ['required', 'string', 'max:255'],
+            'company_logo'        => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
             'company_name'        => ['required', 'string', 'max:255'],
-            'company_address'     => ['required', 'string', 'max:255'],
-            'company_phone'       => ['required', 'string', 'max:20'],
+            'company_address'     => ['nullable', 'string', 'max:255'],
+            'company_phone'       => ['nullable', 'string', 'max:20'],
             'company_category_id' => ['required', 'exists:company_categories,id'],
         ])->validate();
 
@@ -35,29 +35,30 @@ class CreateNewUser implements CreatesNewUsers
                 'email'             => $input['email'],
                 'password'          => Hash::make($input['password']),
                 'email_verified_at' => now(),
-                'remember_token'    => Str::random(10),
             ])->assignRole('company');
 
+            $logoPath = null;
+            if (isset($input['company_logo']) && $input['company_logo'] instanceof UploadedFile) {
+                $path = $input['company_logo']->store('logos', 'public');
+                $logoPath = basename($path);
+            }
+
+            $slug = Str::slug($input['company_name']) . '-' . Str::lower(Str::random(5));
+
             $company = Company::create([
-                'company_owner_id'    => CompanyOwner::create([
-                    'user_id' => $user->id,
-                    'name'    => $input['company_owner_name'],
-                ])->id,
+                'user_id'             => $user->id,
                 'company_category_id' => $input['company_category_id'],
                 'name'                => $input['company_name'],
-                'slug'                => Str::slug($input['company_name']),
+                'slug'                => $slug,
+                'logo'                => $logoPath,
                 'email'               => $input['email'],
-                'address'             => $input['company_address'],
-                'phone'               => $input['company_phone'],
+                'address'             => $input['company_address'] ?? null,
+                'phone'               => $input['company_phone'] ?? null,
                 'is_active'           => true,
             ]);
             
-            $permissions = Permission::where('type', 'general')
-                ->whereIn('scope', ['company', 'workspace'])->get();
-                
-            if ($permissions->count() > 0) {
-                $company->givePermissionTo($permissions);
-            }
+            $permissions = Permission::where('type', 'general')->get();
+            if ($permissions->isNotEmpty()) $company->givePermissionTo($permissions);
             
             return $user;
         });

@@ -4,7 +4,7 @@ import { type BreadcrumbItem } from '@/types';
 import { useCompanyPermission } from '@/hooks/use-company-permission';
 import { Button } from '@/components/ui/button';
 import { StatCard } from '@/components/stat-card';
-import { Briefcase, Users, CheckCircle, Plus, Activity, Building2, ShieldAlert, ShieldCheck, Zap } from 'lucide-react';
+import { Briefcase, Users, CheckCircle, Plus, Activity, Building2, ShieldAlert, ShieldCheck, Zap, CheckCircle2 } from 'lucide-react';
 
 interface DashboardStat {
     title: string;
@@ -48,9 +48,22 @@ export default function Dashboard({ stats, activities }: PageProps) {
     const userRoles = auth.user.roles || [];
     const isSuperAdmin = userRoles.includes('super-admin');
     const { can } = useCompanyPermission();
+    const { flash } = usePage().props as any || {};
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
+            {flash?.success && !isSuperAdmin && (
+                <div className="mb-6 p-4 bg-green-50 border-l-4 border-green-500 text-green-700 animate-in slide-in-from-right duration-500 rounded-r-lg shadow-sm">
+                    <div className="flex items-center gap-3">
+                        <CheckCircle2 className="h-5 w-5 shrink-0" />
+                        <div>
+                            <p className="font-bold text-sm">Akun Aktif Kembali</p>
+                            <p className="text-xs opacity-90">{flash.success}</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <Head title="Dashboard" />
 
             <div className="flex h-full flex-1 flex-col gap-6 rounded-xl p-4">

@@ -5,7 +5,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Cache;
+use Spatie\Permission\Models\Permission;
 
 class CheckCompanyPermission
 {
@@ -23,38 +23,23 @@ class CheckCompanyPermission
             Auth::logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
-
             abort(403, "Akses ditolak. Perusahaan Anda ({$company->name}) sedang ditangguhkan.");
         }
 
         $routeName = $request->route()->getName();
+        
         $whiteList = ['dashboard', 'profile.edit', 'profile.update', 'profile.destroy', 'impersonate.take', 'impersonate.leave'];
         if (in_array($routeName, $whiteList)) return $next($request);
 
-        $permissions = Cache::remember("company-{$company->id}-permissions", now()->addDay(), function () use ($company) {
-            return $company->permissions()->get(['id', 'name', 'route_name', 'isGroup', 'group_routes']);
-        });
+        $dbPermission = Permission::where('route_name', $routeName)->first();
 
-        foreach($permissions as $p) {
-            if (!$p->isGroup && $p->route_name === $routeName) {
-                return $next($request);
-            }
-
-            if ($p->isGroup && $p->group_routes) {
-                $patterns = is_array($p->group_routes)
-                    ? $p->group_routes
-                    : json_decode($p->group_routes, true);
-                
-                if (is_array($patterns) && str($routeName)->is($patterns)) {
-                    return $next($request);
-                }
-            }
+        if ($dbPermission) {
+            if ($company->hasPermissionTo($dbPermission->name)) return $next($request);
+            abort(403, "Company tidak memiliki akses ke fitur: {$dbPermission->name}");
         }
 
-        if ($permission && $permissions->contains('name', $permission)) {
-            return $next($request);
-        }
-
-        abort(403, "Company tidak memiliki akses ke fitur/rute: {$routeName}");
+        if ($permission && $company->hasPermissionTo($permission)) return $next($request);
+        
+        abort(403, "Rute ini ({$routeName}) belum terdaftar dalam sistem akses kontrol.");
     }
 }
