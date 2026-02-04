@@ -12,9 +12,9 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('slug')->unique();
-            $table->text('description')->nullable();
-            $table->enum('type', ['standard', 'addon'])->default('standard'); 
+            $table->string('type')->default('standard');
             $table->decimal('price', 15, 2)->default(0); 
+            $table->text('description')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
