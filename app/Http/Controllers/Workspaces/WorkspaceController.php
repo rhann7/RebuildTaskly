@@ -33,7 +33,8 @@ class WorkspaceController extends Controller
     private function getPageConfig(Request $request)
     {
         $user = $request->user();
-        $canManage = $user->isSuperAdmin() || $user->hasAnyPermission(['access-workspaces', 'manage-workspaces']);
+        $company = $this->resolveCompany($user);
+        $canManage = $user->isSuperAdmin() || ($company && $company->hasPermissionTo('access-workspaces'));
 
         return [
             'title'       => $user->isSuperAdmin() ? 'Workspace Management' : 'My Workspaces',

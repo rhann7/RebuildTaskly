@@ -1,93 +1,100 @@
-import { useState, useMemo } from 'react';
-import { Head, Link, useForm, router } from '@inertiajs/react';
+import { useState, useMemo, useEffect } from 'react';
+import { Head, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import DataTableBase from '@/components/DataTableBase';
-import { getProjectColumns } from '@/components/tabs-workspace/ProjectColumns'; // Gunakan kolom yang sudah kita rapikan tadi
-import { Search, Plus, Briefcase, Settings2, Trash2, ExternalLink } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { ProjectControls } from '@/components/tabs-workspace/ProjectControls';
+import { ProjectGlobalHero } from '@/components/projects-global/ProjectGlobalHero';
+import { NoDataSignal } from '@/components/projects-global/NoDataSignal';
+import { getGlobalProjectColumns } from '@/components/projects-global/GlobalProjectColumns';
 
-export default function ProjectIndex({ projects, workspaces, filters, pageConfig, isSuperAdmin, workspace }: any) {
+export default function index({ projects, workspaces, filters }: any) {
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+    
+    // State Filter
     const [searchQuery, setSearchQuery] = useState(filters.search || '');
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [statusFilter, setStatusFilter] = useState<string[]>(filters.status || []);
+    const [priorityFilter, setPriorityFilter] = useState<string[]>(filters.priority || []);
+    const [workspaceFilter, setWorkspaceFilter] = useState<string[]>(filters.workspaces || []);
 
-    const breadcrumbs = [
-        { title: 'Dashboard', href: '/dashboard' },
-        { title: 'Workspaces', href: '/workspaces' },
-        { title: workspace.name, href: `/workspaces/${workspace.slug}` },
-        { title: 'Projects', href: '#' },
-    ];
+    const columns = useMemo(() => getGlobalProjectColumns(), []);
 
-    // Gunakan kolom yang sudah kita standarisasi
-    const columns = useMemo(() => getProjectColumns(workspace.slug), [workspace.slug]);
+    // Logic: Jalankan router saat salah satu state filter berubah
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            router.get('/projects', 
+                { 
+                    search: searchQuery, 
+                    status: statusFilter, 
+                    priority: priorityFilter,
+                    workspaces: workspaceFilter 
+                },
+                { 
+                    preserveState: true, 
+                    replace: true, 
+                    preserveScroll: true,
+                    only: ['projects', 'filters'] // Biar ringan, cuma reload data tabel & filter
+                }
+            );
+        }, 300); // Debounce 300ms biar gak spam request pas ngetik search
 
-    const handleSearch = () => {
-        router.get(`/workspaces/${workspace.slug}/projects`, 
-            { search: searchQuery }, 
-            { preserveState: true, replace: true }
-        );
-    };
+        return () => clearTimeout(timer);
+    }, [searchQuery, statusFilter, priorityFilter, workspaceFilter]);
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={`Projects - ${workspace.name}`} />
+        <AppLayout breadcrumbs={[
+    { title: 'Dashboard', href: '/dashboard' }, 
+    { title: 'Global Projects', href: '/projects' } // Tambahin href di sini
+    ]}>
+            <Head title="Global Projects" />
 
-            <div className="mx-auto w-full max-w-[1600px] flex flex-col gap-8 p-6 md:p-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="mx-auto w-full max-w-[1600px] flex flex-col gap-8 p-6 md:p-10 animate-in fade-in duration-700">
                 
-                {/* Header SADA Style */}
-                <div className="flex flex-col gap-2">
-                    <h1 className="text-4xl font-black uppercase tracking-tighter italic">
-                        Project Operations
-                    </h1>
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">
-                        Active operations within {workspace.name}
-                    </p>
-                </div>
+                <ProjectGlobalHero 
+                    total={projects.total} 
+                    activeCount={projects.data.length} 
+                />
 
-                {/* Control Bar */}
-                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 w-full">
-                    <div className="relative w-full max-w-lg group">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-muted-foreground group-focus-within:text-sada-red transition-colors" />
-                        <Input 
-                            type="text"
-                            placeholder="Search operation nomenclature..."
-                            className="h-12 pl-12 bg-card border-border rounded-xl text-[11px] font-black uppercase tracking-widest focus:ring-2 focus:ring-sada-red/20 outline-none"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                        />
-                    </div>
-                    
-                    {pageConfig.can_manage && (
-                        <Button 
-                            onClick={() => setIsModalOpen(true)}
-                            className="h-12 px-8 bg-sada-red hover:bg-sada-red-hover text-white rounded-xl font-black text-[11px] uppercase tracking-widest shadow-lg shadow-sada-red/20 transition-all active:scale-95"
-                        >
-                            <Plus className="size-4 mr-2" strokeWidth={3} /> Add New Project
-                        </Button>
-                    )}
-                </div>
+                <ProjectControls 
+                    viewMode={viewMode}
+                    setViewMode={setViewMode}
+                    searchQuery={searchQuery}
+                    setSearchQuery={setSearchQuery} // Cukup update state, useEffect yang handle request
+                    statusFilter={statusFilter}
+                    setStatusFilter={setStatusFilter}
+                    priorityFilter={priorityFilter}
+                    setPriorityFilter={setPriorityFilter}
+                    // Tambahan props untuk filter workspace
+                    workspaces={workspaces} 
+                    workspaceFilter={workspaceFilter}
+                    setWorkspaceFilter={setWorkspaceFilter}
+                />
 
-                {/* Table Section */}
-                <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden w-full transition-all">
+                <div className="bg-card rounded-[32px] border border-border shadow-2xl overflow-hidden min-h-[400px]">
                     {projects.data.length > 0 ? (
                         <DataTableBase 
                             data={projects.data} 
-                            columns={columns} 
-                            options={{ pageLength: 10 }}
+                            columns={columns}
+                            options={{
+                                createdRow: (row: HTMLElement, data: any) => {
+                                    row.classList.add('cursor-pointer');
+                                    row.onclick = () => router.visit(`/workspaces/${data.workspace?.slug}/projects/${data.slug}`);
+                                }
+                            }}
                         />
                     ) : (
-                        <div className="py-40 text-center border-t border-border">
-                            <Briefcase className="mx-auto mb-4 text-muted-foreground/20" size={48} />
-                            <p className="uppercase tracking-[0.3em] text-muted-foreground text-[10px] font-black">
-                                No Active Operations Detected
-                            </p>
-                        </div>
+                        <NoDataSignal />
                     )}
                 </div>
-            </div>
 
-            {/* Modal bisa panggil CreateProjectModal yang sudah kita rapikan tadi */}
+                <div className="flex justify-between items-center px-4 font-black uppercase italic text-[9px] text-muted-foreground tracking-widest">
+                    <span>
+                        Operational Range: {projects.from || 0} — {projects.to || 0}
+                    </span>
+                    <span>
+                        Total Intelligence: {projects.total || 0} Assets
+                    </span>
+                </div>
+            </div>
         </AppLayout>
     );
 }

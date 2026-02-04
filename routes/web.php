@@ -20,6 +20,10 @@ Route::get('/', function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::middleware(['auth', 'verified', 'company_can'])->group(function () {
+    Route::get('/projects', [ProjectController::class, 'globalIndex'])
+        ->name('projects.global');
+    });
     Route::impersonate();
     Route::middleware('role:super-admin')->group(function () {
         Route::prefix('access-control')->name('access-control.')->group(function () {

@@ -1,16 +1,19 @@
 import { useState } from 'react';
-import { Search, Grid3x3, List, X, Filter, Calendar } from "lucide-react";
+import { Search, Grid3x3, List, Filter, Briefcase } from "lucide-react";
 
 interface ProjectControlsProps {
     viewMode: 'grid' | 'list';
     setViewMode: (mode: 'grid' | 'list') => void;
     searchQuery: string;
     setSearchQuery: (query: string) => void;
-    // Props untuk Filter (Gunakan Array untuk Multi-select)
     statusFilter: string[];
     setStatusFilter: (val: string[]) => void;
     priorityFilter: string[];
     setPriorityFilter: (val: string[]) => void;
+    // TAMBAHAN PROPS BARU
+    workspaces?: any[];
+    workspaceFilter?: string[];
+    setWorkspaceFilter?: (val: string[]) => void;
 }
 
 export const ProjectControls = ({ 
@@ -21,25 +24,29 @@ export const ProjectControls = ({
     statusFilter,
     setStatusFilter,
     priorityFilter,
-    setPriorityFilter
+    setPriorityFilter,
+    workspaces = [],
+    workspaceFilter = [],
+    setWorkspaceFilter
 }: ProjectControlsProps) => {
     const [isFilterOpen, setIsFilterOpen] = useState(false);
 
-    // Helper untuk toggle multi-select
-    const toggleFilter = (currentArray: string[], value: string, setter: (val: string[]) => void) => {
-        if (currentArray.includes(value)) {
-            setter(currentArray.filter(i => i !== value));
+    const toggleFilter = (currentArray: string[], value: string, setter?: (val: string[]) => void) => {
+        if (!setter) return;
+        const stringVal = String(value);
+        if (currentArray.includes(stringVal)) {
+            setter(currentArray.filter(i => i !== stringVal));
         } else {
-            setter([...currentArray, value]);
+            setter([...currentArray, stringVal]);
         }
     };
+
+    const activeFilterCount = statusFilter.length + priorityFilter.length + workspaceFilter.length;
 
     return (
         <div className="space-y-4 mb-8 animate-in fade-in slide-in-from-top-4 duration-500">
             {/* BAR UTAMA */}
             <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-card rounded-[24px] p-3 shadow-sm border border-border transition-all">
-                
-                {/* Search */}
                 <div className="relative flex-1 w-full group">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-muted-foreground group-focus-within:text-sada-red transition-colors" />
                     <input
@@ -52,23 +59,22 @@ export const ProjectControls = ({
                 </div>
 
                 <div className="flex items-center gap-3 w-full md:w-auto shrink-0">
-                    {/* View Toggles */}
                     <div className="flex items-center gap-1 bg-muted/50 p-1.5 rounded-2xl border border-border/50">
                         <ViewToggle active={viewMode === 'grid'} onClick={() => setViewMode('grid')} icon={Grid3x3} label="Grid" />
                         <ViewToggle active={viewMode === 'list'} onClick={() => setViewMode('list')} icon={List} label="List" />
                     </div>
 
-                    {/* Tactical Filter Toggle */}
                     <button 
                         onClick={() => setIsFilterOpen(!isFilterOpen)}
                         className={`flex items-center gap-2 px-5 h-12 rounded-2xl border transition-all text-[10px] font-black uppercase tracking-widest ${
-                            isFilterOpen || statusFilter.length > 0 || priorityFilter.length > 0
+                            isFilterOpen || activeFilterCount > 0
                             ? 'bg-sada-red text-white border-sada-red shadow-[0_0_20px_rgba(239,68,68,0.3)]' 
                             : 'bg-card border-border text-muted-foreground hover:text-foreground'
                         }`}
                     >
                         <Filter size={16} />
                         {isFilterOpen ? 'HIDE FILTERS' : 'TACTICAL FILTERS'}
+                        {activeFilterCount > 0 && <span className="ml-2 bg-white text-sada-red size-4 rounded-full flex items-center justify-center text-[8px]">{activeFilterCount}</span>}
                     </button>
                 </div>
             </div>
@@ -76,14 +82,11 @@ export const ProjectControls = ({
             {/* COLLAPSIBLE FILTER PANEL */}
             {isFilterOpen && (
                 <div className="bg-card/50 backdrop-blur-sm rounded-[32px] p-8 border border-border border-dashed animate-in zoom-in-95 duration-300">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
                         
                         {/* Status Group */}
                         <div className="space-y-4">
-                            <div className="flex items-center gap-2">
-                                <div className="size-1.5 bg-sada-red rounded-full" />
-                                <h4 className="text-[11px] font-black uppercase tracking-[0.3em] text-foreground">Filter by Status</h4>
-                            </div>
+                            <SectionTitle label="Filter by Status" />
                             <div className="flex flex-wrap gap-2">
                                 {['active', 'inactive'].map((s) => (
                                     <FilterButton 
@@ -98,10 +101,7 @@ export const ProjectControls = ({
 
                         {/* Priority Group */}
                         <div className="space-y-4">
-                            <div className="flex items-center gap-2">
-                                <div className="size-1.5 bg-sada-red rounded-full" />
-                                <h4 className="text-[11px] font-black uppercase tracking-[0.3em] text-foreground">Filter by Priority</h4>
-                            </div>
+                            <SectionTitle label="Filter by Priority" />
                             <div className="flex flex-wrap gap-2">
                                 {['low', 'medium', 'high'].map((p) => (
                                     <FilterButton 
@@ -113,16 +113,35 @@ export const ProjectControls = ({
                                 ))}
                             </div>
                         </div>
+
+                        {/* Workspace Group (THE NEW ONE) */}
+                        <div className="space-y-4">
+                            <SectionTitle label="Filter by Workspace" />
+                            <div className="flex flex-wrap gap-2">
+                                {workspaces.map((ws: any) => (
+                                    <FilterButton 
+                                        key={ws.id}
+                                        label={ws.name}
+                                        active={workspaceFilter.includes(String(ws.id))}
+                                        onClick={() => toggleFilter(workspaceFilter, String(ws.id), setWorkspaceFilter)}
+                                    />
+                                ))}
+                                {workspaces.length === 0 && <p className="text-[10px] italic text-muted-foreground">No sectors found</p>}
+                            </div>
+                        </div>
                     </div>
 
-                    {/* Footer Panel */}
                     <div className="mt-8 pt-6 border-t border-border/50 flex justify-between items-center">
                         <p className="text-[9px] font-bold text-muted-foreground uppercase italic tracking-widest">
-                            {statusFilter.length + priorityFilter.length} Active tactical parameters
+                            {activeFilterCount} Active tactical parameters detected
                         </p>
-                        {(statusFilter.length > 0 || priorityFilter.length > 0) && (
+                        {activeFilterCount > 0 && (
                             <button 
-                                onClick={() => { setStatusFilter([]); setPriorityFilter([]); }}
+                                onClick={() => { 
+                                    setStatusFilter([]); 
+                                    setPriorityFilter([]); 
+                                    setWorkspaceFilter?.([]);
+                                }}
                                 className="text-[9px] font-black text-sada-red hover:underline tracking-[0.2em] uppercase"
                             >
                                 Reset All Parameters
@@ -135,11 +154,18 @@ export const ProjectControls = ({
     );
 };
 
-// Sub-components
+// Helper Components
+const SectionTitle = ({ label }: { label: string }) => (
+    <div className="flex items-center gap-2">
+        <div className="size-1.5 bg-sada-red rounded-full shadow-[0_0_5px_rgba(239,68,68,1)]" />
+        <h4 className="text-[11px] font-black uppercase tracking-[0.3em] text-foreground">{label}</h4>
+    </div>
+);
+
 const FilterButton = ({ label, active, onClick }: any) => (
     <button
         onClick={onClick}
-        className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border ${
+        className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border ${
             active 
             ? 'bg-foreground text-background border-foreground shadow-lg scale-105' 
             : 'bg-muted/20 text-muted-foreground border-border/50 hover:border-muted-foreground/50'
