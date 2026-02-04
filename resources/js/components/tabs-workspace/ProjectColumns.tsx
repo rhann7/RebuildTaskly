@@ -1,84 +1,93 @@
-import ReactDOMServer from 'react-dom/server';
 import { Building2, FolderKanban, MoreVertical, CheckCircle2 } from "lucide-react";
 
 export const getProjectColumns = (workspaceSlug: string) => [
     {
         data: 'name',
-        title: 'PROJECT DETAILS',
-        width: '35%',
+        title: 'Project Name',
+        width: '30%',
         className: 'text-left align-middle px-6 group',
         render: (data: any, type: any, row: any) => {
-            const statusStyles: any = {
-                "in-progress": "bg-blue-500/10 text-blue-600 border-blue-500/20",
-                "completed": "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
-                "planning": "bg-purple-500/10 text-purple-600 border-purple-500/20",
-                "overdue": "bg-sada-red/10 text-sada-red border-sada-red/20"
-            };
-            const currentStatusStyle = statusStyles[row.status] || 'bg-muted text-muted-foreground border-border';
-
             return `
-                <a href="/workspaces/${workspaceSlug}/projects/${row.slug}" class="flex items-center gap-4 py-3 group no-underline">
-                    <div class="size-11 rounded-xl bg-gradient-to-br ${row.color || 'from-sada-red to-red-950'} flex items-center justify-center shadow-lg shadow-sada-red/10 group-hover:scale-110 transition-transform shrink-0 border border-white/5">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></svg>
+                <a href="/workspaces/${workspaceSlug}/projects/${row.slug}" class="flex items-center gap-4 py-4 group no-underline transition-all">
+                    <div class="size-12 rounded-2xl bg-gradient-to-br ${row.color || 'from-sada-red to-red-950'} flex items-center justify-center shadow-lg shadow-sada-red/10 group-hover:scale-105 transition-all duration-300 border border-white/10 relative overflow-hidden">
+                        <div class="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="relative z-10"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></svg>
                     </div>
                     <div class="flex flex-col min-w-0">
-                        <span class="font-black text-foreground truncate text-[13px] group-hover:text-sada-red transition-colors uppercase tracking-tight leading-tight">
+                        <span class="font-black text-foreground truncate text-[13px] group-hover:text-sada-red transition-colors uppercase tracking-tight leading-none mb-1">
                             ${row.name}
                         </span>
-                        <div class="mt-1 flex items-center gap-2">
-                            <span class="text-[9px] uppercase font-black px-2 py-0.5 rounded border tracking-widest ${currentStatusStyle}">
-                                ${row.status.replace('-', ' ')}
-                            </span>
-                            <span class="text-[10px] text-muted-foreground font-medium italic line-clamp-1 opacity-70">
-                                ${row.description || 'No operational brief...'}
-                            </span>
-                        </div>
                     </div>
                 </a>
             `;
         }
     },
     {
-        data: 'status',
-        title: 'STATUS',
-        width: '35%',
-        className: 'text-left align-middle px-6 group',
+        data: 'description',
+        title: 'Description',
+        width: '25%', 
+        className: 'text-left align-middle px-6',
         render: (data: any) => `
-            <div class="flex items-center gap-2">
-                <div class="size-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-                <span class="text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">${data || 'ONLINE'}</span>
+            <div class="max-w-[200px]">
+                <p class="text-[11px] text-muted-foreground font-medium lic line-clamp-2 leading-relaxed  border-l-2 border-muted pl-3">
+                    ${data || 'No operational briefing provided...'}
+                </p>
             </div>
-        `     
+        `
+    },
+    {
+        data: 'status',
+        title: 'Status',
+        width: '15%',
+        className: 'text-left align-middle px-6',
+        render: (data: any) => {
+            const statusMap: any = {
+                'active': { color: 'bg-emerald-500', label: 'ACTIVE' },
+                'in-progress': { color: 'bg-blue-500', label: 'IN PROGRESS' },
+                'planning': { color: 'bg-amber-500', label: 'PLANNING' },
+                'overdue': { color: 'bg-sada-red', label: 'OVERDUE' }
+            };
+            const config = statusMap[data] || { color: 'bg-zinc-500', label: 'STANDBY' };
+            
+            return `
+                <div class="flex items-center gap-2.5 bg-muted/30 w-fit px-3 py-1.5 rounded-lg border border-border">
+                    <div class="size-1.5 rounded-full ${config.color} animate-pulse"></div>
+                    <span class="text-[9px] font-black text-foreground uppercase tracking-widest">${config.label}</span>
+                </div>
+            `;
+        }
     },
     {
         data: 'priority',
-        title: 'LEVEL',
+        title: 'Priority',
         width: '15%',
         className: 'text-left align-middle px-6',
         render: (data: string) => {
             const colors: any = {
-                high: 'text-sada-red bg-sada-red/10 border-sada-red/20',
-                medium: 'text-amber-500 bg-amber-500/10 border-amber-500/20',
-                low: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20'
+                high: 'text-sada-red bg-sada-red/5 border-sada-red/20',
+                medium: 'text-amber-500 bg-amber-500/5 border-amber-500/20',
+                low: 'text-emerald-500 bg-emerald-500/5 border-emerald-500/20'
             };
             return `
-                <span class="px-3 py-1 rounded-full border text-[9px] font-black uppercase tracking-widest ${colors[data] || 'text-muted-foreground border-border'}">
-                    ${data || 'MEDIUM'}
-                </span>
+                <div class="px-3 py-1 rounded-md border text-[9px] font-black uppercase tracking-[0.2em] text-center w-fit ${colors[data] || 'text-muted-foreground border-border'}">
+                    ${data || 'LOW'}
+                </div>
             `;
         }
     },
     {
         data: 'due_date',
-        title: 'DEADLINE',
-        width: '20%',
+        title: 'Due Date',
+        width: '15%',
         className: 'text-left align-middle px-6',
         render: (data: string) => `
-            <div class="flex flex-col">
-                <span class="text-[11px] font-black text-foreground uppercase tracking-tight">
-                    ${data ? new Date(data).toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric'}) : 'NOT SET'}
-                </span>
-                <span class="text-[9px] text-muted-foreground uppercase font-bold tracking-tighter">Operational Limit</span>
+            <div class="flex items-center gap-2">
+                <div class="flex flex-col">
+                    <span class="text-[11px] font-black text-foreground uppercase tracking-tight ">
+                        ${data ? new Date(data).toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric'}) : 'NOT SET'}
+                    </span>
+                    <span class="text-[8px] font-bold text-muted-foreground uppercase tracking-tighter mt-0.5">Termination Date</span>
+                </div>
             </div>
         `     
     }
