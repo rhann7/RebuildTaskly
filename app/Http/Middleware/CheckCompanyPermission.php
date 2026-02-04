@@ -27,19 +27,19 @@ class CheckCompanyPermission
         }
 
         $routeName = $request->route()->getName();
-        
         $whiteList = ['dashboard', 'profile.edit', 'profile.update', 'profile.destroy', 'impersonate.take', 'impersonate.leave'];
         if (in_array($routeName, $whiteList)) return $next($request);
 
-        $dbPermission = Permission::where('route_name', $routeName)->first();
-
+        $dbPermission = Permission::with('module')->where('route_name', $routeName)->first();
         if ($dbPermission) {
+            $module = $dbPermission->module;
+            abort_if($module && !$module->is_active, 403, "Modul {$module->name} sedang dinonaktifkan.");
+
             if ($company->hasPermissionTo($dbPermission->name)) return $next($request);
             abort(403, "Company tidak memiliki akses ke fitur: {$dbPermission->name}");
         }
 
         if ($permission && $company->hasPermissionTo($permission)) return $next($request);
-        
         abort(403, "Rute ini ({$routeName}) belum terdaftar dalam sistem akses kontrol.");
     }
 }

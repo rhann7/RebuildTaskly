@@ -48,7 +48,6 @@ class MenuService
                 'isActive' => $request->routeIs('access-control.*'),
                 'items'    => [
                     ['title' => 'Permissions', 'href' => url('/access-control/permissions'), 'isActive' => $request->routeIs('access-control.permissions.*')],
-                    ['title' => 'Company Access', 'href' => url('/access-control/company-access'), 'isActive' => $request->routeIs('access-control.company-access.*')],
                 ]
             ],
             [
@@ -58,6 +57,7 @@ class MenuService
                 'isActive' => $request->routeIs('product-management.*'),
                 'items'    => [
                     ['title' => 'Modules', 'href' => url('/product-management/modules'), 'isActive' => $request->routeIs('product-management.modules.*')],
+                    ['title' => 'Plans', 'href' => url('/product-management/plans'), 'isActive' => $request->routeIs('product-management.plans.*')],
                 ]
             ],
             [

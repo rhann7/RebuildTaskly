@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Company;
+use App\Models\Module;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Spatie\Permission\Models\Permission;
@@ -30,10 +31,10 @@ class DashboardController extends Controller
                     'desc'  => 'Available features'
                 ],
                 [
-                    'title' => 'Dummy Card',
-                    'value' => 0, 
-                    'icon'  => 'ShieldAlert',
-                    'desc'  => 'Dummy description'
+                    'title' => 'Total Modules',
+                    'value' => Module::count(),
+                    'icon'  => 'Gems',
+                    'desc'  => 'Available modules'
                 ]
             ];
 
@@ -46,7 +47,7 @@ class DashboardController extends Controller
             });
 
         } else {
-            $company = $user->companyOwner?->company;
+            $company = $user->company;
 
             if ($company) {
                 $company->load('permissions');

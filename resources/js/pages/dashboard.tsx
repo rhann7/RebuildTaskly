@@ -1,10 +1,8 @@
 import AppLayout from '@/layouts/app-layout';
 import { Head, usePage } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
-import { useCompanyPermission } from '@/hooks/use-company-permission';
-import { Button } from '@/components/ui/button';
 import { StatCard } from '@/components/stat-card';
-import { Briefcase, Users, CheckCircle, Plus, Activity, Building2, ShieldAlert, ShieldCheck, Zap, CheckCircle2 } from 'lucide-react';
+import { Briefcase, Users, CheckCircle, Activity, Building2, ShieldAlert, ShieldCheck, Zap, CheckCircle2 } from 'lucide-react';
 
 interface DashboardStat {
     title: string;
@@ -47,7 +45,6 @@ export default function Dashboard({ stats, activities }: PageProps) {
     const { auth } = usePage<PageProps>().props;
     const userRoles = auth.user.roles || [];
     const isSuperAdmin = userRoles.includes('super-admin');
-    const { can } = useCompanyPermission();
     const { flash } = usePage().props as any || {};
 
     return (
@@ -131,13 +128,6 @@ export default function Dashboard({ stats, activities }: PageProps) {
                                         : "You haven't performed any major actions yet."
                                     }
                                 </p>
-                                
-                                {!isSuperAdmin && can('create-workspace') && (
-                                    <Button variant="outline" className="gap-2">
-                                        <Plus className="h-4 w-4" />
-                                        Create New Workspace
-                                    </Button>
-                                )}
                             </div>
                         )}
                     </div>

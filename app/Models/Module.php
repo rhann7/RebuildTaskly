@@ -9,22 +9,35 @@ class Module extends Model
     protected $fillable = [
         'name',
         'slug',
-        'description',
         'type',
         'price',
+        'description',
         'is_active',
     ];
 
     protected $casts = [
-        'price'     => 'float',
+        'price'     => 'decimal:2',
         'is_active' => 'boolean',
     ];
     
     protected static function booted()
     {
         static::saving(function ($module) {
-            $module->slug = str($module->name)->slug();
+            if ($module->isDirty('name')) $module->slug = str($module->name)->slug();
         });
+    }
+
+    public const TYPE_STANDARD = 'standard';
+    public const TYPE_ADDON = 'addon';
+
+    public function isAddon(): bool
+    {
+        return $this->type === self::TYPE_ADDON;
+    }
+
+    public function isStandard(): bool
+    {
+        return $this->type === self::TYPE_STANDARD;
     }
 
     public function permissions()
@@ -32,11 +45,8 @@ class Module extends Model
         return $this->hasMany(Permission::class, 'module_id');
     }
 
-    public function scopeAddons($query) {
-        return $query->where('type', 'addon');
-    }
-
-    public function scopeStandard($query) {
-        return $query->where('type', 'standard');
+    public function plans()
+    {
+        return $this->belongsToMany(Plan::class, 'plan_module');
     }
 }
