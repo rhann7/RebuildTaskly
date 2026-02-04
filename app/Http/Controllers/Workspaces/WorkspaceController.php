@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Workspaces;
 use App\Http\Controllers\Controller;
 use App\Models\Company;
 use App\Models\Workspace;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -24,15 +25,24 @@ class WorkspaceController extends Controller
     private function authorizeWorkspace($user, Workspace $workspace)
     {
         if ($user->isSuperAdmin()) return;
-        
+    
         $company = $this->resolveCompany($user);
 
         // Cek 1: Pastikan workspace punya perusahaan yang sama
         abort_if($workspace->company_id !== $company->id, 403);
 
-        // Cek 2: Kalau dia bukan Owner, dia HARUS manager dari workspace ini
+        // Cek 2: Logic Akses (Owner, Manager, atau Member)
         if (!$user->hasRole('company')) {
-            abort_if($workspace->manager_id !== $user->id, 403, 'Anda bukan manager dari workspace ini.');
+            // Cek apakah dia manager
+            $isManager = $workspace->manager_id === $user->id;
+            
+            // Cek apakah dia member (terdaftar di pivot table)
+            $isMember = $workspace->members()->where('user_id', $user->id)->exists();
+
+            // Kalau bukan manager DAN bukan member, baru abort
+            if (!$isManager && !$isMember) {
+                abort(403, 'Anda tidak memiliki akses ke workspace ini.');
+            }
         }
     }
 
@@ -61,10 +71,20 @@ class WorkspaceController extends Controller
         $company = $this->resolveCompany($user);
 
         $workspaces = Workspace::query()
+            // 1. Filter: Cek satu company (kecuali Super Admin)
             ->when(!$user->isSuperAdmin(), fn ($q) => $q->where('company_id', $company->id))
 
+            /** * 2. Logic Akses: 
+             * Jika bukan Super Admin atau role Company (Owner), 
+             * maka tampilkan workspace yang dia adalah managernya ATAU dia adalah member didalamnya.
+             */
             ->when(!$user->isSuperAdmin() && !$user->hasRole('company'), function ($q) use ($user) {
-                return $q->where('manager_id', $user->id);
+                return $q->where(function ($query) use ($user) {
+                    $query->where('manager_id', $user->id) // Dia Manager-nya
+                        ->orWhereHas('members', function ($sub) use ($user) { // Atau dia Member-nya
+                            $sub->where('user_id', $user->id);
+                        });
+                });
             })
             
             ->with('company:id,name')
@@ -110,13 +130,51 @@ class WorkspaceController extends Controller
     {
         $this->authorizeWorkspace($request->user(), $workspace);
 
-        $projects = $workspace->projects()
-            ->latest()
-            ->get();
+        $projects = $workspace->projects()->latest()->get();
+
+        // 1. Ambil data Manager dari relasi manager_id
+        $manager = $workspace->manager; // Pastikan relasi 'manager' ada di model Workspace
+        
+        // 2. Ambil data Members (karyawan yang di-invite)
+        $members = $workspace->members()
+            ->with('roles')
+            ->get()
+            ->map(fn($user) => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'roles' => $user->roles,
+                'joined_at' => $user->pivot->created_at->format('d M Y'),
+                'is_manager' => false,
+            ]);
+
+        // 3. Gabungkan Manager ke baris paling atas
+        if ($manager) {
+            $managerData = [
+                'id' => $manager->id,
+                'name' => $manager->name,
+                'email' => $manager->email,
+                'roles' => $manager->roles,
+                'joined_at' => $workspace->created_at->format('d M Y'), // Pake tgl workspace dibuat
+                'is_manager' => true, // Flag khusus buat nandain dia Manager
+            ];
+            
+            // Masukkan manager ke urutan pertama
+            $members->prepend($managerData);
+        }
+
+        $allEmployees = \App\Models\User::where('company_id', $workspace->company_id)
+            ->where('id', '!=', $workspace->manager_id) // Jangan invite manager sendiri
+            ->whereDoesntHave('workspaces', function($q) use ($workspace) {
+                $q->where('workspace_id', $workspace->id);
+            })
+            ->get(['id', 'name', 'email']);
 
         return Inertia::render('workspaces/show', [
             'workspace'    => $workspace->load('company:id,name'),
             'projects'     => $projects,
+            'members'      => $members,
+            'allEmployees' => $allEmployees,
             'isSuperAdmin' => $request->user()->isSuperAdmin(),
         ]);
     }
@@ -147,5 +205,25 @@ class WorkspaceController extends Controller
         
         $workspace->delete();
         return back()->with('success', 'Workspace deleted successfully.');
+    }
+
+    public function addMember(Request $request, Workspace $workspace)
+    {
+        // Validasi: User yang diinvite harus ada di company yang sama
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+        ]);
+
+        $userToInvite = User::findOrFail($request->user_id);
+        $workspace->members()->syncWithoutDetaching([$request->user_id]);
+        // Cek apakah user yang mau diinvite satu company sama workspace-nya
+        if ($userToInvite->company_id !== $workspace->company_id) {
+            return back()->with('error', 'User tidak berasal dari perusahaan yang sama.');
+        }
+
+        // Attach ke pivot table (pake syncWithoutDetaching biar gak double)
+        $workspace->members()->syncWithoutDetaching([$request->user_id]);
+
+        return back()->with('success', 'Karyawan berhasil ditambahkan ke workspace.');
     }
 }

@@ -7,9 +7,10 @@ import CreateProjectModal from '@/components/tabs-workspace/CreateProjectModal';
 import WorkspaceSettings from '@/components/tabs-workspace/WorkspaceSettings';
 import ProjectGridCard from '@/components/tabs-workspace/ProjectGridCard';
 import { ProjectControls } from '@/components/tabs-workspace/ProjectControls';
+import WorkspaceMembers from '@/components/tabs-workspace/MemberWorkspaceTab';
 import { Zap } from 'lucide-react';
 
-export default function WorkspaceShow({ workspace, projects, auth, companies }: any) {
+export default function WorkspaceShow({ workspace, projects, auth, companies, members, allEmployees }: any) {
     const [activeTab, setActiveTab] = useState<'projects' | 'members' | 'settings'>('projects');
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     
@@ -88,7 +89,7 @@ export default function WorkspaceShow({ workspace, projects, auth, companies }: 
                     </div>
                 )}
 
-                {activeTab === 'members' && ( <div className="py-32 text-center border border-dashed border-border rounded-[32px]">... Personnel Module Offline ...</div> )}
+                {activeTab === 'members' && ( <div className="animate-in fade-in slide-in-from-bottom-4 duration-500"><WorkspaceMembers workspace={workspace} members={members} allEmployees={allEmployees}/></div>)}
                 {activeTab === 'settings' && ( <WorkspaceSettings workspace={workspace} isSuperAdmin={auth.user.roles?.includes('super-admin')} companies={companies} /> )}
             </div>
 

@@ -68,4 +68,11 @@ class User extends Authenticatable
     // User bisa mengelola satu workspace
     return $this->hasOne(Workspace::class, 'manager_id');
     }
+
+    public function workspaces()
+    {
+        return $this->belongsToMany(Workspace::class, 'workspace_user')
+                    ->withPivot('workspace_role')
+                    ->withTimestamps();
+    }
 }

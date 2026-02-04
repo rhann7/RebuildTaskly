@@ -34,4 +34,10 @@ class Workspace extends Model
     {
     return $this->belongsTo(User::class, 'manager_id');
     }
+
+    public function members(){
+    return $this->belongsToMany(User::class, 'workspace_user')
+                ->withPivot('workspace_role')
+                ->withTimestamps();
+    }
 }

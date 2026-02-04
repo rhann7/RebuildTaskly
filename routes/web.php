@@ -46,6 +46,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     Route::middleware('company_can')->group(function () {
+        Route::post('workspaces/{workspace:slug}/members', [WorkspaceController::class, 'addMember'])
+        ->name('workspaces.members.add');
         Route::resource('workspaces', WorkspaceController::class)
             ->parameters(['workspaces' => 'workspace:slug'])
             ->except(['create', 'edit']);
