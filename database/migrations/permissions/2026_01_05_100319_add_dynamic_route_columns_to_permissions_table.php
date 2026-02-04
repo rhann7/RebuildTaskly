@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('permissions', function (Blueprint $table) {
-            $table->string('route_name')->after('scope')->nullable();
+            $table->string('route_name')->after('name')->nullable();
             $table->string('icon')->after('route_name')->nullable();
             $table->boolean('isMenu')->default(false)->after('icon');
         });
