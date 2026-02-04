@@ -17,13 +17,11 @@ class PermissionRequest extends FormRequest
         $id = $this->route('permission')?->id;
 
         return [
-            'name'              => ['required', 'string', 'max:255', Rule::unique('permissions')->ignore($id)],
-            'type'              => ['required', 'in:general,unique'],
-            'scope'             => ['required', 'in:company,workspace'],
-            'price'             => ['required', 'numeric', 'min:0'],
-            'route_name'        => ['required', 'string'],
-            'icon'              => ['nullable', 'string'],
-            'isMenu'            => ['boolean'],
+            'module_id' => ['nullable', Rule::exists('modules', 'id')->where('is_active', true)],
+            'name'       => ['required', 'string', 'max:255', Rule::unique('permissions')->ignore($id)],
+            'route_name' => ['required', 'string'],
+            'icon'       => ['nullable', 'string'],
+            'isMenu'     => ['boolean'],
         ];
     }
 }

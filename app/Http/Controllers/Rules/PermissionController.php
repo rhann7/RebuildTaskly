@@ -4,12 +4,10 @@ namespace App\Http\Controllers\Rules;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Rules\PermissionRequest;
-use App\Models\Company;
 use App\Models\Module;
 use App\Models\Permission;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Spatie\Permission\PermissionRegistrar;
@@ -21,8 +19,6 @@ class PermissionController extends Controller
         $permissions = Permission::query()
             ->with('module')
             ->when($request->search, fn($q, $s) => $q->where('name', 'like', "%{$s}%"))
-            ->when($request->type && $request->type !== 'all', fn($q) => $q->where('type', $request->type))
-            ->when($request->scope && $request->scope !== 'all', fn($q) => $q->where('scope', $request->scope))
             ->when($request->filled('module_id') && $request->module_id !== 'all', function($q) use ($request) {
                 return $request->module_id === 'unassigned' 
                     ? $q->whereNull('module_id')
@@ -34,30 +30,21 @@ class PermissionController extends Controller
 
         return Inertia::render('permissions/index', [
             'permissions' => $this->transformPermissions($permissions),
-            'filters'     => $request->only(['search', 'type', 'scope', 'module_id']),
+            'filters'     => $request->only(['search', 'module_id']),
             'pageConfig'  => $this->getPageConfig($request),
         ]);
     }
 
     public function store(PermissionRequest $request)
     {
-        DB::transaction(function () use ($request) {
-            $permission = Permission::create($request->validated() + ['guard_name' => 'web']);
-            if ($permission->type === 'general') $this->assignPermissionToAllCompanies($permission);
-        });
-            
+        Permission::create($request->validated());
         $this->clearCache();
         return redirect()->route('access-control.permissions.index')->with('success', 'Permission Created');
     }
 
     public function update(PermissionRequest $request, Permission $permission)
     {
-        DB::transaction(function () use ($request, $permission) {
-            $oldType = $permission->type;
-            $permission->update($request->validated());
-            if ($oldType !== 'general' && $permission->type === 'general') $this->assignPermissionToAllCompanies($permission);
-        });
-
+        $permission->update($request->validated());
         $this->clearCache();
         return redirect()->route('access-control.permissions.index')->with('success', 'Permission Updated');
     }
@@ -78,18 +65,12 @@ class PermissionController extends Controller
             'can_manage'  => $request->user()->isSuperAdmin(),
             'routes'      => $this->getAvailableRoutes(),
             'options'     => [
-                'scopes'  => [
-                    ['label' => 'Company', 'value' => 'company'],
-                    ['label' => 'Workspace', 'value' => 'workspace'],
-                ],
-                'types'      => [
-                    ['label' => 'General', 'value' => 'general'],
-                    ['label' => 'Unique', 'value' => 'unique'],
-                ],
-                'modules'   => Module::all()->map(fn($m) => [
-                    'label' => $m->name,
-                    'value' => (string)$m->id,
-                ])->toArray(),
+                'modules'   => Module::where('is_active', true)
+                    ->get()
+                    ->map(fn($m) => [
+                        'label' => $m->name,
+                        'value' => (string)$m->id,
+                    ])->toArray(),
             ]
         ];
     }
@@ -100,10 +81,7 @@ class PermissionController extends Controller
             'id'   => $p->id,
             'name' => $p->name,
             'ui'   => [
-                'type_label'  => ucfirst($p->type),
-                'type_color'  => $p->type === 'unique' ? 'text-purple-500' : 'text-white',
-                'scope_label' => ucfirst($p->scope),
-                'price_fmt'   => 'Rp ' . number_format($p->price, 0, ',', '.'),
+                'icon'        => $p->icon,
                 'is_menu'     => (bool)$p->isMenu,
                 'module_name' => $p->module?->name ?? 'Unassigned',
                 'has_module'  => (bool)$p->module_id,
@@ -113,39 +91,29 @@ class PermissionController extends Controller
             ],
             'form_default'   => [
                 'name'       => $p->name,
-                'type'       => $p->type,
-                'scope'      => $p->scope,
-                'price'      => (string)$p->price,
                 'route_name' => $p->route_name,
                 'icon'       => $p->icon ?? '',
                 'isMenu'     => (bool)$p->isMenu,
+                'module_id'  => $p->module_id,
             ]
         ]);
 
         return $pagination;
     }
 
-    private function assignPermissionToAllCompanies($permission)
-    {
-        Company::whereDoesntHave('permissions', fn ($q) => $q->where('permissions.id', $permission->id))
-            ->chunkById(100, function ($companies) use ($permission) {
-                foreach ($companies as $company) {
-                    $company->givePermissionTo($permission);
-                }
-            });
-    }
-
     private function clearCache()
     {
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
-        Cache::forget('dynamic_routes');
+        Cache::forget('permissions.dynamic_routes');
     }
 
     private function getAvailableRoutes()
     {
-        return collect(Route::getRoutes())
-            ->map(fn($r) => ['route_name' => $r->getName()])
-            ->whereNotNull('route_name')
-            ->values();
+        return Cache::rememberForever('permissions.available_routes', fn () =>
+            collect(Route::getRoutes())
+                ->map(fn($r) => ['route_name' => $r->getName()])
+                ->whereNotNull('route_name')
+                ->values()
+        );
     }
 }
