@@ -27,7 +27,13 @@ class WorkspaceController extends Controller
         
         $company = $this->resolveCompany($user);
 
+        // Cek 1: Pastikan workspace punya perusahaan yang sama
         abort_if($workspace->company_id !== $company->id, 403);
+
+        // Cek 2: Kalau dia bukan Owner, dia HARUS manager dari workspace ini
+        if (!$user->hasRole('company')) {
+            abort_if($workspace->manager_id !== $user->id, 403, 'Anda bukan manager dari workspace ini.');
+        }
     }
 
     private function getPageConfig(Request $request)
@@ -56,6 +62,11 @@ class WorkspaceController extends Controller
 
         $workspaces = Workspace::query()
             ->when(!$user->isSuperAdmin(), fn ($q) => $q->where('company_id', $company->id))
+
+            ->when(!$user->isSuperAdmin() && !$user->hasRole('company'), function ($q) use ($user) {
+                return $q->where('manager_id', $user->id);
+            })
+            
             ->with('company:id,name')
             ->when($request->search, fn ($q, $s) => $q->where('name', 'like', "%{$s}%"))
             ->latest()

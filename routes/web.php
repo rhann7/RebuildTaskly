@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
 use Spatie\Permission\Models\Permission;
+use App\Http\Controllers\TeamController;
 
 Route::get('/', function () {
     return Inertia::render('welcome', ['canRegister' => Features::enabled(Features::registration())]);
@@ -20,6 +21,8 @@ Route::get('/', function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/team', [TeamController::class, 'index'])->name('team.index');
+    Route::post('/team', [TeamController::class, 'store'])->name('team.store');
     Route::middleware(['auth', 'verified', 'company_can'])->group(function () {
     Route::get('/projects', [ProjectController::class, 'globalIndex'])
         ->name('projects.global');

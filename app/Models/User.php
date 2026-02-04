@@ -18,7 +18,8 @@ class User extends Authenticatable
         'email', 
         'password', 
         'email_verified_at', 
-        'remember_token'
+        'remember_token',
+        'company_id'
     ];
 
     protected $hidden = [
@@ -54,11 +55,17 @@ class User extends Authenticatable
 
     public function company()
     {
-        return $this->HasOneThrough(Company::class, CompanyOwner::class, 'user_id', 'company_owner_id', 'id', 'id');
+        return $this->belongsTo(Company::class, 'company_id');
     }
 
     public function companyOwner()
     {
         return $this->hasOne(CompanyOwner::class);
+    }
+
+    public function managedWorkspace()
+    {
+    // User bisa mengelola satu workspace
+    return $this->hasOne(Workspace::class, 'manager_id');
     }
 }

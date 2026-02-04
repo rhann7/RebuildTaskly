@@ -29,4 +29,9 @@ class Workspace extends Model
     {
     return 'slug';
     }
+
+    public function manager()
+    {
+    return $this->belongsTo(User::class, 'manager_id');
+    }
 }
