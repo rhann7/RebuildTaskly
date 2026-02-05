@@ -98,7 +98,8 @@ class CompanyController extends Controller
                 'phone'               => $validated['company_phone'],
                 'is_active'           => true,
             ]);
-
+            
+            $user->update(['company_id' => $company->id]);
             $permissions = Permission::where('type', 'general')
                 ->where('isGroup', false)
                 ->whereIn('scope', ['company', 'workspace'])
