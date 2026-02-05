@@ -113,13 +113,20 @@ export default function ProjectMemberTab({ project, workspace, members, availabl
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 text-right">
-                                        <button
-                                            onClick={() => handleWithdraw(member.id)}
-                                            className="p-2 text-muted-foreground hover:text-sada-red transition-colors"
-                                            title="Withdraw Personnel"
-                                        >
-                                            <UserMinus2 size={18} />
-                                        </button>
+                                        {/* Cek kalau dia bukan manager baru munculin tombol hapus */}
+                                        {!member.is_manager ? (
+                                            <button
+                                                onClick={() => handleWithdraw(member.id)}
+                                                className="p-2 text-muted-foreground hover:text-sada-red transition-colors"
+                                                title="Withdraw Personnel"
+                                            >
+                                                <UserMinus2 size={18} />
+                                            </button>
+                                        ) : (
+                                            <span className="text-[10px] font-black uppercase text-sada-red opacity-50 px-2">
+                                                Immutable
+                                            </span>
+                                        )}
                                     </td>
                                 </tr>
                             ))

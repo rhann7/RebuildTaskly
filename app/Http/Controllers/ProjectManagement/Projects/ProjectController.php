@@ -96,32 +96,52 @@ class ProjectController extends Controller
         abort_if($project->workspace_id !== $workspace->id, 404);
         $this->authorizeProject($request->user(), $project);
 
-        // 1. Ambil member yang sudah join di project ini
-        $projectMembers = $project->members()
+        // 1. Ambil Manager tunggal dari Workspace & bungkus jadi Collection biar bisa di-map
+        $managers = collect();
+        if ($workspace->manager) {
+            $managers = collect([$workspace->manager])->map(fn($user) => [
+                'id'           => $user->id,
+                'name'         => $user->name,
+                'email'        => $user->email,
+                'project_role' => 'Workspace Manager',
+                'is_manager'   => true,
+            ]);
+        }
+
+        // 2. Ambil Member yang dideploy manual
+        $members = $project->members()
             ->with('roles')
             ->get()
             ->map(fn($user) => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
+                'id'           => $user->id,
+                'name'         => $user->name,
+                'email'        => $user->email,
                 'project_role' => $user->pivot->project_role,
+                'is_manager'   => false,
             ]);
 
-        // 2. Ambil karyawan yang ada di Workspace ini tapi BELUM join di project ini
-        // Kita filter pake whereDoesntHave biar dropdown-nya bersih
+        // 3. Gabungkan Manager & Member
+        $allPersonnel = $managers->concat($members);
+
+        // 4. Update availableEmployees (Filter biar manager gak muncul di dropdown)
+        $managerId = $workspace->manager_id; // Pake ID manager langsung dari kolom DB
+        
         $availableEmployees = $workspace->members()
             ->whereDoesntHave('projects', function($q) use ($project) {
                 $q->where('project_id', $project->id);
             })
+            ->when($managerId, function($q) use ($managerId) {
+                return $q->where('users.id', '!=', $managerId);
+            })
             ->get(['users.id', 'users.name', 'users.email']);
 
         return Inertia::render('projects/show', [
-            'workspace' => $workspace,
-            'project' => $project,
-            'tasks' => $project->tasks()->latest()->get(),
-            'projectMembers' => $projectMembers,
+            'workspace'          => $workspace,
+            'project'            => $project,
+            'tasks'              => $project->tasks()->latest()->get(),
+            'projectMembers'     => $allPersonnel,
             'availableEmployees' => $availableEmployees,
-            'isSuperAdmin' => $request->user()->isSuperAdmin(),
+            'isSuperAdmin'       => $request->user()->isSuperAdmin(),
         ]);
     }
 
