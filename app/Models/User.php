@@ -75,4 +75,11 @@ class User extends Authenticatable
                     ->withPivot('workspace_role')
                     ->withTimestamps();
     }
+
+    public function projects()
+    {
+        return $this->belongsToMany(\App\Models\ProjectManagement\Project::class, 'project_user')
+                    ->withPivot('project_role')
+                    ->withTimestamps();
+    }
 }

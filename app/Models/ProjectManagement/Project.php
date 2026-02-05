@@ -23,4 +23,12 @@ class Project extends Model
     {
         return $this->hasMany(Task::class);
     }
+
+    public function members()
+    {
+        // Ini relasi many-to-many ke User lewat tabel pivot project_user
+        return $this->belongsToMany(\App\Models\User::class, 'project_user')
+                    ->withPivot('project_role')
+                    ->withTimestamps();
+    }
 }

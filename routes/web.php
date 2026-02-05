@@ -52,13 +52,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->parameters(['workspaces' => 'workspace:slug'])
             ->except(['create', 'edit']);
 
-    Route::resource('workspaces.projects', ProjectController::class)
-        ->parameters([
-        'workspaces' => 'workspace:slug',
-        'projects' => 'project:slug'
-    ])
-        ->except(['create', 'edit']);
-
+        Route::resource('workspaces.projects', ProjectController::class)
+            ->parameters([
+            'workspaces' => 'workspace:slug',
+            'projects' => 'project:slug'
+        ])
+            ->except(['create', 'edit']);
+        
+        Route::post('workspaces/{workspace:slug}/projects/{project}/members', [ProjectController::class, 'addMember'])
+        ->name('workspaces.projects.members.store');
+    
+        Route::delete('workspaces/{workspace:slug}/projects/{project}/members/{user}', [ProjectController::class, 'removeMember'])
+        ->name('workspaces.projects.members.destroy');
 
         Route::resource('workspaces.projects.tasks', TaskController::class)
             ->parameters([

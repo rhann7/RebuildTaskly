@@ -1,17 +1,25 @@
-import { useState } from 'react'; // Hapus useMemo kalau gak kepake di sini
+import { useState } from 'react';
 import { Head } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
 
 import TaskTableTab from '@/components/tabs-project/TaskTableTab';
 import ProjectSettingsTab from '@/components/tabs-project/ProjectSettingsTab';
+import ProjectMemberTab from '@/components/tabs-project/ProjectMemberTab'; // Import komponen baru
 import { Users2, CheckCircle2, Settings2 } from 'lucide-react';
 import { ProjectDetailHeader } from '@/layouts/projects/partials/ProjectHeader';
 
-export default function ProjectShow({ workspace, project, tasks, isSuperAdmin }: any) {
+// Tambahkan projectMembers dan availableEmployees ke props
+export default function ProjectShow({ 
+    workspace, 
+    project, 
+    tasks, 
+    isSuperAdmin, 
+    projectMembers, 
+    availableEmployees 
+}: any) {
     const [activeTab, setActiveTab] = useState<'tasks' | 'members' | 'settings'>('tasks');
     
-    // 1. PINDAHKAN STATE MODAL KE SINI (Jadi Remote Control)
     const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
 
     const breadcrumbs: BreadcrumbItem[] = [
@@ -21,10 +29,9 @@ export default function ProjectShow({ workspace, project, tasks, isSuperAdmin }:
         { title: project.name, href: '#' },
     ];
 
-    // 2. FUNGSI UNTUK MEMBUKA MODAL
     const handleAddTask = () => {
-        setActiveTab('tasks'); // Pastikan tab Tasks aktif
-        setIsTaskModalOpen(true); // Buka modalnya
+        setActiveTab('tasks');
+        setIsTaskModalOpen(true);
     };
 
     return (
@@ -34,7 +41,6 @@ export default function ProjectShow({ workspace, project, tasks, isSuperAdmin }:
             <div className="mx-auto w-full max-w-[1600px] flex flex-col gap-8 p-6 md:p-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
                 
                 <div className="flex flex-col gap-6">
-                    {/* 3. SAMBUNGKAN FUNGSI KE HEADER */}
                     <ProjectDetailHeader 
                         project={project} 
                         onAddTask={handleAddTask} 
@@ -67,24 +73,27 @@ export default function ProjectShow({ workspace, project, tasks, isSuperAdmin }:
                         project={project} 
                         tasks={tasks} 
                         workspace={workspace}
-                        // 4. LEMPAR STATE MODAL KE KOMPONEN ANAK
                         isExternalModalOpen={isTaskModalOpen}
                         setIsExternalModalOpen={setIsTaskModalOpen}
                     />
                 )}
 
-                {/* Tab Personnel */}
+                {/* Tab Personnel - Sekarang sudah ONLINE */}
                 {activeTab === 'members' && (
-                    <div className="py-32 text-center border border-dashed border-border rounded-[32px] bg-muted/5">
-                        <Users2 className="mx-auto mb-4 text-muted-foreground/20" size={48} />
-                        <p className="uppercase tracking-[0.3em] text-muted-foreground text-[10px] font-black">
-                            Personnel Module Offline
-                        </p>
-                    </div>
+                    <ProjectMemberTab 
+                        project={project}
+                        workspace={workspace}
+                        members={projectMembers}
+                        availableEmployees={availableEmployees}
+                    />
                 )}
 
                 {activeTab === 'settings' && (
-                    <ProjectSettingsTab project={project} workspace={workspace} isSuperAdmin={isSuperAdmin} />
+                    <ProjectSettingsTab 
+                        project={project} 
+                        workspace={workspace} 
+                        isSuperAdmin={isSuperAdmin} 
+                    />
                 )}
             </div>
         </AppLayout>

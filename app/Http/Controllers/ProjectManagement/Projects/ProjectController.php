@@ -94,13 +94,34 @@ class ProjectController extends Controller
     public function show(Request $request, Workspace $workspace, Project $project)
     {
         abort_if($project->workspace_id !== $workspace->id, 404);
-
         $this->authorizeProject($request->user(), $project);
+
+        // 1. Ambil member yang sudah join di project ini
+        $projectMembers = $project->members()
+            ->with('roles')
+            ->get()
+            ->map(fn($user) => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'project_role' => $user->pivot->project_role,
+            ]);
+
+        // 2. Ambil karyawan yang ada di Workspace ini tapi BELUM join di project ini
+        // Kita filter pake whereDoesntHave biar dropdown-nya bersih
+        $availableEmployees = $workspace->members()
+            ->whereDoesntHave('projects', function($q) use ($project) {
+                $q->where('project_id', $project->id);
+            })
+            ->get(['users.id', 'users.name', 'users.email']);
 
         return Inertia::render('projects/show', [
             'workspace' => $workspace,
-            'tasks' => $project->tasks()->latest()->get(),
             'project' => $project,
+            'tasks' => $project->tasks()->latest()->get(),
+            'projectMembers' => $projectMembers,
+            'availableEmployees' => $availableEmployees,
+            'isSuperAdmin' => $request->user()->isSuperAdmin(),
         ]);
     }
 
@@ -191,5 +212,35 @@ class ProjectController extends Controller
                 'can_manage' => $user->isSuperAdmin() || ($company && $user->hasAnyPermission(['manage-projects']))
             ],
         ]);
+    }
+
+    public function addMember(Request $request, Workspace $workspace, Project $project)
+    {
+        $this->authorizeProject($request->user(), $project);
+
+        $validated = $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'project_role' => 'required|string|max:50'
+        ]);
+
+        // Security: Pastikan user yang di-invite emang anggota workspace ini
+        $isWorkspaceMember = $workspace->members()->where('user_id', $validated['user_id'])->exists();
+        abort_if(!$isWorkspaceMember, 403, 'User ini bukan anggota dari workspace ini.');
+
+        // Attach ke pivot table
+        $project->members()->attach($validated['user_id'], [
+            'project_role' => $validated['project_role']
+        ]);
+
+        return back()->with('success', 'Personnel deployed to project successfully.');
+    }
+
+    public function removeMember(Request $request, Workspace $workspace, Project $project, $userId)
+    {
+        $this->authorizeProject($request->user(), $project);
+        
+        $project->members()->detach($userId);
+
+        return back()->with('success', 'Personnel withdrawn from project.');
     }
 }
