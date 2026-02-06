@@ -24,7 +24,8 @@ class TeamController extends Controller
         return Inertia::render('team/index', [
             'members' => $companyId 
                 ? User::where('company_id', $companyId)
-                    ->with(['roles', 'managedWorkspace'])
+                    // TAMBAHKAN relasi 'workspaces' di sini
+                    ->with(['roles', 'managedWorkspace', 'workspaces']) 
                     ->get()
                 : [],
                 

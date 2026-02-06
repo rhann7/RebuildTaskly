@@ -115,7 +115,7 @@ export default function TaskTableTab({
                         {showFilters ? 'Hide Filters' : 'Filters'}
                     </button>
 
-                    {/* TOMBOL "ADD NEW TASK" DI SINI SUDAH DIHAPUS KARENA PINDAH KE HEADER ATAS */}
+
                 </div>
             </div>
 

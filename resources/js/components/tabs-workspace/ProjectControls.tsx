@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Search, Grid3x3, List, Filter, Briefcase } from "lucide-react";
+import { useState, useEffect } from 'react';
+import { Search, Grid3x3, List, Filter } from "lucide-react";
 
 interface ProjectControlsProps {
     viewMode: 'grid' | 'list';
@@ -10,7 +10,6 @@ interface ProjectControlsProps {
     setStatusFilter: (val: string[]) => void;
     priorityFilter: string[];
     setPriorityFilter: (val: string[]) => void;
-    // TAMBAHAN PROPS BARU
     workspaces?: any[];
     workspaceFilter?: string[];
     setWorkspaceFilter?: (val: string[]) => void;
@@ -30,30 +29,45 @@ export const ProjectControls = ({
     setWorkspaceFilter
 }: ProjectControlsProps) => {
     const [isFilterOpen, setIsFilterOpen] = useState(false);
+    
+    // Local state untuk input search (Debounce logic)
+    const [localSearch, setLocalSearch] = useState(searchQuery);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (localSearch !== searchQuery) {
+                setSearchQuery(localSearch);
+            }
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [localSearch]);
+
+    // Sinkronisasi kalau searchQuery berubah dari luar (misal: Reset)
+    useEffect(() => {
+        setLocalSearch(searchQuery);
+    }, [searchQuery]);
 
     const toggleFilter = (currentArray: string[], value: string, setter?: (val: string[]) => void) => {
         if (!setter) return;
         const stringVal = String(value);
-        if (currentArray.includes(stringVal)) {
-            setter(currentArray.filter(i => i !== stringVal));
-        } else {
-            setter([...currentArray, stringVal]);
-        }
+        const newArray = currentArray.includes(stringVal)
+            ? currentArray.filter(i => i !== stringVal)
+            : [...currentArray, stringVal];
+        setter(newArray);
     };
 
     const activeFilterCount = statusFilter.length + priorityFilter.length + workspaceFilter.length;
 
     return (
         <div className="space-y-4 mb-8 animate-in fade-in slide-in-from-top-4 duration-500">
-            {/* BAR UTAMA */}
-            <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-card rounded-[24px] p-3 shadow-sm border border-border transition-all">
+            <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-card rounded-[24px] p-3 shadow-sm border border-border">
                 <div className="relative flex-1 w-full group">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-muted-foreground group-focus-within:text-sada-red transition-colors" />
                     <input
                         type="text"
                         placeholder="SEARCH PROJECTS..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        value={localSearch}
+                        onChange={(e) => setLocalSearch(e.target.value)}
                         className="w-full pl-12 h-12 rounded-2xl border-none bg-muted/30 focus:bg-background focus:ring-4 focus:ring-sada-red/10 transition-all text-[10px] font-black uppercase tracking-[0.2em]"
                     />
                 </div>
@@ -79,12 +93,9 @@ export const ProjectControls = ({
                 </div>
             </div>
 
-            {/* COLLAPSIBLE FILTER PANEL */}
             {isFilterOpen && (
                 <div className="bg-card/50 backdrop-blur-sm rounded-[32px] p-8 border border-border border-dashed animate-in zoom-in-95 duration-300">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-                        
-                        {/* Status Group */}
                         <div className="space-y-4">
                             <SectionTitle label="Filter by Status" />
                             <div className="flex flex-wrap gap-2">
@@ -99,7 +110,6 @@ export const ProjectControls = ({
                             </div>
                         </div>
 
-                        {/* Priority Group */}
                         <div className="space-y-4">
                             <SectionTitle label="Filter by Priority" />
                             <div className="flex flex-wrap gap-2">
@@ -114,7 +124,6 @@ export const ProjectControls = ({
                             </div>
                         </div>
 
-                        {/* Workspace Group (THE NEW ONE) */}
                         <div className="space-y-4">
                             <SectionTitle label="Filter by Workspace" />
                             <div className="flex flex-wrap gap-2">
@@ -126,7 +135,6 @@ export const ProjectControls = ({
                                         onClick={() => toggleFilter(workspaceFilter, String(ws.id), setWorkspaceFilter)}
                                     />
                                 ))}
-                                {workspaces.length === 0 && <p className="text-[10px] italic text-muted-foreground">No sectors found</p>}
                             </div>
                         </div>
                     </div>
@@ -141,6 +149,7 @@ export const ProjectControls = ({
                                     setStatusFilter([]); 
                                     setPriorityFilter([]); 
                                     setWorkspaceFilter?.([]);
+                                    setSearchQuery('');
                                 }}
                                 className="text-[9px] font-black text-sada-red hover:underline tracking-[0.2em] uppercase"
                             >
@@ -154,7 +163,6 @@ export const ProjectControls = ({
     );
 };
 
-// Helper Components
 const SectionTitle = ({ label }: { label: string }) => (
     <div className="flex items-center gap-2">
         <div className="size-1.5 bg-sada-red rounded-full shadow-[0_0_5px_rgba(239,68,68,1)]" />
