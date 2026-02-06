@@ -138,7 +138,7 @@ class ProjectController extends Controller
         return Inertia::render('projects/show', [
             'workspace'          => $workspace,
             'project'            => $project,
-            'tasks'              => $project->tasks()->latest()->get(),
+            'tasks'              => $project->tasks()->with(['subTasks']) ->latest()->get(),
             'projectMembers'     => $allPersonnel,
             'availableEmployees' => $availableEmployees,
             'isSuperAdmin'       => $request->user()->isSuperAdmin(),
@@ -165,10 +165,11 @@ class ProjectController extends Controller
 
     public function destroy(Request $request, Workspace $workspace, Project $project)
     {
-        $this->authorizeProject($request->user(), $project);
-        abort_if($project->workspace_id !== $workspace->id, 404);
         $project->delete();
-        return back()->with('success', 'Project deleted successfully.');
+
+    // Setelah hapus project, balik ke halaman detail workspace-nya
+        return redirect()->route('workspaces.show', $workspace->slug)
+             ->with('success', 'Project removed from sector.');
     }
 
     private function getPageConfig(Request $request)

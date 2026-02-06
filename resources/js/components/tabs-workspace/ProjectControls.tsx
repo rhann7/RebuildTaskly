@@ -125,7 +125,7 @@ export const ProjectControls = ({
                         </div>
 
                         <div className="space-y-4">
-                            <SectionTitle label="Filter by Workspace" />
+                       <SectionTitle label="Filter by Workspace" />
                             <div className="flex flex-wrap gap-2">
                                 {workspaces.map((ws: any) => (
                                     <FilterButton 

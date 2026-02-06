@@ -202,9 +202,12 @@ class WorkspaceController extends Controller
     public function destroy(Request $request, Workspace $workspace)
     {
         $this->authorizeWorkspace($request->user(), $workspace);
-        
+    
         $workspace->delete();
-        return back()->with('success', 'Workspace deleted successfully.');
+
+        // Sesuai route: Route::resource('workspaces', ...)
+        return redirect()->route('workspaces.index')
+                        ->with('success', 'Sector deleted successfully.');
     }
 
     public function addMember(Request $request, Workspace $workspace)
