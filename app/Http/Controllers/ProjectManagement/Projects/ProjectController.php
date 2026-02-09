@@ -138,7 +138,7 @@ class ProjectController extends Controller
         return Inertia::render('projects/show', [
             'workspace'          => $workspace,
             'project'            => $project,
-            'tasks'              => $project->tasks()->with(['subTasks']) ->latest()->get(),
+            'tasks' => $project->tasks()->latest()->get(),
             'projectMembers'     => $allPersonnel,
             'availableEmployees' => $availableEmployees,
             'isSuperAdmin'       => $request->user()->isSuperAdmin(),
