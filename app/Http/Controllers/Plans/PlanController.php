@@ -17,17 +17,26 @@ class PlanController extends Controller
         $plans = Plan::query()
             ->withCount('modules')
             ->when($request->search, fn($q, $s) => $q->where('name', 'like', "%{$s}%"))
+            ->when($request->type, function ($q, $t) {
+                if ($t === 'free') return $q->free();
+                if ($t === 'paid') return $q->where('is_free', false);
+            })
+            ->when($request->duration, function ($q, $d) {
+                if ($d === 'yearly') return $q->yearly();
+                if ($d === 'monthly_only') return $q->where('is_yearly', false);
+            })
             ->when($request->status, function($q, $s) {
-                if ($s === 'active') return $q->where('is_active', true);
+                if ($s === 'active') return $q->active();
                 if ($s === 'inactive') return $q->where('is_active', false);
             })
-            ->orderBy('id', 'desc')
+            ->orderBy('is_free', 'desc')
+            ->orderBy('price_monthly', 'asc')
             ->paginate(10)
             ->withQueryString();
 
         return Inertia::render('plans/index', [
             'plans'      => $this->transformPlans($plans),
-            'filters'    => $request->only(['search']),
+            'filters'    => $request->only(['search', 'type', 'duration', 'status']),
             'pageConfig' => $this->getPageConfig($request),
         ]);
     }
@@ -35,7 +44,7 @@ class PlanController extends Controller
     public function show(Request $request, Plan $plan)
     {
         $plan->load(['modules' => function($query) {
-            $query->orderBy('name', 'asc');
+            $query->where('is_active', true)->orderBy('name', 'asc');
         }]);
 
         return Inertia::render('plans/show', [
@@ -56,38 +65,32 @@ class PlanController extends Controller
 
     public function store(PlanRequest $request)
     {
-        $plan = DB::transaction(function () use ($request) {
-            if ($request->is_basic) Plan::where('is_basic', true)->update(['is_basic' => false]);
-
-            $plan = Plan::create($request->validated());
-            if ($request->filled('module_ids')) $plan->modules()->sync($request->module_ids);
-            return $plan;
+        DB::transaction(function () use ($request) {
+            Plan::create($request->validated());
         });
 
-        return redirect()->route('product-management.plans.show', ['plan' => $plan->slug])->with('success', 'Plan created successfully. You can now assign modules.');
+        return redirect()->route('product-management.plans.index')->with('success', 'Plan created successfully.');
     }
 
     public function update(PlanRequest $request, Plan $plan)
     {
         DB::transaction(function () use ($request, $plan) {
-            if ($request->is_basic) {
-                Plan::where('is_basic', true)
-                    ->where('id', '!=', $plan->id)
-                    ->update(['is_basic' => false]);
-            }
-
             $plan->update($request->validated());
-            if ($request->filled('module_ids')) $plan->modules()->sync($request->module_ids);
         });
 
-        return redirect()->back()->with('success', 'Plan Updated Successfully');
+        return redirect()->route('product-management.plans.index')->with('success', 'Plan updated successfully.');
     }
 
     public function destroy(Plan $plan)
     {
-        $plan->modules()->detach();
-        $plan->delete();
-        return redirect()->route('product-management.plans.index')->with('success', 'Plan Deleted');
+        if ($plan->companies()->exists()) return redirect()->back()->with('error', 'Cannot delete plan. There are companies currently subscribed to this plan.');
+
+        DB::transaction(function () use ($plan) {
+            $plan->modules()->detach();
+            $plan->delete();
+        });
+
+        return redirect()->route('product-management.plans.index')->with('success', 'Plan deleted successfully.');
     }
 
     public function assignModules(Request $request, Plan $plan)
@@ -110,26 +113,35 @@ class PlanController extends Controller
     private function transformSinglePlan(Plan $plan)
     {
         return [
-            'id'            => $plan->id,
-            'name'          => $plan->name,
-            'slug'          => $plan->slug,
-            'description'   => $plan->description,
-            'price_monthly' => (float) $plan->price_monthly,
-            'price_yearly'  => $plan->price_yearly ? (float) $plan->price_yearly : null,
-            'is_active'     => (bool) $plan->is_active,
-            'is_basic'      => (bool) $plan->is_basic,
-            'modules_count' => $plan->modules_count ?? $plan->modules->count(),
-            'modules'       => $plan->relationLoaded('modules') 
+            'id'                       => $plan->id,
+            'name'                     => $plan->name,
+            'slug'                     => $plan->slug,
+            'description'              => $plan->description,
+            'price_monthly'            => (float) $plan->price_monthly,
+            'price_yearly'             => (float) $plan->price_yearly,
+            'discount_monthly_percent' => $plan->discount_monthly_percent,
+            'discount_yearly_percent'  => $plan->discount_yearly_percent,
+            'final_price_monthly'      => $plan->final_price_monthly,
+            'final_price_yearly'       => $plan->final_price_yearly,
+            'has_monthly'              => $plan->has_monthly,
+            'has_yearly'               => $plan->has_yearly,
+            'is_free'                  => $plan->is_free,
+            'is_yearly'                => $plan->is_yearly,
+            'is_active'                => $plan->is_active,
+            'modules_count'            => $plan->modules_count,
+            'modules'                  => $plan->relationLoaded('modules') 
                 ? $plan->modules->map(fn($m) => ['id' => $m->id, 'name' => $m->name]) 
                 : [],
-            'form_default'      => [
-                'name'          => $plan->name,
-                'description'   => $plan->description ?? '',
-                'price_monthly' => (float) $plan->price_monthly,
-                'price_yearly'  => $plan->price_yearly ? (float) $plan->price_yearly : null,
-                'is_active'     => (bool) $plan->is_active,
-                'is_basic'      => (bool) $plan->is_basic,
-                'module_ids'    => $plan->modules->pluck('id')->toArray(),
+            'form_default' => [
+                'name'                     => $plan->name,
+                'description'              => $plan->description ?? '',
+                'price_monthly'            => $plan->price_monthly,
+                'price_yearly'             => $plan->price_yearly,
+                'discount_monthly_percent' => $plan->discount_monthly_percent,
+                'discount_yearly_percent'  => $plan->discount_yearly_percent,
+                'is_free'                  => $plan->is_free,
+                'is_yearly'                => $plan->is_yearly,
+                'is_active'                => $plan->is_active,
             ]
         ];
     }
