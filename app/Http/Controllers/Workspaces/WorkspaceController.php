@@ -39,7 +39,6 @@ class WorkspaceController extends Controller
             // Cek apakah dia member (terdaftar di pivot table)
             $isMember = $workspace->members()->where('user_id', $user->id)->exists();
 
-            // Kalau bukan manager DAN bukan member, baru abort
             if (!$isManager && !$isMember) {
                 abort(403, 'Anda tidak memiliki akses ke workspace ini.');
             }
