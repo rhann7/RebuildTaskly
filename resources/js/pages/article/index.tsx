@@ -123,6 +123,7 @@ export default function ArticleIndex({ articles, filters, categories = [] }: Pag
                     console.error('Failed to fetch sync info:', res.statusText);
                 }
             } catch (e) {
+                console.log(e);
                 console.error('Error fetching sync info:', e);
             } finally {
                 setIsLoadingSyncInfo(false);

@@ -278,18 +278,7 @@ class ArticleController
                 'text_length' => strlen($cleanedText),
             ], true);
 
-            // 11. Return response dengan info
-            return response()->json([
-                'success' => true,
-                'message' => 'Articles berhasil di-sync ke AI Agent',
-                'data' => [
-                    'pdf_file' => $pdfFileName,
-                    'total_articles' => Article::count(),
-                    'pdf_size' => File::size($pdfPath),
-                    'vector_stats' => $this->agent->vector()->getStatistics(),
-                ],
-                'download_url' => asset('storage/' . $pdfFileName),
-            ]);
+            return redirect()->back()->with('success', 'Article sync successfully.');
         } catch (\Exception $e) {
             \Log::error("Error sync articles: " . $e->getMessage());
 

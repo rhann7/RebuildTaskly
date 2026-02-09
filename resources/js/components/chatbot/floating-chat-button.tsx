@@ -250,7 +250,7 @@ export default function FloatingChatButton({ onToggle }: FloatingChatButtonProps
                         title="Buka chat"
                     >
                         <div className='flex gap-3 items-center'>
-                            <Bot /> <p className='font-bold'>BRIZZ AI</p>
+                            <Bot /> <p className='font-bold'>SADA AI</p>
                         </div>
                     </button>
                 </DrawerTrigger>
@@ -258,7 +258,7 @@ export default function FloatingChatButton({ onToggle }: FloatingChatButtonProps
                     <div className="flex flex-col h-full w-full max-w-4xl mx-auto">
                         {/* Header */}
                         <DrawerHeader className="flex-shrink-0 border-b">
-                            <DrawerTitle>Chat Dengan BRIZZ AI</DrawerTitle>
+                            <DrawerTitle>Chat Dengan SADA AI</DrawerTitle>
                             <DrawerDescription>Kami siap membantu Anda 24 x 7</DrawerDescription>
                         </DrawerHeader>
 
