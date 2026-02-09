@@ -5,7 +5,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Spatie\Permission\Models\Permission;
+use App\Models\Permission;
 
 class CheckCompanyPermission
 {
@@ -32,14 +32,11 @@ class CheckCompanyPermission
 
         $dbPermission = Permission::with('module')->where('route_name', $routeName)->first();
         if ($dbPermission) {
-            $module = $dbPermission->module;
-            abort_if($module && !$module->is_active, 403, "Modul {$module->name} sedang dinonaktifkan.");
-
-            if ($company->hasPermissionTo($dbPermission->name)) return $next($request);
-            abort(403, "Company tidak memiliki akses ke fitur: {$dbPermission->name}");
+            if ($company->hasAccess($dbPermission->name)) return $next($request);
+            abort(403, "Akses ditolak. Langganan Anda mungkin telah berakhir atau fitur ini tidak tersedia dalam Plan Anda.");
         }
 
-        if ($permission && $company->hasPermissionTo($permission)) return $next($request);
+        if ($permission && $company->hasAccess($permission)) return $next($request);
         abort(403, "Rute ini ({$routeName}) belum terdaftar dalam sistem akses kontrol.");
     }
 }
