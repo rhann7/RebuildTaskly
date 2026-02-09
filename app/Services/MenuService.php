@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Permission;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
@@ -72,24 +73,25 @@ class MenuService
     public function getDynamicCompanyMenus(Request $request, $user)
     {
         $company = $user->company;
-        $up = $user->getAllPermissions();
-        $cp = $company 
-            ? cache()->remember("company-{$company->id}-permissions", 86400, fn() => $company->getAllPermissions()) 
-            : collect();
-        
-        $permissions = $up->merge($cp)
-            ->where('isMenu', true)
-            ->unique('id')
-            ->sortBy('id');
-    
+        if (!$company) return [];
+
+        $allMenuPermissions = cache()->remember('all_menu_permissions', 86400, function() {
+            return Permission::where('isMenu', true)->get();
+        });
+
         $dynamicMenu = [];
-        foreach ($permissions as $p) {
-            $dynamicMenu[] = [
-                'title'    => Str::headline($p->name),
-                'href'     => $p->route_name && Route::has($p->route_name) ? route($p->route_name) : url($p->route_path ?? '#'),
-                'icon'     => $p->icon ?? 'Circle',
-                'isActive' => $p->route_name ? $request->routeIs($p->route_name . '*') : false,
-            ];
+        
+        foreach ($allMenuPermissions as $p) {
+            if ($company->hasAccess($p->name)) {
+                if ($p->route_name && Route::has($p->route_name)) {
+                    $dynamicMenu[] = [
+                        'title'    => Str::headline($p->name),
+                        'href'     => route($p->route_name),
+                        'icon'     => $p->icon ?? 'Circle',
+                        'isActive' => $request->routeIs($p->route_name . '*'),
+                    ];
+                }
+            }
         }
 
         return $dynamicMenu;
