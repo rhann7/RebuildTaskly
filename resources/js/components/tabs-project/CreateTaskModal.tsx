@@ -41,8 +41,8 @@ export default function CreateTaskModal({ isOpen, setIsOpen, project, workspace 
             <DialogContent className="sm:max-w-[550px] border-none bg-card p-0 overflow-hidden rounded-[32px] shadow-2xl">
                 <div className="bg-zinc-900 p-8 text-white relative">
                     <Zap className="absolute right-6 top-6 opacity-20 size-12" />
-                    <DialogTitle className="text-3xl font-black uppercase tracking-tighter">
-                        Initialize Task
+                    <DialogTitle className="text-3xl font-black uppercase tracking-widest">
+                        Add New Task
                     </DialogTitle>
                 </div>
 
@@ -56,14 +56,14 @@ export default function CreateTaskModal({ isOpen, setIsOpen, project, workspace 
                                 onChange={e => setData('title', e.target.value)}
                                 placeholder="E.G. CORE ENGINE SYNC"
                                 required
-                                className="h-11 rounded-xl border-border bg-muted/30 font-bold focus:ring-zinc-900/10 focus:border-zinc-900 uppercase tracking-tight"
+                                className="h-11 rounded-xl border-border bg-muted/30 font-bold focus:ring-zinc-900/10 focus:border-zinc-900"
                             />
                             <InputError message={errors.title} />
                         </div>
 
                         {/* Description */}
                         <div className="space-y-1.5">
-                            <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Task Briefing</Label>
+                            <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Description</Label>
                             <Textarea 
                                 value={data.description}
                                 onChange={e => setData('description', e.target.value)}

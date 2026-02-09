@@ -12,7 +12,7 @@ export default function ProjectGridCard({ project, workspaceSlug }: any) {
     // Format tanggal deadline (ID: 20 Jan)
     const formattedDeadline = project.due_date 
         ? new Date(project.due_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' }) 
-        : 'N/A';
+        : 'Not Set';
 
     return (
         <div className="bg-card p-6 rounded-[32px] border border-border hover:border-sada-red/30 transition-all group relative shadow-sm flex flex-col justify-between h-full hover:shadow-2xl hover:shadow-black/5">
@@ -31,7 +31,7 @@ export default function ProjectGridCard({ project, workspaceSlug }: any) {
                 {/* 2. Title & Description */}
                 <div className="space-y-3 text-left mb-6">
                     <div className="flex flex-col gap-1">
-                        <Link href={`/workspaces/${workspaceSlug}/projects/${project.slug}`} className="font-black text-[16px] uppercase tracking-tight text-foreground hover:text-sada-red transition-colors leading-tight">
+                        <Link href={`/workspaces/${workspaceSlug}/projects/${project.slug}`} className="font-black text-[16px] text-foreground hover:text-sada-red transition-colors leading-tight">
                             {project.name}
                         </Link>
                     </div>

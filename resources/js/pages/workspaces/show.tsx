@@ -80,7 +80,7 @@ export default function WorkspaceShow({ workspace, projects, auth, companies, me
                             ) : (
                                 <div className="py-32 text-center border border-dashed border-border rounded-[32px] bg-muted/5">
                                     <Zap className="mx-auto mb-4 text-muted-foreground/20" size={48} />
-                                    <p className="uppercase tracking-[0.3em] text-muted-foreground text-[10px] font-black italic">
+                                    <p className="uppercase tracking-[0.3em] text-muted-foreground text-[10px] font-black ">
                                         No Projects Located with Current Parameters
                                     </p>
                                 </div>

@@ -14,7 +14,7 @@ export const getProjectColumns = (workspaceSlug: string) => [
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="relative z-10"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></svg>
                     </div>
                     <div class="flex flex-col min-w-0">
-                        <span class="font-black text-foreground truncate text-[13px] group-hover:text-sada-red transition-colors uppercase tracking-tight leading-none mb-1">
+                        <span class="font-black text-foreground truncate text-[13px] group-hover:text-sada-red transition-colors leading-none mb-1">
                             ${row.name}
                         </span>
                     </div>
@@ -83,10 +83,10 @@ export const getProjectColumns = (workspaceSlug: string) => [
         render: (data: string) => `
             <div class="flex items-center gap-2">
                 <div class="flex flex-col">
-                    <span class="text-[11px] font-black text-foreground uppercase tracking-tight ">
+                    <span class="text-[11px] font-black text-foreground uppercase">
                         ${data ? new Date(data).toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric'}) : 'NOT SET'}
                     </span>
-                    <span class="text-[8px] font-bold text-muted-foreground uppercase tracking-tighter mt-0.5">Termination Date</span>
+                    <span class="text-[8px] font-bold text-muted-foreground uppercase mt-0.5">Due Date</span>
                 </div>
             </div>
         `     
