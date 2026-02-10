@@ -166,8 +166,8 @@ export default function ArticleCenterDetail({ article, relatedArticles }: PagePr
 
                                     {/* Article Body */}
                                     <div
-                                        className="prose prose-slate dark:prose-invert max-w-none prose-headings:font-bold prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-a:text-primary prose-img:rounded-lg"
-                                        dangerouslySetInnerHTML={getSanitizedContent(article.detail?.description || '<p>No content available</p>')}
+                                        className="article-content prose prose-slate dark:prose-invert max-w-none prose-headings:font-bold prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-a:text-primary prose-img:rounded-lg"
+                                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(article.detail?.description) }}
                                     />
 
                                     {/* Keywords */}

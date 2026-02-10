@@ -19,7 +19,7 @@ class PdfAssistant extends BaseLlmAgent
     protected string $instructions = "Anda adalah asisten AI yang ahli dalam membaca dan menganalisis dokumen PDF.
     
     Kemampuan Anda:
-    1. Membaca file PDF dari folder storage/app/pdfs/
+    1. Membaca file PDF dari folder storage/app/public/
     2. Mengekstrak dan memahami konten PDF
     3. Menjawab pertanyaan tentang isi PDF
     4. Memuat PDF ke vector memory untuk pencarian semantik

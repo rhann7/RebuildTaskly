@@ -6,12 +6,10 @@ import { Button } from '../ui/button';
 import { Textarea } from '../ui/textarea';
 import { ScrollArea } from '../ui/scroll-area';
 import { BlinkBlur } from 'react-loading-indicators'
-import { Chat } from '@/services/ChatbotService';
 import { useSpring, useSpringRef, config, useTransition, useChain, animated } from '@react-spring/web'
 import dataListFeature from '../../types/data-list-feature';
 import { ActionAgent, ActionChatbot } from '../../types/data-fast-action';
 import { Badge } from '../ui/badge';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '../ui/select';
 import { AgentTask } from '@/services/AgentAIService';
 
 interface FloatingChatButtonProps {
@@ -33,8 +31,6 @@ export default function FloatingChatButton({ onToggle }: FloatingChatButtonProps
     const [isDrawerOpen, setIsDrawerOpen] = useState(false); // State untuk track drawer
     const [open, setOpen] = useState(false)
     const [showTransition, setShowTransition] = useState(false)
-    const [aiType, setAiType] = useState<string[]>([])
-    const [selectedAiType, setSelectedAiType] = useState('') // State kosong dulu
     const [type, setType] = useState('')
 
     const springApi = useSpringRef()
@@ -88,16 +84,6 @@ export default function FloatingChatButton({ onToggle }: FloatingChatButtonProps
     };
 
     useEffect(() => {
-        if (user.role !== 'company' && 'company-owner') {
-            setAiType(['Agent', 'Chat'])
-            setSelectedAiType('Chat')
-        } else {
-            setAiType(['Chat'])
-            setSelectedAiType('Chat') // Set default value
-        }
-    }, [user?.role])
-
-    useEffect(() => {
         let timer: NodeJS.Timeout
         if (open) {
             timer = setTimeout(() => {
@@ -141,18 +127,10 @@ export default function FloatingChatButton({ onToggle }: FloatingChatButtonProps
         setAnalyze(true)
 
         try {
-            let response
-            let responseText = ''
-
-            if (selectedAiType.toLowerCase() == 'agent') {
-                response = await AgentTask(inputValue)
-                // AgentTask returns {agent_name, session_id, response}
-                responseText = response.response || JSON.stringify(response)
-            } else {
-                response = await Chat(inputValue);
-                responseText = response.reply || 'Tidak ada respons'
-            }
-
+            const response = await AgentTask(inputValue)
+            console.log(response);
+            
+            const responseText = response.choices[0].message.content || 'Maaf, terjadi kesalahan!'
 
             const botResponse: Message = {
                 id: Date.now() + 1,
@@ -186,17 +164,10 @@ export default function FloatingChatButton({ onToggle }: FloatingChatButtonProps
         setAnalyze(true)
 
         try {
-            let response
-            let responseText = ''
-
-            if (selectedAiType.toLowerCase() == 'agent') {
-                response = await AgentTask(text)
-                // AgentTask returns {agent_name, session_id, response}
-                responseText = response.response || 'Maaf, terjadi kesalahan!'
-            } else {
-                response = await Chat(text);
-                responseText = response.reply || 'Maaf, terjadi kesalahan!'
-            }
+            const response = await AgentTask(text)
+            console.log(response);
+            
+            const responseText = response.choices[0].message.content || 'Maaf, terjadi kesalahan!'
 
             const botResponse: Message = {
                 id: Date.now() + 1,
@@ -375,20 +346,8 @@ export default function FloatingChatButton({ onToggle }: FloatingChatButtonProps
 
                         {/* Input Area - Fixed at bottom */}
                         <DrawerFooter className="flex-shrink-0 border-t p-4">
-                            <div className="flex items-center justify-between mb-2">
-                                <Select value={selectedAiType} onValueChange={setSelectedAiType}>
-                                    <SelectTrigger className="w-[120px]">
-                                        <SelectValue placeholder="Type" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectGroup>
-                                            {aiType.map((type) => (
-                                                <SelectItem key={type} value={type}>{type}</SelectItem>
-                                            ))}
-                                        </SelectGroup>
-                                    </SelectContent>
-                                </Select>
-                                {messages.length > 0 && (
+                            {messages.length > 0 && (
+                                <div className="flex items-center justify-end mb-2">
                                     <Button
                                         variant="ghost"
                                         size="sm"
@@ -398,8 +357,8 @@ export default function FloatingChatButton({ onToggle }: FloatingChatButtonProps
                                         <X className="mr-1 h-4 w-4" />
                                         Clear Messages
                                     </Button>
-                                )}
-                            </div>
+                                </div>
+                            )}
                             <Textarea
                                 placeholder='Apa yang ingin anda tanyakan?'
                                 className='mb-3 min-h-[100px] resize-none'
