@@ -4,7 +4,6 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use App\Models\Permission;
 
 class CheckCompanyPermission
@@ -19,21 +18,18 @@ class CheckCompanyPermission
         $company = $user->company;
         abort_if(!$company, 403, 'Akun ini tidak terhubung dengan company.');
 
-        if (!$company->is_active) {
-            Auth::logout();
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
-            abort(403, "Akses ditolak. Perusahaan Anda ({$company->name}) sedang ditangguhkan.");
-        }
-
         $routeName = $request->route()->getName();
         $whiteList = ['dashboard', 'profile.edit', 'profile.update', 'profile.destroy', 'impersonate.take', 'impersonate.leave'];
         if (in_array($routeName, $whiteList)) return $next($request);
 
+        $subscription = $company->activeSubscription;
+        $isExpired = $subscription && $subscription->ends_at->isPast();
+
         $dbPermission = Permission::with('module')->where('route_name', $routeName)->first();
         if ($dbPermission) {
             if ($company->hasAccess($dbPermission->name)) return $next($request);
-            abort(403, "Akses ditolak. Langganan Anda mungkin telah berakhir atau fitur ini tidak tersedia dalam Plan Anda.");
+            abort_if($isExpired, 403, "Masa langganan Paket " . ($subscription->plan->name ?? '') . " Anda telah berakhir. Silakan lakukan upgrade atau perpanjangan.");
+            abort(403, "Fitur ini tidak tersedia dalam paket Anda.");
         }
 
         if ($permission && $company->hasAccess($permission)) return $next($request);
