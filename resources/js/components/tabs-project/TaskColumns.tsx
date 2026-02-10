@@ -1,11 +1,12 @@
 export const getTaskColumns = (workspaceSlug: string, projectSlug: string) => [
-    {
+      {
         data: "title",
         title: "TASK DETAILS",
         width: '35%',
         className: "text-left align-middle px-6 group",
         render: (data: any, type: any, row: any) => `
-            <div class="flex items-center gap-4 py-3 group/item transition-all">
+            <a href="/workspaces/${workspaceSlug}/projects/${projectSlug}/tasks/${row.slug}" 
+               class="flex items-center gap-4 py-3 group/item transition-all no-underline block">
                 <div class="size-10 shrink-0 rounded-xl bg-zinc-900 flex items-center justify-center text-white shadow-lg group-hover/item:scale-105 transition-all duration-300 border border-white/10 relative overflow-hidden">
                     <div class="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="relative z-10">
@@ -14,14 +15,14 @@ export const getTaskColumns = (workspaceSlug: string, projectSlug: string) => [
                     </svg>
                 </div>
                 <div class="flex flex-col justify-center min-w-0 leading-tight">
-                    <span class="font-black text-foreground truncate text-[13px] group-hover:text-sada-red transition-colors uppercase  leading-none mb-1">
+                    <span class="font-black text-foreground truncate text-[13px] group-hover/item:text-sada-red transition-colors uppercase leading-none mb-1">
                         ${row.title}
                     </span>
-                    <p class="text-[11px] text-muted-foreground font-bold line-clamp-1 italic  tracking-wider opacity-60 border-l-2 border-muted pl-2">
+                    <p class="text-[11px] text-muted-foreground font-bold line-clamp-1 italic tracking-wider opacity-60 border-l-2 border-muted pl-2">
                         ${row.description || 'No operational briefing provided...'}
                     </p>
                 </div>
-            </div>
+            </a>
         `
     },
     {

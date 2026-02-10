@@ -70,6 +70,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 'workspaces' => 'workspace:slug',
                 'projects' => 'project:slug',
                 'tasks' => 'task:slug'
+                
             ])
             ->except([]);
 

@@ -3,6 +3,7 @@
 namespace App\Models\TaskManagement;
 
 use App\Models\ProjectManagement\Project;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 
 class Task extends Model
@@ -12,5 +13,15 @@ class Task extends Model
     public function project()
     {
         return $this->belongsTo(Project::class);
+    }
+
+    public function subtasks()
+    {
+        return $this->hasMany(SubTask::class);
+    }
+
+    public function assignee()
+    {
+        return $this->belongsTo(User::class, 'user_id'); // sesuaikan nama kolomnya
     }
 }

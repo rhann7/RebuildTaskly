@@ -160,8 +160,14 @@ export default function TaskIndex({ workspace, project, tasks, filters, pageConf
                                 <TableCell className="text-center text-muted-foreground tabular-nums">{tasks.from + i}</TableCell>
                                 <TableCell>
                                     <div className="flex flex-col">
-                                        <span className="font-semibold">{task.title}</span>
-                                        <span className="text-xs text-muted-foreground line-clamp-1">{task.description || 'No description'}</span>
+                                        {/* Tambahkan Link di sini */}
+                                        <Link
+                                            href={`/workspaces/${workspace.slug}/projects/${project.slug}/tasks/${task.slug}`}
+                                            className="font-semibold hover:text-red-600 transition-colors uppercase tracking-tight"
+                                        >
+                                            {task.title}
+                                        </Link>
+                                        <span className="text-xs text-muted-foreground line-clamp-1 italic">{task.description || 'No description'}</span>
                                     </div>
                                 </TableCell>
                                 <TableCell>
@@ -175,6 +181,19 @@ export default function TaskIndex({ workspace, project, tasks, filters, pageConf
                                 <TableCell className="text-right px-6">
                                     <div className="flex justify-end gap-1">
                                         <TooltipProvider>
+                                            {/* --- TOMBOL VIEW DETAIL --- */}
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600" asChild>
+                                                        <Link href={`/workspaces/${workspace.slug}/projects/${project.slug}/tasks/${task.slug}`}>
+                                                            <Eye className="h-4 w-4" />
+                                                        </Link>
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>View Task Intelligence</TooltipContent>
+                                            </Tooltip>
+
+                                            {/* Tombol Edit yang sudah ada */}
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
                                                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditModal(task)}>
@@ -183,9 +202,11 @@ export default function TaskIndex({ workspace, project, tasks, filters, pageConf
                                                 </TooltipTrigger>
                                                 <TooltipContent>Edit Task</TooltipContent>
                                             </Tooltip>
+
+                                            {/* Tombol Delete yang sudah ada */}
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600"   onClick={() => handleDelete(task.slug)}>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600" onClick={() => handleDelete(task.slug)}>
                                                         <Trash2 className="h-4 w-4" />
                                                     </Button>
                                                 </TooltipTrigger>

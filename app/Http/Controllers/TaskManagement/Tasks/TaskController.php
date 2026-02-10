@@ -87,16 +87,26 @@ class TaskController extends Controller
     }
 
 
-    public function show(Request $request, Workspace $workspace, Project $project)
+  public function show(Request $request, Workspace $workspace, Project $project, Task $task)
     {
-        abort_if($project->workspace_id !== $workspace->id, 404);
-        $this->authorizeProject($request->user(), $project);
+        // 1. Validasi Hirarki: Pastikan rute tidak 'nyasar'
+        abort_if($task->project_id !== $project->id || $project->workspace_id !== $workspace->id, 404);
 
-        return Inertia::render('projects/show', [
+        // 2. Eager Load: Ambil sub-task dan user yang menyelesaikannya
+        $task->load([
+            'subtasks' => function ($query) {
+                $query->with('completer')->latest(); // 'completer' adalah relasi ke completed_by
+            }
+        ]);
+
+        // 3. Render: Pastikan render ke 'tasks/show' atau folder detail task, BUKAN project detail
+        return Inertia::render('tasks/show', [
             'workspace' => $workspace,
             'project'   => $project,
-            'tasks' => $project->tasks()->latest()->get(),
-            'isSuperAdmin' => $request->user()->isSuperAdmin(),
+            'task'      => $task,
+            'subtasks'  => $task->subtasks,
+            // Cek apakah user adalah manager workspace atau super-admin
+            'isManager' => $request->user()->id === $workspace->manager_id || $request->user()->isSuperAdmin(),
         ]);
     }
 
