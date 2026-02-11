@@ -117,7 +117,7 @@ export default function WorkspaceIndex({ workspaces, companies, filters, pageCon
                 description={pageConfig.description}
                 breadcrumbs={breadcrumbs}
                 filterWidget={FilterWidget}
-                headerActions={pageConfig.can_manage && <Button onClick={openCreateModal} size="sm"><Plus className="h-4 w-4 mr-2" />Add Workspace</Button>}
+                headerActions={<Button onClick={openCreateModal} size="sm"><Plus className="h-4 w-4 mr-2" />Add Workspace</Button>}
                 pagination={workspaces}
                 isEmpty={workspaces.data.length === 0}
                 config={{ showFilter: true, showPagination: true, showHeaderActions: true, emptyStateIcon: <LayoutGrid className="h-6 w-6 text-muted-foreground/60" /> }}
@@ -136,7 +136,7 @@ export default function WorkspaceIndex({ workspaces, companies, filters, pageCon
                         {workspaces.data.map((workspace, i) => (
                             <TableRow key={workspace.id} className="group hover:bg-muted/30">
                                 <TableCell className="text-center text-muted-foreground tabular-nums">{workspaces.from + i}</TableCell>
-                                
+
                                 {isSuperAdmin && (
                                     <TableCell>
                                         <div className="flex items-center gap-2 font-medium">
@@ -172,14 +172,14 @@ export default function WorkspaceIndex({ workspaces, companies, filters, pageCon
                                                 <TooltipContent>Manage Workspace</TooltipContent>
                                             </Tooltip>
 
-                                            {pageConfig.can_manage && (
+                                            {
                                                 <>
                                                     <Tooltip>
                                                         <TooltipTrigger asChild>
-                                                            <Button 
-                                                                variant="ghost" 
-                                                                size="icon" 
-                                                                className="h-8 w-8" 
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-8 w-8"
                                                                 onClick={() => openEditModal(workspace)}
                                                             >
                                                                 <Settings2 className="h-4 w-4" />
@@ -190,10 +190,10 @@ export default function WorkspaceIndex({ workspaces, companies, filters, pageCon
 
                                                     <Tooltip>
                                                         <TooltipTrigger asChild>
-                                                            <Button 
-                                                                variant="ghost" 
-                                                                size="icon" 
-                                                                className="h-8 w-8 hover:text-red-600" 
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-8 w-8 hover:text-red-600"
                                                                 onClick={() => handleDelete(workspace.slug)}
                                                             >
                                                                 <Trash2 className="h-4 w-4" />
@@ -204,7 +204,7 @@ export default function WorkspaceIndex({ workspaces, companies, filters, pageCon
                                                         </TooltipContent>
                                                     </Tooltip>
                                                 </>
-                                            )}
+                                            }
                                         </TooltipProvider>
                                     </div>
                                 </TableCell>
