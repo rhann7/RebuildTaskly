@@ -4,8 +4,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Spatie\Permission\Models\Permission;
+use App\Models\Permission;
 
 class CheckCompanyPermission
 {
@@ -19,27 +18,21 @@ class CheckCompanyPermission
         $company = $user->company;
         abort_if(!$company, 403, 'Akun ini tidak terhubung dengan company.');
 
-        if (!$company->is_active) {
-            Auth::logout();
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
-            abort(403, "Akses ditolak. Perusahaan Anda ({$company->name}) sedang ditangguhkan.");
-        }
-
         $routeName = $request->route()->getName();
         $whiteList = ['dashboard', 'profile.edit', 'profile.update', 'profile.destroy', 'impersonate.take', 'impersonate.leave'];
         if (in_array($routeName, $whiteList)) return $next($request);
 
+        $subscription = $company->activeSubscription;
+        $isExpired = $subscription && $subscription->ends_at->isPast();
+
         $dbPermission = Permission::with('module')->where('route_name', $routeName)->first();
         if ($dbPermission) {
-            $module = $dbPermission->module;
-            abort_if($module && !$module->is_active, 403, "Modul {$module->name} sedang dinonaktifkan.");
-
-            if ($company->hasPermissionTo($dbPermission->name)) return $next($request);
-            abort(403, "Company tidak memiliki akses ke fitur: {$dbPermission->name}");
+            if ($company->hasAccess($dbPermission->name)) return $next($request);
+            abort_if($isExpired, 403, "Masa langganan Paket " . ($subscription->plan->name ?? '') . " Anda telah berakhir. Silakan lakukan upgrade atau perpanjangan.");
+            abort(403, "Fitur ini tidak tersedia dalam paket Anda.");
         }
 
-        if ($permission && $company->hasPermissionTo($permission)) return $next($request);
+        if ($permission && $company->hasAccess($permission)) return $next($request);
         abort(403, "Rute ini ({$routeName}) belum terdaftar dalam sistem akses kontrol.");
     }
 }

@@ -3,6 +3,8 @@
 namespace App\Actions\Fortify;
 
 use App\Models\Company;
+use App\Models\Plan;
+use App\Models\Subscription;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -11,7 +13,6 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
-use Spatie\Permission\Models\Permission;
 
 class CreateNewUser implements CreatesNewUsers
 {
@@ -56,9 +57,19 @@ class CreateNewUser implements CreatesNewUsers
                 'phone'               => $input['company_phone'] ?? null,
                 'is_active'           => true,
             ]);
-            
-            $permissions = Permission::where('type', 'general')->get();
-            if ($permissions->isNotEmpty()) $company->givePermissionTo($permissions);
+
+            $freePlan = Plan::where('is_free', true)->where('is_active', true)->first();
+
+            if ($freePlan) {
+                Subscription::create([
+                    'company_id' => $company->id,
+                    'plan_id'    => $freePlan->id,
+                    'status'     => 'active',
+                    'is_free'    => true,
+                    'starts_at'  => now(),
+                    'ends_at'    => now()->addDays(30),
+                ]);
+            }
             
             return $user;
         });

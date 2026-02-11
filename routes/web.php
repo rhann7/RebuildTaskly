@@ -69,19 +69,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('workspaces', WorkspaceController::class)
             ->parameters(['workspaces' => 'workspace:slug'])
             ->except(['create', 'edit']);
-    
-        if (Schema::hasTable('permissions') && Schema::hasColumns('permissions', ['route_path', 'route_name'])) {
-            $dynamicRoutes = cache()->remember('dynamic_routes', 3600, function () {
-                return Permission::whereNotNull('route_path')->whereNotNull('route_name')->get();
-            });
-    
-            foreach ($dynamicRoutes as $route) {
-                if (!Route::has($route->route_name)) {
-                    Route::get($route->route_path, $route->controller_action)
-                        ->name($route->route_name);
-                }
-            }
-        }
     });
 });
 
