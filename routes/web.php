@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
-use Spatie\Permission\Models\Permission;    
+use Spatie\Permission\Models\Permission;
 use App\Http\Controllers\TeamController;
 
 Route::get('/', function () {
@@ -82,6 +82,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 'subtasks' => 'subtask'
             ])
             ->only(['store', 'destroy']);
+
+        Route::patch(
+            'workspaces/{workspace:slug}/projects/{project:slug}/tasks/{task:slug}/subtasks/{subTask}/toggle',
+            [SubTaskController::class, 'toggle'])
+            ->name('workspaces.projects.tasks.subtasks.toggle');
 
         if (Schema::hasTable('permissions') && Schema::hasColumns('permissions', ['route_path', 'route_name'])) {
             $dynamicRoutes = cache()->remember('dynamic_routes', 3600, function () {

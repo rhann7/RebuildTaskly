@@ -13,9 +13,13 @@ return new class extends Migration
     {
         Schema::create('sub_tasks', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('task_id')->constrained()->onDelete('cascade'); // Nempel ke Task
+            $table->foreignId('task_id')->constrained()->onDelete('cascade');
             $table->string('title');
             $table->boolean('is_completed')->default(false);
+            $table->foreignId('completed_by')
+                ->nullable()
+                ->constrained('users')
+                ->onDelete('set null');
             $table->timestamps();
         });
     }
