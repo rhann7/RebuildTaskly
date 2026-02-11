@@ -129,14 +129,14 @@ export default function CreateTaskModal({ isOpen, setIsOpen, project, workspace 
                             onClick={() => setIsOpen(false)} 
                             className="rounded-xl font-black uppercase text-[10px] tracking-widest"
                         >
-                            Abort
+                            Cancel
                         </Button>
                         <Button 
                             type="submit" 
                             disabled={processing}
                             className="h-12 px-8 bg-zinc-900 hover:bg-black text-white rounded-xl font-black uppercase text-[10px] tracking-widest flex items-center gap-2 transition-all active:scale-95 shadow-xl shadow-zinc-900/20"
                         >
-                            {processing ? 'Processing...' : <><CheckCircle2 size={16} /> Deploy Task</>}
+                            {processing ? 'Processing...' : <><CheckCircle2 size={16} /> Submit</>}
                         </Button>
                     </DialogFooter>
                 </form>

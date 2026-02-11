@@ -9,7 +9,7 @@ import { TaskTimesheets } from '@/layouts/tasks/tabs/TasksTimesheets';
 import { TaskDocuments } from '@/layouts/tasks/tabs/TaskDocument';
 
 
-export default function TaskShow({ workspace, project, task, subtasks }: any) {
+export default function TaskShow({ workspace, project, task, subtasks, isManager }: any) {
     const [activeTab, setActiveTab] = useState<'brief' | 'timesheets' | 'docs' | 'activity'>('brief');
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },
@@ -30,9 +30,18 @@ export default function TaskShow({ workspace, project, task, subtasks }: any) {
                 <TaskDetailTabs activeTab={activeTab} setActiveTab={setActiveTab} />
 
                 <div className="min-h-[600px] transition-all duration-500">
-                    {activeTab === 'brief' && <TaskOverview task={task} />}
-                    {activeTab === 'timesheets' && <TaskTimesheets task={task} />}
-                    {activeTab === 'docs' && <TaskDocuments task={task} />}
+                    {activeTab === 'brief' &&
+                        <TaskOverview
+                            workspace={workspace}
+                            project={project}
+                            task={task}
+                            isManager={isManager} />}
+                    {activeTab === 'timesheets' &&
+                        <TaskTimesheets
+                            task={task} />}
+                    {activeTab === 'docs' &&
+                        <TaskDocuments
+                            task={task} />}
                     {/* {activeTab === 'activity' && <TaskActionCenter task={task} />}  */}
                 </div>
             </div>

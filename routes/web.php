@@ -6,13 +6,14 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProjectManagement\Projects\ProjectController;
 use App\Http\Controllers\Rules\PermissionAccessController;
 use App\Http\Controllers\Rules\PermissionController;
+use App\Http\Controllers\TaskManagement\SubTasks\SubTaskController;
 use App\Http\Controllers\TaskManagement\Tasks\TaskController;
 use App\Http\Controllers\Workspaces\WorkspaceController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
-use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Permission;    
 use App\Http\Controllers\TeamController;
 
 Route::get('/', function () {
@@ -24,8 +25,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/team', [TeamController::class, 'index'])->name('team.index');
     Route::post('/team', [TeamController::class, 'store'])->name('team.store');
     Route::middleware(['auth', 'verified', 'company_can'])->group(function () {
-    Route::get('/projects', [ProjectController::class, 'globalIndex'])
-        ->name('projects.global');
+        Route::get('/projects', [ProjectController::class, 'globalIndex'])
+            ->name('projects.global');
     });
     Route::impersonate();
     Route::middleware('role:super-admin')->group(function () {
@@ -47,32 +48,40 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::middleware('company_can')->group(function () {
         Route::post('workspaces/{workspace:slug}/members', [WorkspaceController::class, 'addMember'])
-        ->name('workspaces.members.add');
+            ->name('workspaces.members.add');
         Route::resource('workspaces', WorkspaceController::class)
             ->parameters(['workspaces' => 'workspace:slug'])
             ->except(['create', 'edit']);
 
         Route::resource('workspaces.projects', ProjectController::class)
             ->parameters([
-            'workspaces' => 'workspace:slug',
-            'projects' => 'project:slug'
-        ])
+                'workspaces' => 'workspace:slug',
+                'projects' => 'project:slug'
+            ])
             ->except(['create', 'edit']);
-        
+
         Route::post('workspaces/{workspace:slug}/projects/{project}/members', [ProjectController::class, 'addMember'])
-        ->name('workspaces.projects.members.store');
-    
+            ->name('workspaces.projects.members.store');
+
         Route::delete('workspaces/{workspace:slug}/projects/{project}/members/{user}', [ProjectController::class, 'removeMember'])
-        ->name('workspaces.projects.members.destroy');
+            ->name('workspaces.projects.members.destroy');
 
         Route::resource('workspaces.projects.tasks', TaskController::class)
             ->parameters([
                 'workspaces' => 'workspace:slug',
                 'projects' => 'project:slug',
                 'tasks' => 'task:slug'
-                
             ])
             ->except([]);
+
+        Route::resource('workspaces.projects.tasks.subtasks', SubTaskController::class)
+            ->parameters([
+                'workspaces' => 'workspace:slug',
+                'projects' => 'project:slug',
+                'tasks' => 'task:slug',
+                'subtasks' => 'subtask'
+            ])
+            ->only(['store', 'destroy']);
 
         if (Schema::hasTable('permissions') && Schema::hasColumns('permissions', ['route_path', 'route_name'])) {
             $dynamicRoutes = cache()->remember('dynamic_routes', 3600, function () {
