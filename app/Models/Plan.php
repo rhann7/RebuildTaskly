@@ -29,6 +29,11 @@ class Plan extends Model
         'discount_yearly_percent'  => 'integer',
     ];
 
+    protected $appends = [
+        'final_price_monthly',
+        'final_price_yearly',
+    ];
+
     protected static function booted()
     {
         static::saving(function ($plan) {
