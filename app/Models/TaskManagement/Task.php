@@ -6,6 +6,7 @@ use App\Models\ProjectManagement\Project;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 
+
 class Task extends Model
 {
     protected $fillable = ['project_id', 'title', 'slug', 'description', 'status', 'priority', 'due_date'];
@@ -19,9 +20,12 @@ class Task extends Model
     {
         return $this->hasMany(SubTask::class);
     }
-
     public function assignee()
     {
         return $this->belongsTo(User::class, 'user_id'); // sesuaikan nama kolomnya
+    }
+    public function timesheets()
+    {
+        return $this->hasMany(Timesheet::class);
     }
 }

@@ -60,7 +60,6 @@ class SubTaskController extends Controller
             'is_completed' => !$subTask->is_completed,
             'completed_by' => !$subTask->is_completed ? $request->user()->id : null,
         ]);
-
         return back();
     }
 

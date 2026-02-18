@@ -26,7 +26,7 @@ export const TaskOverview = ({ task, isManager = false, workspace, project }: Pr
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
 
-            {/* --- KIRI: MISSION BRIEF & SUB-TASKS --- */}
+            {/* --- KIRI: MISSION PARAMETERS & SUB-TASKS --- */}
             <div className="lg:col-span-2 flex flex-col gap-8">
 
                 {/* 1. Description Card (Mission Parameters) */}
@@ -36,11 +36,11 @@ export const TaskOverview = ({ task, isManager = false, workspace, project }: Pr
                     </div>
                     <div className="relative z-10 flex flex-col gap-2">
                         <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-black text-sada-red uppercase tracking-[0.2em] italic">Mission Parameters</span>
+                            <span className="text-[10px] font-black text-sada-red uppercase tracking-[0.2em] italic">Description</span>
                             {isManager && <Shield size={10} className="text-sada-red opacity-50" />}
                         </div>
                         <p className="text-zinc-600 dark:text-muted-foreground text-sm leading-relaxed italic opacity-90 max-w-2xl font-medium mt-2">
-                            {task.description || "No specific mission parameters defined for this objective."}
+                            {task.description || "No specific description in this task."}
                         </p>
                     </div>
                 </div>
@@ -49,7 +49,7 @@ export const TaskOverview = ({ task, isManager = false, workspace, project }: Pr
                 <div className="flex flex-col gap-6">
                     <div className="flex justify-between items-end px-4">
                         <div className="flex flex-col gap-1">
-                            <h3 className="text-xl font-black uppercase tracking-tighter flex items-center gap-3">
+                            <h3 className="text-xl font-black uppercase flex items-center gap-3">
                                 <Target className="text-sada-red" size={20} />
                                 Operational Objectives
                             </h3>

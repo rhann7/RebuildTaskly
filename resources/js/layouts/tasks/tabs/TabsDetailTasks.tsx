@@ -8,7 +8,7 @@ interface Props {
 
 export const TaskDetailTabs = ({ activeTab, setActiveTab, isManager }: Props) => {
     const tabs = [
-        { id: 'brief', label: 'Mission Brief', icon: Target },
+        { id: 'brief', label: 'Task Detail', icon: Target },
         { id: 'timesheets', label: 'Operation Logs', icon: Clock },
         { id: 'docs', label: 'Documentation', icon: Paperclip },
         { id: 'activity', label: 'System Activity', icon: Activity },

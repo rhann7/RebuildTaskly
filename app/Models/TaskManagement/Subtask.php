@@ -15,6 +15,11 @@ class SubTask extends Model
         return $this->belongsTo(Task::class);
     }
 
+    public function timesheets()
+    {
+        return $this->hasMany(Timesheet::class);
+    }
+
     public function completer()
     {
         return $this->belongsTo(User::class, 'completed_by');

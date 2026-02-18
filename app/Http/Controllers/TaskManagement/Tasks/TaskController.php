@@ -71,23 +71,40 @@ class TaskController extends Controller
             'status' => 'required|in:todo,in_progress,done',
             'priority' => 'required|in:low,medium,high',
             'due_date' => 'nullable|date',
-        ]);
-        Task::create([
-            'project_id'  => $project->id,
-            'title'       => $validated['title'],
-            'slug'        => Str::slug($validated['title']) . '-' . Str::lower(Str::random(5)),
-            'description' => $validated['description'],
-            'status'      => $validated['status'],
-            'priority' => $validated['priority'],
-            'due_date' => $validated['due_date'],
+            // Validasi untuk array subtasks
+            'subtasks' => 'nullable|array',
+            'subtasks.*.title' => 'required|string|max:255',
         ]);
 
+        // Gunakan Transaction untuk keamanan data
+        \DB::transaction(function () use ($validated, $project) {
+            // 1. Buat Task Utama
+            $task = Task::create([
+                'project_id'  => $project->id,
+                'title'       => $validated['title'],
+                'slug'        => Str::slug($validated['title']) . '-' . Str::lower(Str::random(5)),
+                'description' => $validated['description'],
+                'status'      => $validated['status'],
+                'priority'    => $validated['priority'],
+                'due_date'    => $validated['due_date'],
+            ]);
 
-        return back()->with('success', 'Task created successfully.');
+            // 2. Jika ada subtasks, masukkan sekaligus
+            if (!empty($validated['subtasks'])) {
+                foreach ($validated['subtasks'] as $subtaskData) {
+                    $task->subtasks()->create([
+                        'title' => $subtaskData['title'],
+                        'is_completed' => false,
+                    ]);
+                }
+            }
+        });
+
+        return back()->with('success', 'Task and Sub-objectives deployed.');
     }
 
 
-  public function show(Request $request, Workspace $workspace, Project $project, Task $task)
+    public function show(Request $request, Workspace $workspace, Project $project, Task $task)
     {
         // 1. Validasi Hirarki: Pastikan rute tidak 'nyasar'
         abort_if($task->project_id !== $project->id || $project->workspace_id !== $workspace->id, 404);

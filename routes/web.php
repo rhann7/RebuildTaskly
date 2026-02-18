@@ -8,6 +8,7 @@ use App\Http\Controllers\Rules\PermissionAccessController;
 use App\Http\Controllers\Rules\PermissionController;
 use App\Http\Controllers\TaskManagement\SubTasks\SubTaskController;
 use App\Http\Controllers\TaskManagement\Tasks\TaskController;
+use App\Http\Controllers\TaskManagement\TimesheetController;
 use App\Http\Controllers\Workspaces\WorkspaceController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
@@ -15,6 +16,7 @@ use Inertia\Inertia;
 use Laravel\Fortify\Features;
 use Spatie\Permission\Models\Permission;
 use App\Http\Controllers\TeamController;
+
 
 Route::get('/', function () {
     return Inertia::render('welcome', ['canRegister' => Features::enabled(Features::registration())]);
@@ -27,6 +29,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware(['auth', 'verified', 'company_can'])->group(function () {
         Route::get('/projects', [ProjectController::class, 'globalIndex'])
             ->name('projects.global');
+        Route::resource('timesheets', TimesheetController::class)
+            ->only(['index', 'store', 'destroy']);
     });
     Route::impersonate();
     Route::middleware('role:super-admin')->group(function () {
@@ -85,7 +89,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::patch(
             'workspaces/{workspace:slug}/projects/{project:slug}/tasks/{task:slug}/subtasks/{subTask}/toggle',
-            [SubTaskController::class, 'toggle'])
+            [SubTaskController::class, 'toggle']
+        )
             ->name('workspaces.projects.tasks.subtasks.toggle');
 
         if (Schema::hasTable('permissions') && Schema::hasColumns('permissions', ['route_path', 'route_name'])) {
