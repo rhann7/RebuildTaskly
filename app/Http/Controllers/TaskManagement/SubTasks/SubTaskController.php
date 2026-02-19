@@ -58,7 +58,8 @@ class SubTaskController extends Controller
 
         $subTask->update([
             'is_completed' => !$subTask->is_completed,
-            'completed_by' => !$subTask->is_completed ? $request->user()->id : null,
+            // Ganti 'completed_by' jadi 'user_id'
+            'user_id' => !$subTask->is_completed ? $request->user()->id : null, 
         ]);
         return back();
     }

@@ -1,46 +1,69 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import { router } from '@inertiajs/react';
 import { 
-    FileIcon, 
-    ImageIcon, 
-    FileTextIcon, 
-    Download, 
-    Search, 
-    LayoutGrid, 
-    FileX,
-    ExternalLink,
-    Filter,
-    HardDrive,
-    Database
+    FileIcon, ImageIcon, FileTextIcon, Download, Search, 
+    FileX, ExternalLink, HardDrive, Database, 
+    UploadCloud, Plus, Loader2, Trash2, PieChart, Activity
 } from 'lucide-react';
 
 interface Props {
-    task: any;
+    task: any; 
 }
 
 export const TaskDocuments = ({ task }: Props) => {
     const [searchQuery, setSearchQuery] = useState("");
+    const [isUploading, setIsUploading] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const documents = [
-        { id: 1, name: 'ui_final_v2_dashboard.png', size: '4.2 MB', type: 'image', date: '10 Feb 2026', uploader: 'Andyto' },
-        { id: 2, name: 'api_integration_flow.pdf', size: '1.8 MB', type: 'pdf', date: '09 Feb 2026', uploader: 'Michael Chen' },
-        { id: 3, name: 'sprint_report_q1.xlsx', size: '920 KB', type: 'excel', date: '08 Feb 2026', uploader: 'Sarah Mitchell' },
-    ];
+    const documents = task.documents || [];
 
-    const filteredDocuments = documents.filter(doc => 
-        doc.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    // --- LOGIC TAMBAHAN UNTUK SIDEBAR STATS ---
+    const totalFiles = documents.length;
+    const imagesCount = documents.filter((d: any) => ['jpg', 'jpeg', 'png', 'webp', 'svg'].includes(d.file_type.toLowerCase())).length;
+    const docsCount = documents.filter((d: any) => ['pdf', 'doc', 'docx', 'txt', 'xlsx'].includes(d.file_type.toLowerCase())).length;
+    const othersCount = totalFiles - (imagesCount + docsCount);
 
-    const getFileIcon = (type: string) => {
-        switch (type) {
-            case 'image': return <ImageIcon className="text-blue-500" size={32} />;
-            case 'excel': return <FileTextIcon className="text-emerald-500" size={32} />;
-            case 'pdf': return <FileIcon className="text-sada-red" size={32} />;
-            default: return <FileIcon className="text-muted-foreground" size={32} />;
+    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const url = `/workspaces/${task.project.workspace.slug}/projects/${task.project.slug}/tasks/${task.slug}/documents`;
+
+        router.post(url, formData, {
+            onBefore: () => setIsUploading(true),
+            onFinish: () => {
+                setIsUploading(false);
+                if (fileInputRef.current) fileInputRef.current.value = '';
+            },
+            forceFormData: true,
+            preserveScroll: true,
+        });
+    };
+
+    const handleDelete = (docId: number) => {
+        if (confirm('Erase this asset from the vault?')) {
+            router.delete(`/documents/${docId}`, { preserveScroll: true });
         }
     };
 
+    const getFileIcon = (type: string) => {
+        const t = type.toLowerCase();
+        if (['jpg', 'jpeg', 'png', 'webp', 'svg'].includes(t)) return <ImageIcon className="text-blue-500" size={32} />;
+        if (['xlsx', 'xls', 'csv'].includes(t)) return <FileTextIcon className="text-emerald-500" size={32} />;
+        if (t === 'pdf') return <FileIcon className="text-red-500" size={32} />;
+        return <FileIcon className="text-muted-foreground" size={32} />;
+    };
+
+    const filteredDocuments = documents.filter((doc: any) => 
+        doc.file_name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
     return (
-        <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="flex flex-col gap-8 animate-in fade-in duration-700">
+            <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" />
 
             {/* --- TOP CONTROL BAR --- */}
             <div className="flex flex-col md:flex-row justify-between items-center gap-6 bg-card border border-border p-6 rounded-[32px] shadow-sm">
@@ -48,122 +71,175 @@ export const TaskDocuments = ({ task }: Props) => {
                     <Search className="absolute left-5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                     <input
                         type="text"
-                        placeholder="SEARCH MISSION ASSETS..."
+                        placeholder="SEARCH ASSETS..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full bg-muted/50 border-border rounded-2xl pl-13 pr-4 py-3.5 text-[11px] font-black uppercase tracking-widest focus:ring-2 focus:ring-sada-red outline-none transition-all shadow-inner text-foreground placeholder:text-muted-foreground/50 "
+                        className="w-full bg-muted/50 border-border rounded-2xl pl-12 pr-4 py-3.5 text-[11px] font-black uppercase tracking-widest focus:ring-2 focus:ring-red-500 outline-none transition-all"
                     />
                 </div>
                 
-                <div className="flex items-center gap-3 w-full md:w-auto">
-                    <button className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3.5 bg-muted/50 border border-border rounded-2xl text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:bg-muted hover:text-foreground transition-all active:scale-95">
-                        <Filter size={14} /> Filter Type
-                    </button>
-                    <div className="h-10 w-px bg-border hidden md:block mx-2" />
-                    <div className="flex items-center gap-3 px-5 py-2.5 bg-background border border-border rounded-2xl shadow-sm">
-                        <HardDrive size={14} className="text-sada-red animate-pulse" />
-                        <span className="text-[10px] font-black text-foreground uppercase tracking-tighter ">Vault: 1.2 GB / 5 GB</span>
+                <div className="flex items-center gap-4 w-full md:w-auto">
+                    <div className="hidden lg:flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
+                        <Activity size={12} className="text-emerald-500 animate-pulse" />
+                        <span className="text-[9px] font-black text-emerald-600 uppercase">System Online</span>
                     </div>
+                    <button 
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isUploading}
+                        className="flex-1 md:flex-none flex items-center justify-center gap-2 px-8 py-3.5 bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-red-600 hover:text-white transition-all active:scale-95 disabled:opacity-50"
+                    >
+                        {isUploading ? <Loader2 className="animate-spin" size={14} /> : <Plus size={14} />} 
+                        {isUploading ? 'Transmitting...' : 'Upload Asset'}
+                    </button>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                
-                {/* --- MAIN GRID AREA --- */}
+                {/* --- MAIN CONTENT AREA --- */}
                 <div className="lg:col-span-3">
                     {filteredDocuments.length > 0 ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-                            {filteredDocuments.map((doc) => (
-                                <div key={doc.id} className="group bg-card border border-border rounded-[40px] p-6 hover:border-sada-red/40 transition-all duration-300 shadow-sm hover:shadow-xl hover:shadow-sada-red/5 flex flex-col gap-5">
-                                    {/* Preview Box */}
-                                    <div className="aspect-video bg-muted/30 rounded-[28px] flex flex-col items-center justify-center border border-dashed border-border group-hover:bg-muted/50 transition-colors relative overflow-hidden">
-                                        <div className="absolute top-4 right-4 translate-x-10 group-hover:translate-x-0 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                                            <div className="bg-background p-2 rounded-xl shadow-lg border border-border">
-                                                <ExternalLink size={14} className="text-sada-red" />
+                            {filteredDocuments.map((doc: any) => (
+                                <div key={doc.id} className="group bg-card border border-border rounded-[40px] p-6 hover:border-red-500/40 transition-all duration-300 shadow-sm flex flex-col gap-5">
+                                    <div className="aspect-video bg-muted/30 rounded-[28px] flex items-center justify-center relative overflow-hidden border border-dashed border-border/50">
+                                        <a href={doc.file_url} target="_blank" className="absolute top-4 right-4 translate-x-10 group-hover:translate-x-0 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                                            <div className="bg-background p-2 rounded-xl border border-border hover:bg-red-500 hover:text-white shadow-lg">
+                                                <ExternalLink size={14} />
                                             </div>
+                                        </a>
+                                        <div className="aspect-video bg-muted/30 rounded-[28px] flex items-center justify-center relative overflow-hidden border border-dashed border-border/50 group-hover:bg-muted/50 transition-colors">
+                                            {/* Action Overlay (Open Link) */}
+                                            <a href={doc.file_url} target="_blank" className="absolute top-4 right-4 translate-x-10 group-hover:translate-x-0 opacity-0 group-hover:opacity-100 transition-all duration-300 z-20">
+                                                <div className="bg-background/80 backdrop-blur-md p-2 rounded-xl border border-border hover:bg-red-500 hover:text-white shadow-lg">
+                                                    <ExternalLink size={14} />
+                                                </div>
+                                            </a>
+
+                                            {/* PREVIEW LOGIC */}
+                                            {['jpg', 'jpeg', 'png', 'webp', 'svg', 'gif'].includes(doc.file_type.toLowerCase()) ? (
+                                                <img 
+                                                    src={doc.file_url} 
+                                                    alt={doc.file_name}
+                                                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                                    // Tambahin loading="lazy" biar gak berat pas dokumennya banyak
+                                                    loading="lazy"
+                                                />
+                                            ) : (
+                                                <div className="group-hover:scale-110 transition-transform duration-500">
+                                                    {getFileIcon(doc.file_type)}
+                                                </div>
+                                            )}
+                                            
+                                            {/* Dark Overlay pas di Hover (Optional biar teks icon external lebih kelihatan) */}
+                                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
                                         </div>
-                                        <div className="group-hover:scale-110 transition-transform duration-500">
-                                            {getFileIcon(doc.type)}
-                                        </div>
-                                        <span className="text-[8px] font-black text-muted-foreground/40 uppercase tracking-[0.4em] mt-5 ">Encrypted Data</span>
                                     </div>
 
-                                    {/* File Info */}
                                     <div className="flex flex-col gap-1 px-2">
-                                        <h4 className="text-[13px] font-black text-foreground uppercase truncate  leading-tight group-hover:text-sada-red transition-colors">
-                                            {doc.name}
-                                        </h4>
+                                        <h4 className="text-[13px] font-black uppercase truncate group-hover:text-red-500 transition-colors">{doc.file_name}</h4>
                                         <div className="flex justify-between items-end mt-4">
                                             <div className="flex flex-col gap-1">
-                                                <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-tighter">
-                                                    {doc.size} <span className="mx-1 text-border">|</span> {doc.date}
-                                                </span>
-                                                <div className="flex items-center gap-1.5">
-                                                    <div className="size-1.5 rounded-full bg-sada-red" />
-                                                    <span className="text-[9px] font-black text-foreground uppercase opacity-80 ">
-                                                        Source: {doc.uploader}
-                                                    </span>
-                                                </div>
+                                                <span className="text-[9px] font-bold text-muted-foreground uppercase">{doc.file_size}</span>
+                                                <span className="text-[9px] font-black text-foreground/50 uppercase">{new Date(doc.created_at).toLocaleDateString()}</span>
                                             </div>
-                                            <button className="size-10 bg-foreground text-background rounded-2xl flex items-center justify-center hover:bg-sada-red hover:text-white transition-all shadow-xl active:scale-90">
-                                                <Download size={16} />
-                                            </button>
+                                            <div className="flex gap-2">
+                                                <button onClick={() => handleDelete(doc.id)} className="size-9 bg-muted text-muted-foreground rounded-xl flex items-center justify-center hover:bg-red-500 hover:text-white transition-all active:scale-90"><Trash2 size={15} /></button>
+                                                <a href={doc.file_url} download className="size-9 bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 rounded-xl flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-lg active:scale-90"><Download size={15} /></a>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             ))}
                         </div>
                     ) : (
-                        <div className="flex flex-col items-center justify-center py-40 bg-muted/20 border-2 border-dashed border-border rounded-[48px] opacity-40">
-                            <FileX size={64} className="text-muted-foreground mb-6" />
-                            <p className="text-[11px] font-black uppercase tracking-[0.4em] text-muted-foreground ">No intelligence assets identified</p>
+                        <div className="py-32 text-center border-2 border-dashed border-border rounded-[48px] bg-muted/10">
+                            <UploadCloud size={48} className="mx-auto mb-4 text-muted-foreground/40" />
+                            <p className="text-[11px] font-black uppercase tracking-[0.3em] text-muted-foreground">No assets in secure vault</p>
                         </div>
                     )}
                 </div>
 
-                {/* --- SIDEBAR: REPOSITORY SUMMARY --- */}
+                {/* --- IMPROVED SIDEBAR SUMMARY --- */}
                 <div className="lg:col-span-1 flex flex-col gap-6">
-                    <div className="bg-card border border-border rounded-[40px] p-10 relative overflow-hidden shadow-sm group">
-                        <div className="absolute -right-6 -bottom-6 opacity-[0.03] dark:opacity-[0.08] rotate-12 group-hover:scale-110 transition-transform duration-700 text-foreground">
-                            <Database size={180} />
+                    <div className="bg-card border border-border rounded-[40px] p-8 relative overflow-hidden shadow-sm group">
+                        {/* Decorative Icon Background */}
+                        <div className="absolute -right-8 -bottom-8 opacity-[0.03] dark:opacity-[0.1] -rotate-12 group-hover:scale-110 transition-transform duration-700">
+                            <Database size={200} />
                         </div>
-                        
+
                         <div className="relative z-10 flex flex-col gap-8">
                             <div className="flex flex-col gap-1">
-                                <span className="text-[10px] font-black text-sada-red uppercase tracking-[0.3em] ">Intelligence Repository</span>
-                                <h4 className="text-3xl font-black uppercase text-foreground  tracking-tighter leading-none">Archive</h4>
+                                <span className="text-[10px] font-black text-red-500 uppercase tracking-[0.3em]">Vault Summary</span>
+                                <h4 className="text-3xl font-black uppercase text-foreground tracking-tighter">Archive</h4>
                             </div>
 
                             <div className="space-y-6">
-                                <AssetStat label="Images" count="08" color="text-blue-500" />
-                                <AssetStat label="Documents" count="03" color="text-sada-red" />
-                                <AssetStat label="Spreadsheets" count="05" color="text-emerald-500" />
-                            </div>
+                                {/* Total Files Stat */}
+                                <div className="flex justify-between items-end border-b border-border pb-4">
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] font-bold text-muted-foreground uppercase">Total Capacity</span>
+                                        <span className="text-[9px] font-black text-red-500 uppercase tracking-widest">Unlimited</span>
+                                    </div>
+                                    <span className="text-4xl font-black font-mono tracking-tighter">{totalFiles.toString().padStart(2, '0')}</span>
+                                </div>
 
-                            <div className="pt-6 border-t border-border">
-                                <p className="text-[8px] font-bold text-muted-foreground uppercase leading-relaxed tracking-widest  opacity-60">
-                                    Archive system v.2.0 active. All files are indexed via member log transmissions.
-                                </p>
+                                {/* Distribution Breakdown */}
+                                <div className="space-y-4 pt-2">
+                                    <div className="flex flex-col gap-3">
+                                        <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
+                                            <div className="flex items-center gap-2">
+                                                <div className="size-2 rounded-full bg-blue-500" />
+                                                <span>Images</span>
+                                            </div>
+                                            <span>{imagesCount}</span>
+                                        </div>
+                                        <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
+                                            <div className="h-full bg-blue-500 transition-all duration-1000" style={{ width: `${(imagesCount / totalFiles) * 100 || 0}%` }} />
+                                        </div>
+                                    </div>
+
+                                    <div className="flex flex-col gap-3">
+                                        <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
+                                            <div className="flex items-center gap-2">
+                                                <div className="size-2 rounded-full bg-emerald-500" />
+                                                <span>Documents</span>
+                                            </div>
+                                            <span>{docsCount}</span>
+                                        </div>
+                                        <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
+                                            <div className="h-full bg-emerald-500 transition-all duration-1000" style={{ width: `${(docsCount / totalFiles) * 100 || 0}%` }} />
+                                        </div>
+                                    </div>
+
+                                    <div className="flex flex-col gap-3">
+                                        <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
+                                            <div className="flex items-center gap-2">
+                                                <div className="size-2 rounded-full bg-zinc-400" />
+                                                <span>Other Assets</span>
+                                            </div>
+                                            <span>{othersCount}</span>
+                                        </div>
+                                        <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
+                                            <div className="h-full bg-zinc-400 transition-all duration-1000" style={{ width: `${(othersCount / totalFiles) * 100 || 0}%` }} />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Secure Vault Badge */}
+                                <div className="mt-8 p-5 bg-muted/50 rounded-3xl border border-border/50 flex items-center gap-4 group/badge">
+                                    <div className="size-10 rounded-2xl bg-background border border-border flex items-center justify-center shadow-inner group-hover/badge:scale-110 transition-transform">
+                                        <HardDrive size={18} className="text-red-500" />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] font-black uppercase tracking-widest">Encryption</span>
+                                        <span className="text-[9px] font-bold text-muted-foreground uppercase italic">AES-256 Active</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
-
-                    <div className="p-8 bg-muted/30 border border-border rounded-[40px] relative overflow-hidden group">
-                        <div className="size-2 bg-sada-red rounded-full absolute top-8 right-8 animate-ping" />
-                        <span className="text-[8px] font-black text-sada-red uppercase  block mb-3 ">Notes</span>
-                        <p className="text-[10px] font-bold  uppercase opacity-80">
-                            All intelligence assets are protected with end-to-end encryption. Unauthorized access attempts will be logged and reported.
-                        </p>
                     </div>
                 </div>
             </div>
         </div>
     );
 };
-
-const AssetStat = ({ label, count, color }: any) => (
-    <div className="flex justify-between items-center border-b border-border pb-4 last:border-0">
-        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ">{label}</span>
-        <span className={`text-2xl font-black font-mono tracking-tighter ${color}`}>{count}</span>
-    </div>
-);

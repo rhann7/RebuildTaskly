@@ -47,7 +47,7 @@ class TaskController extends Controller
         $tasks = Task::query()
             ->where('project_id', $project->id)
             ->when($request->search, fn($q, $s) => $q->where('title', 'like', "%{$s}%"))
-            ->when($request->status, fn($q, $status) => $q->where('status', $status))
+            ->when($request->priority, fn($q, $p) => $q->where('priority', $p))
             ->latest()
             ->paginate(10)
             ->withQueryString();
@@ -104,26 +104,29 @@ class TaskController extends Controller
     }
 
 
-    public function show(Request $request, Workspace $workspace, Project $project, Task $task)
+   public function show(Request $request, Workspace $workspace, Project $project, Task $task)
     {
-        // 1. Validasi Hirarki: Pastikan rute tidak 'nyasar'
+        // 1. Pastikan hirarki bener
         abort_if($task->project_id !== $project->id || $project->workspace_id !== $workspace->id, 404);
 
-        // 2. Eager Load: Ambil sub-task dan user yang menyelesaikannya
+        // 2. Load SEMUA relasi yang dibutuhin frontend dalam satu kali jalan
         $task->load([
+            'project.workspace', // <--- INI KUNCINYA biar task.project.workspace.slug gak undefined
+            'documents.user',    // Load documents sekalian biar muncul di list
             'subtasks' => function ($query) {
-                $query->with('completer')->latest(); // 'completer' adalah relasi ke completed_by
+                $query->with('completer')->latest();
             }
         ]);
 
-        // 3. Render: Pastikan render ke 'tasks/show' atau folder detail task, BUKAN project detail
+        // 3. Ambil user yang terdaftar di PROJECT ini
+        $project->load('users'); 
+
         return Inertia::render('tasks/show', [
             'workspace' => $workspace,
-            'project'   => $project,
+            'project'   => $project, 
             'task'      => $task,
-            'subtasks'  => $task->subtasks,
-            // Cek apakah user adalah manager workspace atau super-admin
-            'isManager' => $request->user()->id === $workspace->manager_id || $request->user()->isSuperAdmin(),
+            'isManager' => $request->user()->id === $workspace->manager_id 
+                        || $request->user()->role === 'manager',
         ]);
     }
 

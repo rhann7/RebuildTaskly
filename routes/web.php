@@ -16,6 +16,7 @@ use Inertia\Inertia;
 use Laravel\Fortify\Features;
 use Spatie\Permission\Models\Permission;
 use App\Http\Controllers\TeamController;
+use App\Http\Controllers\TaskManagement\TaskDocumentController;
 
 
 Route::get('/', function () {
@@ -83,9 +84,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 'workspaces' => 'workspace:slug',
                 'projects' => 'project:slug',
                 'tasks' => 'task:slug',
-                'subtasks' => 'subtask'
+                'subtasks' => 'subTask'
             ])
             ->only(['store', 'destroy']);
+
+            Route::post('workspaces/{workspace:slug}/projects/{project:slug}/tasks/{task:slug}/documents', [TaskDocumentController::class, 'store'])
+            ->name('workspaces.projects.tasks.documents.store');
+
+            Route::delete('documents/{document}', [TaskDocumentController::class, 'destroy'])
+            ->name('workspaces.projects.tasks.documents.destroy');
 
         Route::patch(
             'workspaces/{workspace:slug}/projects/{project:slug}/tasks/{task:slug}/subtasks/{subTask}/toggle',

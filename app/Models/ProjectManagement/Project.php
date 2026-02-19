@@ -5,6 +5,7 @@ namespace App\Models\ProjectManagement;
 use App\Models\TaskManagement\Task;
 use App\Models\Workspace;
 use Illuminate\Database\Eloquent\Model;
+use app\Models\User;
 
 class Project extends Model
 {
@@ -19,6 +20,11 @@ class Project extends Model
         return $this->belongsTo(Workspace::class);
     }
 
+    public function users() 
+    {
+    return $this->belongsToMany(User::class, 'project_user'); // Ganti 'project_user' sesuai nama tabel pivot project lo
+    }
+
     public function tasks()
     {
         return $this->hasMany(Task::class);
@@ -31,6 +37,7 @@ class Project extends Model
                     ->withPivot('project_role')
                     ->withTimestamps();
     }
+    
 
     public function getStatusAttribute($value)
         {

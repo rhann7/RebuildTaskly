@@ -22,6 +22,7 @@ class SubTask extends Model
 
     public function completer()
     {
-        return $this->belongsTo(User::class, 'completed_by');
+        // Karena kolomnya user_id, kita kasih tau Laravel secara manual
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

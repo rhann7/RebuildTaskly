@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react'; // Tambah useMemo biar efisien
 import { Head, Link } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
@@ -8,9 +8,21 @@ import { TaskOverview } from '@/layouts/tasks/tabs/TaskOverview';
 import { TaskTimesheets } from '@/layouts/tasks/tabs/TasksTimesheets';
 import { TaskDocuments } from '@/layouts/tasks/tabs/TaskDocument';
 
-
-export default function TaskShow({ workspace, project, task, subtasks, isManager }: any) {
+export default function TaskShow({ workspace, project, task, isManager }: any) {
     const [activeTab, setActiveTab] = useState<'brief' | 'timesheets' | 'docs' | 'activity'>('brief');
+
+    // 1. HITUNG PROGRESS SECARA REALTIME
+    // Setiap kali task di-update (misal checklist diklik), progress bakal kehitung ulang
+    const progressPercent = useMemo(() => {
+        const total = task.subtasks?.length || 0;
+        if (total === 0) return 0;
+        const completed = task.subtasks.filter((s: any) => s.is_completed).length;
+        return Math.round((completed / total) * 100);
+    }, [task.subtasks]);
+
+    // Masukkan progress ke object task buat dipake di header & overview
+    const enrichedTask = { ...task, progress: progressPercent };
+
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },
         { title: 'Workspaces', href: '/workspaces' },
@@ -25,7 +37,9 @@ export default function TaskShow({ workspace, project, task, subtasks, isManager
             <Head title={`${task.title} - Task Detail`} />
 
             <div className="mx-auto w-full max-w-[1200px] flex flex-col gap-8 p-6 md:p-10 animate-in fade-in duration-700">
-                <TaskDetailHeader task={task} />
+                
+                {/* 2. OPER PROJECT JUGA KE SINI */}
+                <TaskDetailHeader task={enrichedTask} project={project} />
 
                 <TaskDetailTabs activeTab={activeTab} setActiveTab={setActiveTab} />
 
@@ -34,15 +48,15 @@ export default function TaskShow({ workspace, project, task, subtasks, isManager
                         <TaskOverview
                             workspace={workspace}
                             project={project}
-                            task={task}
-                            isManager={isManager} />}
+                            task={enrichedTask}
+                            isManager={isManager} 
+                        />}
                     {activeTab === 'timesheets' &&
                         <TaskTimesheets
-                            task={task} />}
+                            task={enrichedTask} />}
                     {activeTab === 'docs' &&
                         <TaskDocuments
-                            task={task} />}
-                    {/* {activeTab === 'activity' && <TaskActionCenter task={task} />}  */}
+                            task={enrichedTask} />}
                 </div>
             </div>
         </AppLayout >
