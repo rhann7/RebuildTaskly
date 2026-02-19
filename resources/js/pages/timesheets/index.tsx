@@ -1,90 +1,104 @@
 import AppLayout from '@/layouts/app-layout';
 import { Head } from '@inertiajs/react';
 import { useState } from 'react';
-import { 
-    Clock, Calendar as CalendarIcon, ListChecks, 
-    BarChart3, History, LayoutGrid, Search 
+import {
+    Clock, Calendar as CalendarIcon, ListChecks,
+    BarChart3, History, Search, User
 } from 'lucide-react';
 import { TimesheetHeader } from '@/layouts/timesheets/partials/timesheetsHeader';
+import { ViewRenderer } from '@/layouts/timesheets/parts/ViewRender';
+import LogTimeModal from '@/components/timesheets/LogTimeModals';
 
+export default function TimesheetIndex({ timesheets, auth, tasks, workspace }: any) {
+    const [currentView, setCurrentView] = useState<'audit' | 'calendar' | 'review' | 'analytics' | 'member'>('audit');
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
-export default function TimesheetIndex({ timesheets }: any) {
-    // 1. State untuk mengatur view mana yang aktif
-    const [currentView, setCurrentView] = useState<'audit' | 'calendar' | 'review' | 'analytics'>('audit');
+    const isManager = auth.user.roles?.some((role: any) => {
+        const roleName = typeof role === 'string' ? role : role.name;
+        return ['company', 'manager', 'super-admin'].includes(roleName);
+    }) || false;
 
     const breadcrumbs = [
         { title: 'Dashboard', href: '/dashboard' },
         { title: 'Timesheets', href: '/timesheets' },
     ];
 
-    // 2. Siapkan data untuk dikirim ke ViewRenderer
-    const renderData = {
-        timeEntries: timesheets.data,
-        calendarProps: { /* Data untuk kalender nanti */ },
-        pendingLogs: timesheets.data.filter((l: any) => !l.is_verified), // Contoh filter
-        // ... data lainnya
-    };
+    const tabStyle = (view: string) => `
+        flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300
+        ${currentView === view
+            ? 'bg-zinc-900 text-white shadow-lg shadow-black/20'
+            : 'text-muted-foreground hover:bg-muted hover:text-foreground'}
+    `;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Work Registry" />
 
-            <div className="mx-auto w-full max-w-[1400px] p-6 md:p-10 space-y-10">
-                
-                {/* --- HEADER --- */}
-                <TimesheetHeader 
-                    title="Timesheet Dashboard" 
-                    description="Monitoring your work hours and field performance data."
-                    onAddEvent={() => console.log('Open Modal')} 
-                    onExport={() => console.log('Exporting...')}
+            <LogTimeModal
+                isOpen={isModalOpen}
+                setIsOpen={setIsModalOpen}
+                workspace={workspace}
+                tasks={tasks}
+            />
+
+            <div className="mx-auto w-full max-w-[1400px] p-6 md:p-10 space-y-8 animate-in fade-in duration-700">
+                {/* 1. Header Section */}
+                <TimesheetHeader
+                    title={isManager ? "Timesheet Manager" : "Timesheet Dashboard"}
+                    // 3. Hubungkan tombol Header ke state modal
+                    onAddEvent={() => setIsModalOpen(true)}
                 />
 
-                {/* --- VIEW SWITCHER (Tabs) --- */}
-                <div className="flex items-center justify-between border-b border-border pb-4">
-                    <div className="flex bg-muted/50 p-1.5 rounded-2xl gap-1">
-                        <button 
-                            onClick={() => setCurrentView('audit')}
-                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all
-                            ${currentView === 'audit' ? 'bg-zinc-900 text-white shadow-lg' : 'text-muted-foreground hover:bg-muted'}`}
-                        >
-                            <ListChecks size={14} /> Audit
-                        </button>
-                        <button 
-                            onClick={() => setCurrentView('calendar')}
-                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all
-                            ${currentView === 'calendar' ? 'bg-zinc-900 text-white shadow-lg' : 'text-muted-foreground hover:bg-muted'}`}
-                        >
-                            <CalendarIcon size={14} /> Calendar
-                        </button>
-                        <button 
-                            onClick={() => setCurrentView('review')}
-                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all
-                            ${currentView === 'review' ? 'bg-zinc-900 text-white shadow-lg' : 'text-muted-foreground hover:bg-muted'}`}
-                        >
-                            <History size={14} /> Review
-                        </button>
-                        <button 
-                            onClick={() => setCurrentView('analytics')}
-                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all
-                            ${currentView === 'analytics' ? 'bg-zinc-900 text-white shadow-lg' : 'text-muted-foreground hover:bg-muted'}`}
-                        >
-                            <BarChart3 size={14} /> Analytics
-                        </button>
+                {/* 2. Navigation & Content Container (Dibungkus satu kesatuan biar gak jauh-jauh) */}
+                <div className="flex flex-col gap-6">
+                    {/* --- TABS SYSTEM --- */}
+                    <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border pb-4">
+                        <div className="flex bg-muted/40 p-1 rounded-2xl gap-1 border border-border/50">
+                            <button onClick={() => setCurrentView('audit')} className={tabStyle('audit')}>
+                                <ListChecks size={14} strokeWidth={3} /> Audit
+                            </button>
+
+                            <button onClick={() => setCurrentView('member')} className={tabStyle('member')}>
+                                <User size={14} strokeWidth={3} /> My Routine
+                            </button>
+
+                            <button onClick={() => setCurrentView('calendar')} className={tabStyle('calendar')}>
+                                <CalendarIcon size={14} strokeWidth={3} /> Calendar
+                            </button>
+
+                            {isManager && (
+                                <>
+                                    <button onClick={() => setCurrentView('review')} className={tabStyle('review')}>
+                                        <History size={14} strokeWidth={3} /> Review
+                                    </button>
+                                    <button onClick={() => setCurrentView('analytics')} className={tabStyle('analytics')}>
+                                        <BarChart3 size={14} strokeWidth={3} /> Analytics
+                                    </button>
+                                </>
+                            )}
+                        </div>
+
+                        {/* Search Bar - Hidden on mobile biar gak sumpek */}
+                        <div className="hidden lg:flex relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                            <input
+                                placeholder="Search logs..."
+                                className="h-10 pl-10 pr-4 bg-muted/20 border-border rounded-xl text-[10px] font-black uppercase focus:ring-2 focus:ring-sada-red/20 w-48 transition-all focus:w-64"
+                            />
+                        </div>
                     </div>
 
-                    {/* Search Bar Kecil */}
-                    <div className="hidden md:flex relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                        <input 
-                            placeholder="SEARCH LOG..." 
-                            className="h-10 pl-10 pr-4 bg-muted/30 border-border rounded-xl text-[10px] font-black uppercase focus:ring-sada-red/20 focus:border-sada-red w-64"
+                    {/* --- RENDERER AREA (Langsung nempel di bawah tab) --- */}
+                    <div className="relative min-h-[400px] w-full">
+                        <ViewRenderer
+                            currentView={currentView}
+                            data={{
+                                timeEntries: timesheets.data,
+                                isManager: isManager,
+                                pendingLogs: timesheets.data.filter((l: any) => !l.is_verified)
+                            }}
                         />
                     </div>
-                </div>
-
-                {/* --- RENDERER --- */}
-                <div className="min-h-[600px]">
-                    {/* <ViewRenderer currentView={currentView} data={renderData} /> */}
                 </div>
             </div>
         </AppLayout>

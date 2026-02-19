@@ -22,7 +22,7 @@ export const TimesheetHeader = ({
                 <div className="absolute left-0 top-1 bottom-1 w-1.5 bg-sada-red rounded-full shadow-[0_0_10px_rgba(239,68,68,0.3)]" />
                 
                 <div className="space-y-1">
-                    <h1 className="text-4xl font-black text-foreground uppercase italic leading-none">
+                    <h1 className="text-4xl font-black text-foreground uppercase leading-none">
                         {title}
                     </h1>
                     <p className="text-[11px] text-muted-foreground font-bold uppercase tracking-wide opacity-70 max-w-md">
@@ -49,7 +49,7 @@ export const TimesheetHeader = ({
                     className="h-11 px-6 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-xl shadow-xl shadow-black/10 font-black flex items-center gap-3 group transition-all active:scale-95 border-none"
                 >
                     <Plus size={16} strokeWidth={4} className="group-hover:rotate-90 transition-transform duration-300" />
-                    <span className="uppercase text-[10px] tracking-[0.2em]">Deploy Log</span>
+                    <span className="uppercase text-[10px] tracking-[0.2em]">Add Event</span>
                 </Button>
             </div>
         </div>

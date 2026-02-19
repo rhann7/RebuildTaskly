@@ -8,6 +8,7 @@ use App\Models\ProjectManagement\Project;
 use App\Models\TaskManagement\Task;
 use App\Models\TaskManagement\Timesheet;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class TimesheetController extends Controller
 {
@@ -15,14 +16,23 @@ class TimesheetController extends Controller
     {
         $user = $request->user();
 
-        // Ambil data timesheet milik user yang login
         $timesheets = Timesheet::where('user_id', $user->id)
-            ->with(['task', 'subTask']) // Load relasi agar nama task muncul
+            ->with(['task', 'subTask'])
             ->latest()
-            ->paginate(10);
+            ->paginate(15);
 
-        return \Inertia\Inertia::render('timesheets/index', [
+        // Load Task beserta Subtasks-nya
+        $availableTasks = Task::with(['subtasks'])
+            ->whereHas('project.workspace', function ($q) use ($user) {
+                $q->whereHas('members', fn($m) => $m->where('user_id', $user->id));
+            })->get();
+
+        $activeWorkspace = Workspace::whereHas('members', fn($q) => $q->where('user_id', $user->id))->first();
+
+        return Inertia::render('timesheets/index', [
             'timesheets' => $timesheets,
+            'tasks' => $availableTasks,
+            'workspace' => $activeWorkspace,
         ]);
     }
     public function store(Request $request, Workspace $workspace, Project $project, Task $task)
