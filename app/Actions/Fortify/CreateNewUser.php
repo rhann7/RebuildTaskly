@@ -56,8 +56,6 @@ class CreateNewUser implements CreatesNewUsers
                 'phone'               => $input['company_phone'] ?? null,
                 'is_active'           => true,
             ]);
-
-            Plan::where('is_free', true)->where('is_active', true)->first();
             
             return $user;
         });
