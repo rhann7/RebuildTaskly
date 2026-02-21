@@ -13,24 +13,34 @@ class CheckCompanyPermission
         $user = $request->user();
         abort_if(!$user, 403, 'Anda belum login.');
 
-        if ($user->isSuperAdmin() && !app('impersonate')->isImpersonating()) return $next($request);
+        $isImpersonating = app('impersonate')->isImpersonating();
+        if ($user->isSuperAdmin() && !$isImpersonating) return $next($request);
         
         $company = $user->company;
         abort_if(!$company, 403, 'Akun ini tidak terhubung dengan company.');
 
+        if ($isImpersonating && !$request->isMethod('GET') && !$request->isMethod('HEAD')) {
+            if (!$request->routeIs('impersonate.leave')) abort(403, "Mode Lihat Saja: Anda tidak diizinkan mengubah data saat dalam mode penyamaran.");
+        }
+
         $routeName = $request->route()->getName();
-        $whiteList = ['dashboard', 'impersonate.take', 'profile.edit', 'profile.update', 'profile.destroy'];
+        $whiteList = ['dashboard', 'impersonate.take', 'impersonate.leave'];
         if (in_array($routeName, $whiteList)) return $next($request);
 
         $dbPermission = Permission::with('module')->where('route_name', $routeName)->first();
         if ($dbPermission) {
-            if (!$company->hasAccess($dbPermission->name)) abort(403, "Fitur ini tidak tersedia dalam paket Anda.");
+            // if (!$company->hasAccess($dbPermission->name)) abort(403, "Fitur ini tidak tersedia dalam paket Anda.");
 
             $module = $dbPermission->module;
-            if ($module && $module->isWorkspaceScope()) {
-                $workspace = $request->route('workspace');
-                if ($workspace) {
-                    $workspaceId = is_object($workspace) ? $workspace->id : $workspace;
+            if ($module) {
+                $workspaceParam = $request->route('workspace');
+
+                if ($module->isCompanyScope() && $workspaceParam) abort(403, "Fitur ini adalah fitur level Perusahaan, tidak bisa diakses dari dalam Workspace.");
+
+                if ($module->isWorkspaceScope()) {
+                    if (!$workspaceParam) abort(403, "Fitur ini hanya dapat diakses melalui konteks Workspace.");
+
+                    $workspaceId = is_object($workspaceParam) ? $workspaceParam->id : $workspaceParam;
                     $exists = $company->workspaces()->where('id', $workspaceId)->exists();
 
                     abort_if(!$exists, 403, "Workspace tidak ditemukan atau bukan milik perusahaan Anda.");
