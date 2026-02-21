@@ -39,14 +39,11 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $plan = Plan::create([
-            'name'                     => 'Free Plan',
-            'price_monthly'            => 0,
-            'discount_monthly_percent' => 0,
-            'price_yearly'             => null,
-            'discount_yearly_percent'  => 0,
-            'is_free'                  => true,
+            'name'                     => 'Enterprise Plan',
+            'description'              => 'Best for large organizations with advanced needs.',
+            'price'                    => 150000,
+            'duration'                 => 30,
             'is_active'                => true,
-            'is_yearly'                => false,
         ]);
         $plan->modules()->sync($module->id);
 
