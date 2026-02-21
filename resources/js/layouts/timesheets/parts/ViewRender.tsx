@@ -45,29 +45,25 @@ const StandbyState = ({ icon: Icon, title, description }: any) => (
 );
 
 export const ViewRenderer = ({ currentView, data }: any) => {
+    // PROTEKSI: Jika bukan manager tapi mencoba akses view rahasia
+    const restrictedViews = ['review', 'analytics'];
+    if (!data.isManager && restrictedViews.includes(currentView)) {
+        return (
+            <ViewContainer className="min-h-[400px] flex flex-col items-center justify-center bg-red-500/5 border border-red-500/20 rounded-[40px]">
+                <ShieldCheck size={48} className="text-red-500 mb-4 opacity-50" />
+                <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-red-500">Access Denied</h4>
+                <p className="text-[9px] font-bold uppercase mt-2 opacity-60">Insufficient clearance level for Sector: {currentView}</p>
+            </ViewContainer>
+        );
+    }
     switch (currentView) {
-        case 'audit':
-            return (
-                <ViewContainer>
-                    <SectionHeader title="Operational Audit" subtitle="System Transmission Logs" />
-                    <div className="bg-white dark:bg-zinc-900/40 border border-border rounded-[40px] overflow-hidden shadow-2xl shadow-black/5">
-                        {/* Nanti panggil <TimesheetTable entries={data.timeEntries} /> di sini */}
-                        <StandbyState
-                            icon={Database}
-                            title="Table Engine Standby"
-                            description="Initializing database interface..."
-                        />
-                    </div>
-                </ViewContainer>
-            );
 
         case 'member':
             return (
                 <ViewContainer>
                     <SectionHeader title="Crew Routines" subtitle="Individual Time Logs" />
                     <div className="bg-white dark:bg-zinc-900/40 border border-border rounded-[40px] p-8 md:p-10 shadow-2xl shadow-black/5">
-                        {/* Nanti panggil <MemberRoutineView timeEntries={data.timeEntries} /> di sini */}
-                      <MemberRoutineView timeEntries={data.timeEntries} />
+                        <MemberRoutineView timeEntries={data.timeEntries} />
                     </div>
                 </ViewContainer>
             );
@@ -81,6 +77,20 @@ export const ViewRenderer = ({ currentView, data }: any) => {
                             icon={CalendarIcon}
                             title="Calendar Grid Offline"
                             description="Initializing temporal mapping interface..."
+                        />
+                    </div>
+                </ViewContainer>
+            );
+        case 'audit':
+            return (
+                <ViewContainer>
+                    <SectionHeader title="Operational Audit" subtitle="System Transmission Logs" />
+                    <div className="bg-white dark:bg-zinc-900/40 border border-border rounded-[40px] overflow-hidden shadow-2xl shadow-black/5">
+                        {/* Nanti panggil <TimesheetTable entries={data.timeEntries} /> di sini */}
+                        <StandbyState
+                            icon={Database}
+                            title="Table Engine Standby"
+                            description="Initializing database interface..."
                         />
                     </div>
                 </ViewContainer>

@@ -15,14 +15,25 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->foreignId('workspace_id')->constrained()->onDelete('cascade');
-            // Bisa pilih Task utama atau Sub-Task
-            $table->foreignId('task_id')->constrained()->onDelete('cascade');
-            $table->foreignId('sub_task_id')->nullable()->constrained()->onDelete('cascade');
 
-            $table->string('note'); // Apa yang dikerjakan
-            $table->dateTime('start_at'); // Jam mulai
-            $table->dateTime('end_at');   // Jam selesai
-            $table->integer('duration_minutes')->nullable(); // Kalkulasi otomatis nanti
+            // Periode (misal: Senin - Minggu)
+            $table->date('start_at');
+            $table->date('end_at');
+
+            // Status operasional
+            // draft: masih diutak-atik user
+            // submitted: sudah dikirim ke manager
+            // approved: sudah diverifikasi (Verified Status di UI kamu)
+            // rejected/revision: butuh perbaikan (Alert/Revision di UI kamu)
+            $table->enum('status', ['draft', 'submitted', 'approved', 'revision'])->default('draft');
+
+            $table->decimal('total_hours', 8, 2)->default(0);
+            $table->text('notes')->nullable(); // Catatan mingguan jika ada
+
+            $table->timestamp('submitted_at')->nullable();
+            $table->timestamp('approved_at')->nullable();
+            $table->foreignId('approved_by')->nullable()->constrained('users');
+
             $table->timestamps();
         });
     }

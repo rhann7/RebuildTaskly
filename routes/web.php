@@ -8,7 +8,6 @@ use App\Http\Controllers\Rules\PermissionAccessController;
 use App\Http\Controllers\Rules\PermissionController;
 use App\Http\Controllers\TaskManagement\SubTasks\SubTaskController;
 use App\Http\Controllers\TaskManagement\Tasks\TaskController;
-use App\Http\Controllers\TaskManagement\TimesheetController;
 use App\Http\Controllers\Workspaces\WorkspaceController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
@@ -17,7 +16,7 @@ use Laravel\Fortify\Features;
 use Spatie\Permission\Models\Permission;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\TaskManagement\TaskDocumentController;
-
+use App\Http\Controllers\Timesheets\TimesheetController;
 
 Route::get('/', function () {
     return Inertia::render('welcome', ['canRegister' => Features::enabled(Features::registration())]);
@@ -35,6 +34,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('timesheets', TimesheetController::class)
             ->only(['index', 'store', 'destroy']);
     });
+    
     Route::impersonate();
     Route::middleware('role:super-admin')->group(function () {
         Route::prefix('access-control')->name('access-control.')->group(function () {
@@ -90,10 +90,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ])
             ->only(['store', 'destroy']);
 
-            Route::post('workspaces/{workspace:slug}/projects/{project:slug}/tasks/{task:slug}/documents', [TaskDocumentController::class, 'store'])
+        Route::post('workspaces/{workspace:slug}/projects/{project:slug}/tasks/{task:slug}/documents', [TaskDocumentController::class, 'store'])
             ->name('workspaces.projects.tasks.documents.store');
 
-            Route::delete('documents/{document}', [TaskDocumentController::class, 'destroy'])
+        Route::delete('documents/{document}', [TaskDocumentController::class, 'destroy'])
             ->name('workspaces.projects.tasks.documents.destroy');
 
         Route::patch(

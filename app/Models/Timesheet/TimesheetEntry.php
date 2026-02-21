@@ -1,39 +1,42 @@
 <?php
 
-namespace App\Models\TaskManagement; 
+namespace App\Models\Timesheet;
+
 use App\Models\TaskManagement\SubTask;
 use App\Models\TaskManagement\Task;
 use App\Models\User;
+
 use Illuminate\Database\Eloquent\Model;
 
-class Timesheet extends Model
+class TimesheetEntry extends Model
 {
     protected $fillable = [
+        'timesheet_id',
         'user_id',
-        'workspace_id',
+        'project_id',
         'task_id',
         'sub_task_id',
-        'note',
-        'start_at',
-        'end_at',
-        'duration_minutes'
+        'date',
+        'start_time',
+        'end_time',
+        'hours',
+        'description',
+        'is_billable'
     ];
 
-    // Relasi ke Task Utama
+    // Relasi balik ke Header
+    public function timesheet()
+    {
+        return $this->belongsTo(Timesheet::class);
+    }
+
     public function task()
     {
         return $this->belongsTo(Task::class);
     }
 
-    // Relasi ke Sub-Task (Objective detail)
     public function subTask()
     {
         return $this->belongsTo(SubTask::class);
-    }
-
-    // Relasi ke User (Operative yang bekerja)
-    public function user()
-    {
-        return $this->belongsTo(User::class);
     }
 }

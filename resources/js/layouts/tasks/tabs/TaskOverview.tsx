@@ -107,30 +107,6 @@ export const TaskOverview = ({ task, isManager = false, workspace, project }: Pr
 
             {/* --- KANAN: SIDEBAR --- */}
             <div className="lg:col-span-1 flex flex-col gap-6">
-                
-                {/* Integrity Card */}
-                <div className="bg-white dark:bg-zinc-900/40 border border-border flex flex-col gap-6 rounded-[40px] p-8 shadow-sm relative overflow-hidden group">
-                    <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:scale-110 transition-transform duration-700 text-sada-red">
-                        <Activity size={120} />
-                    </div>
-                    <div className="relative z-10 flex flex-col gap-4">
-                        <span className="text-[9px] font-black text-sada-red uppercase tracking-[0.3em] italic">Integrity Score</span>
-                        <div className="flex items-baseline gap-2">
-                            <span className="text-5xl font-black italic tracking-tighter text-zinc-900 dark:text-white">
-                                {task.progress || 0}%
-                            </span>
-                            <span className={`text-[10px] font-black uppercase italic ${task.progress === 100 ? 'text-emerald-500' : 'text-amber-500'}`}>
-                                {task.progress === 100 ? 'Mission Complete' : 'In Progress'}
-                            </span>
-                        </div>
-                        <div className="w-full h-2 bg-zinc-100 dark:bg-white/5 rounded-full overflow-hidden p-[2px] border border-zinc-200 dark:border-white/5">
-                            <div
-                                className="h-full bg-gradient-to-r from-sada-red to-red-500 rounded-full shadow-[0_0_15px_rgba(227,6,19,0.5)] transition-all duration-1000 ease-out"
-                                style={{ width: `${task.progress || 0}%` }}
-                            />
-                        </div>
-                    </div>
-                </div>
 
                 {/* Field Operatives Card */}
                 <div className="bg-zinc-50 dark:bg-white/[0.02] border border-dashed border-zinc-200 dark:border-white/10 rounded-[32px] p-6 flex flex-col gap-5">

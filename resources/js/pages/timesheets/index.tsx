@@ -54,10 +54,7 @@ export default function TimesheetIndex({ timesheets, auth, tasks, workspace }: a
                     {/* --- TABS SYSTEM --- */}
                     <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border pb-4">
                         <div className="flex bg-muted/40 p-1 rounded-2xl gap-1 border border-border/50">
-                            <button onClick={() => setCurrentView('audit')} className={tabStyle('audit')}>
-                                <ListChecks size={14} strokeWidth={3} /> Audit
-                            </button>
-
+                            {/* Tab yang bisa dilihat semua orang */}
                             <button onClick={() => setCurrentView('member')} className={tabStyle('member')}>
                                 <User size={14} strokeWidth={3} /> My Routine
                             </button>
@@ -66,10 +63,16 @@ export default function TimesheetIndex({ timesheets, auth, tasks, workspace }: a
                                 <CalendarIcon size={14} strokeWidth={3} /> Calendar
                             </button>
 
+                            <button onClick={() => setCurrentView('audit')} className={tabStyle('audit')}>
+                                <ListChecks size={14} strokeWidth={3} /> Audit
+                            </button>
+
+                            {/* Tab Terlarang buat Member */}
                             {isManager && (
                                 <>
+                                    <div className="w-[1px] h-4 bg-border mx-1 self-center" /> {/* Divider kecil */}
                                     <button onClick={() => setCurrentView('review')} className={tabStyle('review')}>
-                                        <History size={14} strokeWidth={3} /> Review
+                                        <History size={14} strokeWidth={3} /> Team Review
                                     </button>
                                     <button onClick={() => setCurrentView('analytics')} className={tabStyle('analytics')}>
                                         <BarChart3 size={14} strokeWidth={3} /> Analytics
