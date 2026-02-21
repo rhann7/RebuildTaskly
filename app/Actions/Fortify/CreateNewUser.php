@@ -4,6 +4,7 @@ namespace App\Actions\Fortify;
 
 use App\Models\Company;
 use App\Models\Plan;
+use App\Models\Subscription;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -45,7 +46,7 @@ class CreateNewUser implements CreatesNewUsers
 
             $slug = Str::slug($input['company_name']) . '-' . Str::lower(Str::random(5));
 
-            Company::create([
+            $company = Company::create([
                 'user_id'             => $user->id,
                 'company_category_id' => $input['company_category_id'],
                 'name'                => $input['company_name'],
@@ -55,6 +56,17 @@ class CreateNewUser implements CreatesNewUsers
                 'address'             => $input['company_address'] ?? null,
                 'phone'               => $input['company_phone'] ?? null,
                 'is_active'           => true,
+            ]);
+
+            $plan = Plan::where('is_free', true)->first();
+
+            Subscription::create([
+                'company_id'    => $company->id,
+                'plan_id'       => $plan->id,
+                'starts_at'     => now(),
+                'ends_at'       => now()->addDays(30),
+                'billing_cycle' => 'monthly',
+                'status'        => 'active',
             ]);
             
             return $user;
