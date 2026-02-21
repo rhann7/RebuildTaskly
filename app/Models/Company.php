@@ -53,15 +53,4 @@ class Company extends Model
     {
         return $this->hasMany(CompanyAppealLog::class)->latest();
     }
-
-    public function hasAccess(string $permissionName)
-    {
-        if (!$this->plan_id) return false;
-
-        return $this->plan->modules()
-            ->where('is_active', true)
-            ->whereHas('permissions', function ($p) use ($permissionName) {
-                $p->where('name', $permissionName);
-            })->exists();
-    }
 }
