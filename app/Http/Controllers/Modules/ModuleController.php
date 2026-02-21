@@ -17,13 +17,14 @@ class ModuleController extends Controller
             ->withCount('permissions')
             ->when($request->search, fn($q, $s) => $q->where('name', 'like', "%{$s}%"))
             ->when($request->type && $request->type !== 'all', fn($q, $t) => $q->where('type', $t))
+            ->when($request->scope && $request->scope !== 'all', fn($q, $s) => $q->where('scope', $s))
             ->orderBy('id', 'desc')
             ->paginate(10)
             ->withQueryString();
 
         return Inertia::render('modules/index', [
             'modules'    => $this->transformModules($modules),
-            'filters'    => $request->only(['search', 'type']),
+            'filters'    => $request->only(['search', 'type', 'scope']),
             'pageConfig' => $this->getPageConfig($request),
         ]);
     }
@@ -88,6 +89,7 @@ class ModuleController extends Controller
             'name'              => $module->name,
             'slug'              => $module->slug,
             'type'              => $module->type,
+            'scope'             => $module->scope,
             'price'             => (float) $module->price,
             'price_fmt'         => 'Rp ' . number_format((float) $module->price, 0, ',', '.'),
             'is_active'         => (bool) $module->is_active,
@@ -101,6 +103,7 @@ class ModuleController extends Controller
             'form_default'    => [
                 'name'        => $module->name,
                 'type'        => $module->type,
+                'scope'       => $module->scope,
                 'price'       => (float) $module->price,
                 'description' => $module->description ?? '',
                 'is_active'   => (bool)$module->is_active,
@@ -118,6 +121,10 @@ class ModuleController extends Controller
                 'types' => [
                     ['label' => 'Standard', 'value' => 'standard'],
                     ['label' => 'Add-on', 'value' => 'addon'],
+                ],
+                'scopes' => [
+                    ['label' => 'Company Level', 'value' => 'company'],
+                    ['label' => 'Workspace Level', 'value' => 'workspace'],
                 ],
             ]
         ];

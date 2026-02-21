@@ -18,7 +18,8 @@ class ModuleRequest extends FormRequest
         return [
             'name'        => ['required', 'string', 'max:255'],
             'type'        => ['required', Rule::in([Module::TYPE_STANDARD, Module::TYPE_ADDON])],
-            'price'       => ['required', 'numeric', 'min:0'],
+            'scope'       => ['required', Rule::in([Module::SCOPE_COMPANY, Module::SCOPE_WORKSPACE])],
+            'price'       => ['required_if:type,' . Module::TYPE_ADDON, 'numeric', 'min:0'],
             'description' => ['nullable', 'string'],
             'is_active'   => ['boolean'],
         ];
