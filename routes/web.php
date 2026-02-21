@@ -18,12 +18,16 @@ Route::get('/', function () {
 
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('dashboard', [DashboardController::class, 'index'])
+        ->name('dashboard');
 
     Route::impersonate();
 
     Route::resource('appeals', CompanyAppealController::class)
         ->only(['create', 'store']);
+
+    Route::get('plans/pricing', [PlanController::class, 'pricing'])
+        ->name('plans.pricing');
         
     Route::middleware('role:super-admin')->group(function () {
         Route::prefix('access-control')->name('access-control.')->group(function () {
