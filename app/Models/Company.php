@@ -54,35 +54,14 @@ class Company extends Model
         return $this->hasMany(CompanyAppealLog::class)->latest();
     }
 
-    public function subscriptions()
+    public function hasAccess(string $permissionName)
     {
-        return $this->hasMany(Subscription::class, 'company_id');
-    }
+        if (!$this->plan_id) return false;
 
-    public function hasPermission(string $permissionName)
-    {
-        return $this->hasPermissionTo($permissionName);
-    }
-
-    public function activeSubscription()
-    {
-        return $this->hasOne(Subscription::class)
-            ->where('status', 'active')
-            ->latestOfMany();
-    }
-
-    public function hasAccess(string $permissionName): bool
-    {
-        $activeSub = $this->activeSubscription;
-        if (!$activeSub || ($activeSub->ends_at && $activeSub->ends_at->isPast())) return false;
-
-        return $activeSub->plan()
+        return $this->plan->modules()
             ->where('is_active', true)
-            ->whereHas('modules', function ($q) use ($permissionName) {
-                $q->where('modules.is_active', true)
-                ->whereHas('permissions', function ($p) use ($permissionName) {
-                    $p->where('name', $permissionName);
-                });
+            ->whereHas('permissions', function ($p) use ($permissionName) {
+                $p->where('name', $permissionName);
             })->exists();
     }
 }
