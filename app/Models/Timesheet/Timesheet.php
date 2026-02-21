@@ -24,7 +24,7 @@ class Timesheet extends Model
     ];
 
     protected $casts = [
-        'start_date' => 'date', // Sesuaikan dengan migration
+        'start_at' => 'date', // Sesuaikan dengan migration
         'end_date' => 'date',
     ];
 

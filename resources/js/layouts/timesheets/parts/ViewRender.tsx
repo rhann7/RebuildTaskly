@@ -61,8 +61,7 @@ export const ViewRenderer = ({ currentView, data }: any) => {
         case 'member':
             return (
                 <ViewContainer>
-                    <SectionHeader title="Crew Routines" subtitle="Individual Time Logs" />
-                    <div className="bg-white dark:bg-zinc-900/40 border border-border rounded-[40px] p-8 md:p-10 shadow-2xl shadow-black/5">
+                    <div>
                         <MemberRoutineView timeEntries={data.timeEntries} />
                     </div>
                 </ViewContainer>

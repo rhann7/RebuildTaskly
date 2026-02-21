@@ -53,6 +53,7 @@
         "datatables.net-dt": "^2.3.6",
         "datatables.net-react": "^1.0.1",
         "datatables.net-responsive-dt": "^3.0.7",
+        "dayjs": "^1.11.19",
         "globals": "^15.14.0",
         "input-otp": "^1.4.2",
         "laravel-vite-plugin": "^2.0",

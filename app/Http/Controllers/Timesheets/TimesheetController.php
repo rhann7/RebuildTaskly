@@ -47,6 +47,13 @@ class TimesheetController extends Controller
             ->where('start_at', $startOfWeek->toDateString())
             ->with(['entries.task', 'entries.subTask'])
             ->first();
+
+        $stats = [
+            'totalHoursWeek' => (float)($timesheet ? $timesheet->total_hours : 0),
+            'approvedHours'  => (float)($timesheet ? $timesheet->entries()->where('status', 'approved')->sum('hours') : 0),
+            'pendingHours'   => (float)($timesheet ? $timesheet->entries()->where('status', 'submitted')->sum('hours') : 0),
+            'draftHours'     => (float)($timesheet ? $timesheet->entries()->where('status', 'draft')->sum('hours') : 0),
+        ];
         $formattedEntries = $timesheet ? $timesheet->entries->map(fn($entry) => [
             'id' => (string)$entry->id,
             'taskName' => $entry->task?->title,
@@ -57,6 +64,20 @@ class TimesheetController extends Controller
             'description' => $entry->note, // Pakai note
             'status' => $timesheet->status,
         ]) : [];
+
+        // Ambil tanggal dari request, default ke hari ini
+        $dateParam = $request->input('date', now()->toDateString());
+        $currentDate = Carbon::parse($dateParam);
+
+        // Hitung range minggu berdasarkan tanggal tersebut
+        $startOfWeek = $currentDate->copy()->startOfWeek();
+        $endOfWeek = $currentDate->copy()->endOfWeek();
+
+        // Ambil data berdasarkan range tersebut
+        $timesheet = Timesheet::where('user_id', $request->user()->id)
+            ->where('start_at', $startOfWeek->toDateString())
+            ->with(['entries.task'])
+            ->first();
 
         return Inertia::render('timesheets/index', [
             'timesheets' => [
@@ -72,7 +93,8 @@ class TimesheetController extends Controller
             ],
             'pageConfig' => [
                 'can_manage' => $user->hasAnyPermission(['manage-timesheets', 'create-timesheets']) // Tambahkan ini
-            ]
+            ],
+            'stats' => $stats,
         ]);
     }
 
