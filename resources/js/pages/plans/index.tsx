@@ -8,10 +8,10 @@ import InputError from '@/components/input-error';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 
 type Plan = {
@@ -19,25 +19,16 @@ type Plan = {
     name: string;
     slug: string;
     description: string;
-    price_monthly: number;
-    price_yearly: number;
-    discount_monthly_percent: number;
-    discount_yearly_percent: number;
-    final_price_monthly: string;
-    final_price_yearly: string;
+    price: number;
+    duration: number;
     is_free: boolean;
-    is_yearly: boolean;
     is_active: boolean;
     modules_count: number;
     form_default: {
         name: string;
         description: string;
-        price_monthly: number;
-        price_yearly: number;
-        discount_monthly_percent: number;
-        discount_yearly_percent: number;
-        is_free: boolean;
-        is_yearly: boolean;
+        price: number;
+        duration: number;
         is_active: boolean;
     };
 };
@@ -62,31 +53,17 @@ export default function PlanIndex({ plans, filters, pageConfig }: PageProps) {
     const { data, setData, post, put, processing, errors, reset, clearErrors } = useForm({
         name: '',
         description: '',
-        price_monthly: 0,
-        price_yearly: 0,
-        discount_monthly_percent: 0,
-        discount_yearly_percent: 0,
-        is_free: false,
-        is_yearly: false,
+        price: 0,
+        duration: 30,
         is_active: true,
     });
 
     const handleFilterChange = (key: string, value: string) => {
-        const params: any = {
-            search: searchQuery,
-            type: filters.type,
-            duration: filters.duration,
-            status: filters.status,
-            [key]: value
-        };
-
-        Object.keys(params).forEach(k => {
-            if (params[k] === 'all' || !params[k]) delete params[k];
-        });
+        const params: any = { ...filters, search: searchQuery, [key]: value };
+        Object.keys(params).forEach(k => { if (params[k] === 'all' || !params[k]) delete params[k]; });
 
         router.get(route('product-management.plans.index'), params, { 
-            preserveState: true, 
-            replace: true 
+            preserveState: true, replace: true 
         });
     };
 
@@ -146,11 +123,11 @@ export default function PlanIndex({ plans, filters, pageConfig }: PageProps) {
             </Select>
 
             <Select value={filters.duration || 'all'} onValueChange={(val) => handleFilterChange('duration', val)}>
-                <SelectTrigger className="w-[130px] h-9 bg-background"><SelectValue placeholder="Duration" /></SelectTrigger>
+                <SelectTrigger className="w-[140px] h-9 bg-background"><SelectValue placeholder="Duration" /></SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="all">All Duration</SelectItem>
-                    <SelectItem value="yearly">Yearly</SelectItem>
-                    <SelectItem value="monthly_only">Monthly Only</SelectItem>
+                    <SelectItem value="all">All Durations</SelectItem>
+                    <SelectItem value="monthly">Monthly (30 Days)</SelectItem>
+                    <SelectItem value="yearly">Yearly (365 Days)</SelectItem>
                 </SelectContent>
             </Select>
 
@@ -172,21 +149,16 @@ export default function PlanIndex({ plans, filters, pageConfig }: PageProps) {
                 description={pageConfig.description}
                 breadcrumbs={breadcrumbs}
                 filterWidget={FilterWidget}
-                headerActions={<Button onClick={openCreateModal}><Plus className="h-4 w-4 mr-2" />Add New Plan</Button>}
+                headerActions={<Button onClick={openCreateModal}><Plus className="h-4 w-4 mr-2" />Add Plan</Button>}
                 pagination={plans}
                 isEmpty={plans.data.length === 0}
-                config={{ 
-                    showFilter: true, showPagination: true, showPaginationInfo: true, 
-                    showHeaderActions: true, showShadow: true, showBorder: true, 
-                    emptyStateIcon: <Layers className="h-6 w-6 text-muted-foreground/60" /> 
-                }}
             >
                 <Table>
                     <TableHeader>
                         <TableRow className="hover:bg-transparent bg-zinc-50/50 dark:bg-zinc-900/50">
                             <TableHead className="w-[50px] text-center">#</TableHead>
                             <TableHead>Plan Details</TableHead>
-                            <TableHead>Monthly Price</TableHead>
+                            <TableHead>Price & Billing</TableHead>
                             <TableHead>Modules</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead className="text-right px-6">Actions</TableHead>
@@ -205,22 +177,20 @@ export default function PlanIndex({ plans, filters, pageConfig }: PageProps) {
                                 </TableCell>
                                 <TableCell>
                                     <div className="flex flex-col">
-                                        <span className="font-mono text-sm font-semibold">{plan.is_free ? 'FREE' : plan.final_price_monthly}</span>
-                                        {plan.discount_monthly_percent > 0 && (<span className="text-[10px] text-muted-foreground line-through">Rp {plan.price_monthly?.toLocaleString('id-ID')}</span>)}
-                                        {plan.is_yearly && <span className="text-[10px] text-muted-foreground">Incl. Yearly option</span>}
+                                        <span className="font-mono text-sm font-semibold">{plan.is_free ? 'FREE' : new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(plan.price)}</span>
+                                        <span className="text-[10px] text-muted-foreground">{plan.duration === 365 ? 'Yearly Billed' : 'Monthly Billed'}</span>
                                     </div>
                                 </TableCell>
                                 <TableCell>
-                                    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                                    <span className="inline-flex items-center gap-1.5 text-xs">
                                         <Layers className="h-3 w-3" /> {plan.modules_count} Modules
                                     </span>
                                 </TableCell>
                                 <TableCell>
-                                    {plan.is_active ? (
-                                        <span className="inline-flex items-center gap-1 rounded-md bg-green-50 border border-green-200 px-2 py-0.5 text-xs font-medium text-green-700">Active</span>
-                                    ) : (
-                                        <span className="inline-flex items-center gap-1 rounded-md bg-zinc-50 border border-dashed border-zinc-300 px-2 py-0.5 text-xs text-zinc-500">Inactive</span>
-                                    )}
+                                    {plan.is_active 
+                                        ? <span className="inline-flex items-center gap-1 rounded-md bg-green-50 border border-green-200 px-2 py-0.5 text-xs font-medium text-green-700">Active</span>
+                                        : <span className="inline-flex items-center gap-1 rounded-md bg-zinc-50 border border-dashed border-zinc-300 px-2 py-0.5 text-xs text-zinc-500">Inactive</span>
+                                    }
                                 </TableCell>
                                 <TableCell className="text-right px-6 space-x-1">
                                     <Link href={route('product-management.plans.show', { plan: plan.slug })}>
@@ -238,118 +208,54 @@ export default function PlanIndex({ plans, filters, pageConfig }: PageProps) {
             <Dialog open={isOpen} onOpenChange={setIsOpen}>
                 <DialogContent className="sm:max-w-[500px]">
                     <DialogHeader>
-                        <DialogTitle>{isEditing ? 'Edit Plan' : 'New Subscription Plan'}</DialogTitle>
-                        <DialogDescription>Configure pricing tiers and subscription details for your plans.</DialogDescription>
+                        <DialogTitle>{isEditing ? 'Edit Plan' : 'New Plan'}</DialogTitle>
+                        <DialogDescription>Set a single price and duration for this subscription tier.</DialogDescription>
                     </DialogHeader>
 
                     <form onSubmit={handleSubmit} className="space-y-6 pt-4">
                         <div className="space-y-2">
                             <Label htmlFor="name" className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Plan Name</Label>
-                            <Input id="name" value={data.name} onChange={(e) => setData('name', e.target.value)} placeholder="Professional Plan" className="h-9 border-zinc-200 shadow-none focus-visible:ring-zinc-200" />
-                            
+                            <Input id="name" value={data.name} onChange={(e) => setData('name', e.target.value)} placeholder="Professional Monthly" className="h-9 border-zinc-200 shadow-none focus-visible:ring-zinc-200" />
                             <InputError message={errors.name} />
                         </div>
 
                         <div className="space-y-2">
                             <Label htmlFor="description" className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Description</Label>
                             <Textarea id="description" value={data.description} onChange={(e) => setData('description', e.target.value)} className="min-h-[80px] border-zinc-200 shadow-none focus-visible:ring-zinc-200" placeholder="Brief explanation of the plan benefits and features..." />
-                            
                             <InputError message={errors.description} />
                         </div>
 
-                        {!data.is_free && (
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="price_monthly" className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Monthly Price (IDR)</Label>
-                                    <Input 
-                                        id="price_monthly" 
-                                        type="number" 
-                                        value={data.price_monthly === 0 ? '' : data.price_monthly} 
-                                        onChange={(e) => {
-                                            const val = e.target.value;
-                                            setData('price_monthly', val === '' ? 0 : Number(val));
-                                        }}
-                                        placeholder="Enter monthly price..."
-                                        className="h-9 border-zinc-200 shadow-none focus-visible:ring-zinc-200"
-                                    />
-
-                                    <InputError message={errors.price_monthly} />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="discount_monthly" className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Monthly Discount (%)</Label>
-                                    <Input 
-                                        id="discount_monthly"
-                                        type="number" 
-                                        value={data.discount_monthly_percent === 0 ? '' : data.discount_monthly_percent} 
-                                        onChange={(e) => {
-                                            const val = e.target.value;
-                                            setData('discount_monthly_percent', val === '' ? 0 : Number(val));
-                                        }}
-                                        placeholder="0"
-                                        className="h-9 border-zinc-200 shadow-none focus-visible:ring-zinc-200"
-                                    />
-
-                                    <InputError message={errors.discount_monthly_percent} />
-                                </div>
-                            </div>
-                        )}
-
-                        {data.is_yearly && !data.is_free && (
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="price_yearly" className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Yearly Price (IDR)</Label>
-                                    <Input 
-                                        id="price_yearly"
-                                        type="number" 
-                                        value={data.price_yearly === 0 ? '' : data.price_yearly} 
-                                        onChange={(e) => {
-                                            const val = e.target.value;
-                                            setData('price_yearly', val === '' ? 0 : Number(val));
-                                        }}
-                                        placeholder="Enter yearly price..."
-                                        className="h-9 border-zinc-200 shadow-none focus-visible:ring-zinc-200"
-                                    />
-
-                                    <InputError message={errors.price_yearly} />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="discount_yearly" className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Yearly Discount (%)</Label>
-                                    <Input 
-                                        id="discount_yearly"
-                                        type="number" 
-                                        value={data.discount_yearly_percent === 0 ? '' : data.discount_yearly_percent} 
-                                        onChange={(e) => {
-                                            const val = e.target.value;
-                                            setData('discount_yearly_percent', val === '' ? 0 : Number(val));
-                                        }}
-                                        placeholder="0"
-                                        className="h-9 border-zinc-200 shadow-none focus-visible:ring-zinc-200"
-                                    />
-
-                                    <InputError message={errors.discount_yearly_percent} />
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="space-y-4 py-4 border-t border-b border-zinc-100 border-dashed">
-                            <div className="flex items-center justify-between">
-                                <div className="space-y-0.5">
-                                    <Label htmlFor="is-free" className="text-sm font-medium">Free Plan</Label>
-                                    <p className="text-[11px] text-zinc-400">Enable this to make the plan available at no cost.</p>
-                                </div>
-                                <Switch id="is-free" checked={data.is_free} onCheckedChange={(val) => setData('is_free', val)} />
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="price" className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Price (IDR)</Label>
+                                <Input id="price" type="number" value={data.price === 0 && !isEditing ? '' : data.price} onChange={(e) => { const val = e.target.value; setData('price', val === '' ? 0 : Number(val)); }} placeholder="Enter price..." className="h-9 border-zinc-200 shadow-none focus-visible:ring-zinc-200" />
+                                <InputError message={errors.price} />
                             </div>
 
-                            <div className="flex items-center justify-between">
-                                <div className="space-y-0.5">
-                                    <Label htmlFor="is-yearly" className="text-sm font-medium">Enable Yearly Subscription</Label>
-                                    <p className="text-[11px] text-zinc-400">Allow customers to subscribe on a yearly billing cycle.</p>
-                                </div>
-                                <Switch id="is-yearly" checked={data.is_yearly} onCheckedChange={(val) => setData('is_yearly', val)} />
+                            <div className="space-y-2">
+                                <Label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Billing Cycle</Label>
+                                <Select value={data.duration.toString()} onValueChange={(val) => setData('duration', parseInt(val))}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="30">30 Days (Monthly)</SelectItem>
+                                        <SelectItem value="365">365 Days (Yearly)</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <InputError message={errors.duration} />
                             </div>
                         </div>
+
+                        {isEditing && (
+                            <div className="flex items-center justify-between p-4 rounded-lg border border-zinc-100">
+                                <div className="space-y-0.5">
+                                    <Label htmlFor="is_active" className="text-sm font-medium text-zinc-100">Active Status</Label>
+                                    <p className="text-[11px] text-zinc-500 italic">
+                                        Turn off to hide this plan from the registration page.
+                                    </p>
+                                </div>
+                                <Switch id="is_active" checked={data.is_active} onCheckedChange={(val) => setData('is_active', val)} />
+                            </div>
+                        )}
 
                         <DialogFooter className="gap-2 pt-2">
                             <Button type="button" variant="ghost" size="lg" onClick={() => setIsOpen(false)} className="text-zinc-500">Cancel</Button>
