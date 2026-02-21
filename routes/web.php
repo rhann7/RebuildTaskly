@@ -6,14 +6,11 @@ use App\Http\Controllers\Companies\CompanyController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Modules\ModuleController;
 use App\Http\Controllers\Plans\PlanController;
-use App\Http\Controllers\Rules\PermissionAccessController;
 use App\Http\Controllers\Rules\PermissionController;
 use App\Http\Controllers\Workspaces\WorkspaceController;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
-use Spatie\Permission\Models\Permission;
 
 Route::get('/', function () {
     return Inertia::render('welcome', ['canRegister' => Features::enabled(Features::registration())]);
@@ -21,12 +18,14 @@ Route::get('/', function () {
 
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    Route::impersonate();
+
     Route::resource('appeals', CompanyAppealController::class)
         ->only(['create', 'store']);
         
     Route::middleware('role:super-admin')->group(function () {
-        Route::impersonate();
-
         Route::prefix('access-control')->name('access-control.')->group(function () {
             Route::resource('permissions', PermissionController::class);
         });
@@ -64,8 +63,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     Route::middleware(['company_status', 'company_can'])->group(function () {
-        Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
-
         Route::resource('workspaces', WorkspaceController::class)
             ->parameters(['workspaces' => 'workspace:slug'])
             ->except(['create', 'edit']);
