@@ -26,7 +26,7 @@ class DatabaseSeeder extends Seeder
         $module = Module::create([
             'name'        => 'Workspace Management',
             'type'        => 'standard',
-            'price'       => 250000,
+            'scope'       => 'company',
             'description' => 'Workspace Management Features',
             'is_active'   => true,
         ]);
@@ -87,7 +87,7 @@ class DatabaseSeeder extends Seeder
             ]
         )->syncRoles('company');
 
-        $starbhak = Company::firstOrCreate(
+        Company::firstOrCreate(
             ['email' => 'starbhaktech@gmail.com'],
             [
                 'company_category_id' => CompanyCategory::where('name', 'Technology')->first()->id,
@@ -98,17 +98,6 @@ class DatabaseSeeder extends Seeder
                 'logo'                => null,
                 'address'             => 'Jl. Setya Bhakti No. 713',
                 'is_active'           => true,
-            ]
-        );
-
-        Subscription::updateOrCreate(
-            ['company_id' => $starbhak->id],
-            [
-                'plan_id'   => $plan->id,
-                'status'    => 'active',
-                'is_free'   => true,
-                'starts_at' => now(),
-                'ends_at'   => now()->addDays(30),
             ]
         );
     }
