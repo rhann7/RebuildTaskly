@@ -18,19 +18,18 @@ class PlanController extends Controller
             ->withCount('modules')
             ->when($request->search, fn($q, $s) => $q->where('name', 'like', "%{$s}%"))
             ->when($request->type, function ($q, $t) {
-                if ($t === 'free') return $q->free();
-                if ($t === 'paid') return $q->where('is_free', false);
+                if ($t === 'free') return $q->where('price', '<=', 0);
+                if ($t === 'paid') return $q->where('price', '>', 0);
             })
             ->when($request->duration, function ($q, $d) {
-                if ($d === 'yearly') return $q->yearly();
-                if ($d === 'monthly_only') return $q->where('is_yearly', false);
+                if ($d === 'yearly') return $q->where('duration', 365);
+                if ($d === 'monthly') return $q->where('duration', 30);
             })
             ->when($request->status, function($q, $s) {
                 if ($s === 'active') return $q->active();
                 if ($s === 'inactive') return $q->where('is_active', false);
             })
-            ->orderBy('is_free', 'desc')
-            ->orderBy('price_monthly', 'asc')
+            ->orderBy('price', 'asc')
             ->paginate(10)
             ->withQueryString();
 
@@ -106,22 +105,25 @@ class PlanController extends Controller
 
     private function transformSinglePlan(Plan $plan)
     {
-        $data = $plan->toArray();
-
-        $data['modules_count'] = $plan->modules_count ?? 0;
-        $data['form_default'] = [
-            'name'                     => $plan->name,
-            'description'              => $plan->description ?? '',
-            'price_monthly'            => (int) $plan->price_monthly,
-            'price_yearly'             => (int) $plan->price_yearly,
-            'discount_monthly_percent' => $plan->discount_monthly_percent,
-            'discount_yearly_percent'  => $plan->discount_yearly_percent,
-            'is_free'                  => (bool) $plan->is_free,
-            'is_yearly'                => (bool) $plan->is_yearly,
-            'is_active'                => (bool) $plan->is_active,
+        return [
+            'id'              => $plan->id,
+            'name'            => $plan->name,
+            'slug'            => $plan->slug,
+            'description'     => $plan->description,
+            'price'           => (float) $plan->price,
+            'duration'        => $plan->duration,
+            'is_active'       => $plan->is_active,
+            'is_free'         => $plan->is_free,
+            'modules_count'   => $plan->modules_count ?? 0,
+            'modules'         => $plan->relationLoaded('modules') ? $plan->modules : [],
+            'form_default'    => [
+                'name'        => $plan->name,
+                'description' => $plan->description ?? '',
+                'price'       => (float) $plan->price,
+                'duration'    => $plan->duration ?? 30,
+                'is_active'   => (bool) $plan->is_active,
+            ]
         ];
-
-        return $data;
     }
 
     private function transformPlans($pagination)
