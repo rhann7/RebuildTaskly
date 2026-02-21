@@ -79,7 +79,7 @@ class MenuService
         foreach ($groupedPermissions as $moduleName => $permissions) {
             $items = [];
             foreach ($permissions as $p) {
-                if ($company->hasAccess($p->name) && Route::has($p->route_name)) {
+                if (Route::has($p->route_name)) {
                     $items[] = [
                         'title'    => Str::headline($p->name),
                         'href'     => route($p->route_name),
