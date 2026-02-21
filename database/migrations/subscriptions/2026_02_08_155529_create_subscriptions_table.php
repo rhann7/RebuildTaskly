@@ -10,7 +10,6 @@ return new class extends Migration
     {
         Schema::create('subscriptions', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('invoice_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('company_id')->constrained()->cascadeOnDelete();
             $table->foreignId('plan_id')->constrained()->cascadeOnDelete();
             $table->timestamp('starts_at')->useCurrent();
