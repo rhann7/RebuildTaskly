@@ -25,7 +25,7 @@ class MenuService
         return array_merge($menu, $this->getDynamicCompanyMenus($request, $user));
     }
 
-    private function getSuperAdminMenus(Request $request): array
+    private function getSuperAdminMenus(Request $request)
     {
         return [
             [
@@ -64,16 +64,23 @@ class MenuService
         ];
     }
 
-    private function getDynamicCompanyMenus(Request $request, $user): array
+    private function getDynamicCompanyMenus(Request $request, $user)
     {
         $company = $user->company;
         if (!$company) return [];
 
-        $allMenuPermissions = cache()->remember('all_menu_permissions', 86400, function() {
-            return Permission::with('module')->where('isMenu', true)->get();
-        });
+        $subscription = $company->subscription;
+        if (!$subscription) return [];
 
-        $groupedPermissions = $allMenuPermissions->groupBy(fn($p) => $p->module->name ?? 'Lainnya');
+        $allowedPermissions = Permission::query()
+            ->where('isMenu', true)
+            ->whereHas('module.plans', function ($query) use ($subscription) {
+                $query->where('plans.id', $subscription->plan_id);
+            })
+            ->with('module')
+            ->get();
+
+        $groupedPermissions = $allowedPermissions->groupBy(fn($p) => $p->module->name ?? 'Lainnya');
         $dynamicMenu = [];
 
         foreach ($groupedPermissions as $moduleName => $permissions) {
