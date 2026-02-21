@@ -22,7 +22,7 @@ class HandleInertiaRequests extends Middleware
         [$message, $author] = str(Inspiring::quotes()->random())->explode('-');
 
         $user = $request->user();
-        if ($user) $user->loadMissing('company.subscription.plan');
+        if ($user) $user->loadMissing('company');
 
         $company = $user?->company;
 
