@@ -137,7 +137,7 @@ export default function SubscriptionIndex({ subscriptions, filters, pageConfig }
 
                         <TableCell>
                             <div className="flex flex-col gap-0.5">
-                                <span className="text-xs font-medium capitalize flex items-center gap-1">
+                                <span className="text-sm font-medium capitalize flex items-center gap-1">
                                     <Clock className="h-3 w-3 text-zinc-400" /> {sub.billing_cycle}
                                 </span>
                             </div>
@@ -145,7 +145,7 @@ export default function SubscriptionIndex({ subscriptions, filters, pageConfig }
 
                         <TableCell>
                             <div className="flex flex-col text-xs">
-                                <span className="text-muted-foreground">{sub.starts_at} — {sub.ends_at}</span>
+                                <span className="text-xs text-muted-foreground">{sub.starts_at} — {sub.ends_at}</span>
                                 {sub.is_active && (
                                     <span className={`text-[10px] mt-0.5 font-bold uppercase ${sub.is_expiring ? 'text-amber-500' : 'text-zinc-400'}`}>
                                         {sub.remaining_days} days left
@@ -161,7 +161,7 @@ export default function SubscriptionIndex({ subscriptions, filters, pageConfig }
                                         Active
                                     </span>
                                 ) : (
-                                    <span className="inline-flex items-center gap-1 rounded-md bg-red-50 border border-red-200 px-2 py-0.5 text-sm font-bold text-red-700">
+                                    <span className="text-sm text-red-700">
                                         EXPIRED
                                     </span>
                                 )}
