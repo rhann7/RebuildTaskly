@@ -30,6 +30,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware(['auth', 'verified', 'company_can'])->group(function () {
         Route::get('/projects', [ProjectController::class, 'globalIndex'])
             ->name('projects.global');
+        Route::get('/tasks', [TaskController::class, 'globalIndex'])
+            ->name('tasks.global');
         Route::resource('timesheets', TimesheetController::class)
             ->only(['index', 'store', 'destroy']);
     });

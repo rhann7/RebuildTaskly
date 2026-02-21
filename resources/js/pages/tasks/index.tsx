@@ -1,260 +1,134 @@
-import ResourceListLayout from '@/layouts/resource/resource-list-layout';
-import { useState, FormEventHandler } from 'react';
-import { useForm, router, Link } from '@inertiajs/react';
-import { PageConfig, type BreadcrumbItem } from '@/types';
-import { Plus, Trash2, Search, CheckCircle, Pencil, Eye } from 'lucide-react';
-
-import InputError from '@/components/input-error';
-import { Badge } from '@/components/ui/badge';
+import { useState } from 'react';
+import { Head, router, Link } from '@inertiajs/react';
+import AppLayout from '@/layouts/app-layout';
+import HeaderBase from '@/components/HeaderBase';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Briefcase, Activity, Search, FolderKanban, Building2, Eye } from 'lucide-react';
 
-interface Task {
-    id: number;
-    slug: string;
-    title: string;
-    description: string | null;
-    status: 'todo' | 'in_progress' | 'done';
-    created_at: string;
-}
-
-
-interface PageProps {
-    workspace: { name: string; slug: string };
-    project: { id: number; name: string; slug: string };
-    tasks: {
-        data: Task[];
-        links: any[];
-        from: number;
-        to: number;
-        total: number;
-    };
-    filters: { search?: string };
-    pageConfig: PageConfig;
-}
-
-export default function TaskIndex({ workspace, project, tasks, filters, pageConfig }: PageProps) {
-    const breadcrumbs: BreadcrumbItem[] = [
-        { title: 'Dashboard', href: '/dashboard' },
-        { title: 'Workspaces', href: '/workspaces' },
-        { title: workspace.name, href: `/workspaces/${workspace.slug}` },
-        { title: project.name, href: `/workspaces/${workspace.slug}/projects/${project.slug}` },
-        { title: 'Tasks', href: '#' },
-    ];
-
-    const [isOpen, setIsOpen] = useState(false);
-    const [isEditing, setIsEditing] = useState(false);
-    const [currentTaskSlug, setCurrentTaskSlug] = useState<string | null>(null);
-
+export default function GlobalTaskIndex({ tasks, filters }: any) {
     const [searchQuery, setSearchQuery] = useState(filters.search || '');
 
-    const { data, setData, post, put, processing, errors, reset, clearErrors } = useForm({
-        title: '',
-        description: '',
-        status: 'todo' as 'todo' | 'in_progress' | 'done',
-        project_id: project.id,
-    });
-
-    const handleFilterChange = () => {
-        router.get(`/workspaces/${workspace.slug}/projects/${project.slug}/tasks`,
-            { search: searchQuery },
-            { preserveState: true, replace: true }
-        );
+    const handleSearch = () => {
+        router.get('/tasks', { search: searchQuery }, { preserveState: true });
     };
-
-    const openCreateModal = () => {
-        setIsEditing(false);
-        setCurrentTaskSlug(null);
-        reset();
-        clearErrors();
-        setIsOpen(true);
-    };
-
-    const openEditModal = (task: Task) => {
-        setIsEditing(true);
-        setCurrentTaskSlug(task.slug);
-        setData({
-            title: task.title,
-            description: task.description || '',
-            status: task.status,
-            project_id: project.id,
-        });
-        clearErrors();
-        setIsOpen(true);
-    };
-
-
-    const handleSubmit: FormEventHandler = (e) => {
-        e.preventDefault();
-        const baseUrl = `/workspaces/${workspace.slug}/projects/${project.slug}/tasks`;
-        if (isEditing && currentTaskSlug) {
-            put(`${baseUrl}/${currentTaskSlug}`, {
-                onSuccess: () => setIsOpen(false),
-            });
-        } else {
-            post(baseUrl, {
-                onSuccess: () => setIsOpen(false),
-            });
+    interface Task {
+        id: number;
+        slug: string;
+        title: string;
+        description: string | null;
+        status: 'todo' | 'in_progress' | 'done';
+        created_at: string;
+        // Tambahkan ini
+        project?: {
+            name: string;
+            slug: string;
+            workspace?: {
+                name: string;
+                slug: string;
+            }
         }
-    };
-
-
-    const handleDelete = (taskSlug: string) => {
-        if (confirm('Are you sure you want to delete this task?')) {
-            router.delete(
-                `/workspaces/${workspace.slug}/projects/${project.slug}/tasks/${taskSlug}`
-            );
-        }
-    };
-
-
-    const FilterWidget = (
-        <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-                placeholder="Search tasks..."
-                className="pl-9 h-9"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleFilterChange()}
-            />
-        </div>
-    );
+    }
 
     return (
-        <>
-            <ResourceListLayout
-                title={`Tasks`}
-                // description="Manage and track progress of project activities."
-                breadcrumbs={breadcrumbs}
-                filterWidget={FilterWidget}
-                headerActions={<Button onClick={openCreateModal} size="sm"><Plus className="h-4 w-4 mr-2" />Add Task</Button>}
-                pagination={tasks}
-                isEmpty={tasks.data.length === 0}
-                config={{
-                    showFilter: true,
-                    showPagination: true,
-                    showHeaderActions: true,
-                    emptyStateIcon: <CheckCircle className="h-6 w-6 text-muted-foreground/60" />
-                }}
-            >
-                <Table>
-                    <TableHeader>
-                        <TableRow className="bg-zinc-50/50 dark:bg-zinc-900/50">
-                            <TableHead className="w-[50px] text-center">#</TableHead>
-                            <TableHead>Task Title</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Created At</TableHead>
-                            <TableHead className="text-right px-6">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {tasks.data.map((task, i) => (
-                            <TableRow key={task.id} className="group hover:bg-muted/30">
-                                <TableCell className="text-center text-muted-foreground tabular-nums">{tasks.from + i}</TableCell>
-                                <TableCell>
-                                    <div className="flex flex-col">
-                                        {/* Tambahkan Link di sini */}
-                                        <Link
-                                            href={`/workspaces/${workspace.slug}/projects/${project.slug}/tasks/${task.slug}`}
-                                            className="font-semibold hover:text-red-600 transition-colors uppercase tracking-tight"
-                                        >
-                                            {task.title}
-                                        </Link>
-                                        <span className="text-xs text-muted-foreground line-clamp-1 italic">{task.description || 'No description'}</span>
-                                    </div>
-                                </TableCell>
-                                <TableCell>
-                                    <Badge variant={task.status === 'done' ? 'outline' : task.status === 'in_progress' ? 'secondary' : 'default'} className="capitalize">
-                                        {task.status.replace('_', ' ')}
-                                    </Badge>
-                                </TableCell>
-                                <TableCell className="text-sm text-muted-foreground">
-                                    {new Date(task.created_at).toLocaleDateString()}
-                                </TableCell>
-                                <TableCell className="text-right px-6">
-                                    <div className="flex justify-end gap-1">
-                                        <TooltipProvider>
-                                            {/* --- TOMBOL VIEW DETAIL --- */}
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600" asChild>
-                                                        <Link href={`/workspaces/${workspace.slug}/projects/${project.slug}/tasks/${task.slug}`}>
-                                                            <Eye className="h-4 w-4" />
-                                                        </Link>
-                                                    </Button>
-                                                </TooltipTrigger>
-                                                <TooltipContent>View Task Intelligence</TooltipContent>
-                                            </Tooltip>
+        <AppLayout breadcrumbs={[{ title: 'Dashboard', href: '/dashboard' }, { title: 'Global Tasks', href: '/tasks' }]}>
+            <Head title="Global Tasks Intelligence" />
 
-                                            {/* Tombol Edit yang sudah ada */}
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditModal(task)}>
-                                                        <Pencil className="h-4 w-4" />
-                                                    </Button>
-                                                </TooltipTrigger>
-                                                <TooltipContent>Edit Task</TooltipContent>
-                                            </Tooltip>
+            <div className="mx-auto w-full max-w-[1600px] flex flex-col gap-8 p-6 md:p-10 animate-in fade-in duration-700">
 
-                                            {/* Tombol Delete yang sudah ada */}
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600" onClick={() => handleDelete(task.slug)}>
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
-                                                </TooltipTrigger>
-                                                <TooltipContent>Delete Task</TooltipContent>
-                                            </Tooltip>
-                                        </TooltipProvider>
-                                    </div>
-                                </TableCell>
+                <HeaderBase
+                    title="Global"
+                    subtitle="Task Intel"
+                    stats={[
+                        { label: "Total Tasks", value: tasks.total, icon: Briefcase },
+                        { label: "Current View", value: tasks.data.length, icon: Activity, color: "text-sada-red" }
+                    ]}
+                    addButton={{ show: false, label: "Add Task", onClick: () => {} }}
+                />
+                {/* Filter Bar */}
+                <div className="flex items-center gap-4 bg-card p-4 rounded-2xl border border-border shadow-sm">
+                    <div className="relative flex-1 max-w-sm">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            placeholder="Search task title..."
+                            className="pl-10 rounded-xl"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                        />
+                    </div>
+                </div>
+
+                <div className="bg-card rounded-[32px] border border-border shadow-2xl overflow-hidden">
+                    <Table>
+                        <TableHeader>
+                            <TableRow className="bg-zinc-50/50 dark:bg-zinc-900/50 border-b border-border">
+                                <TableHead className="w-[250px] font-black uppercase tracking-widest text-[10px]">Task Objective</TableHead>
+                                <TableHead className="font-black uppercase tracking-widest text-[10px]">Origin Project</TableHead>
+                                <TableHead className="font-black uppercase tracking-widest text-[10px]">Workspace</TableHead>
+                                <TableHead className="font-black uppercase tracking-widest text-[10px]">Status</TableHead>
+                                <TableHead className="text-right font-black uppercase tracking-widest text-[10px] px-6">Action</TableHead>
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </ResourceListLayout>
+                        </TableHeader>
+                        <TableBody>
+                            {tasks.data.map((task: Task) => (
+                                <TableRow key={task.id} className="group hover:bg-muted/30 transition-colors border-b border-border/50">
+                                    <TableCell>
+                                        <div className="flex flex-col gap-0.5">
+                                            <span className="font-bold text-sm uppercase tracking-tight group-hover:text-sada-red transition-colors">
+                                                {task.title}
+                                            </span>
+                                            <span className="text-[10px] text-muted-foreground italic truncate max-w-[200px]">
+                                                {task.description || 'No extra parameters'}
+                                            </span>
+                                        </div>
+                                    </TableCell>
 
-            <Dialog open={isOpen} onOpenChange={setIsOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>{isEditing ? 'Edit Task' : 'New Task'}</DialogTitle>
-                    </DialogHeader>
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="title">Task Title</Label>
-                            <Input id="title" value={data.title} onChange={e => setData('title', e.target.value)} placeholder="What needs to be done?" />
-                            <InputError message={errors.title} />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="description">Description</Label>
-                            <Textarea id="description" value={data.description} onChange={e => setData('description', e.target.value)} placeholder="Add more details..." />
-                            <InputError message={errors.description} />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Status</Label>
-                            <Select value={data.status} onValueChange={(val: any) => setData('status', val)}>
-                                <SelectTrigger><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="todo">To Do</SelectItem>
-                                    <SelectItem value="in_progress">In Progress</SelectItem>
-                                    <SelectItem value="done">Done</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <DialogFooter>
-                            <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
-                            <Button type="submit" disabled={processing}>{isEditing ? 'Save Changes' : 'Create Task'}</Button>
-                        </DialogFooter>
-                    </form>
-                </DialogContent>
-            </Dialog>
-        </>
+                                    <TableCell>
+                                        <div className="flex items-center gap-2">
+                                            <FolderKanban size={12} className="text-muted-foreground" />
+                                            <span className="text-xs font-bold uppercase text-zinc-600 dark:text-zinc-400">
+                                                {task.project?.name || 'Unknown'}
+                                            </span>
+                                        </div>
+                                    </TableCell>
+
+                                    <TableCell>
+                                        <div className="flex items-center gap-2">
+                                            <Building2 size={12} className="text-sada-red/60" />
+                                            <span className="text-[11px] font-black uppercase tracking-tighter italic">
+                                                {task.project?.workspace?.name || 'N/A'}
+                                            </span>
+                                        </div>
+                                    </TableCell>
+
+                                    <TableCell>
+                                        <Badge variant={task.status === 'done' ? 'outline' : 'secondary'} className="text-[9px] font-black uppercase px-2 py-0">
+                                            {task.status}
+                                        </Badge>
+                                    </TableCell>
+
+                                    <TableCell className="text-right px-6">
+                                        <Link
+                                            href={`/workspaces/${task.project?.workspace?.slug}/projects/${task.project?.slug}/tasks/${task.slug}`}
+                                            className="inline-flex items-center justify-center size-8 rounded-lg bg-zinc-900 text-white hover:bg-sada-red transition-all shadow-lg shadow-black/10"
+                                        >
+                                            <Eye size={14} />
+                                        </Link>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </div>
+
+                {/* Footer Info */}
+                <div className="flex justify-between items-center px-4 font-black uppercase italic text-[9px] text-muted-foreground tracking-[0.2em]">
+                    <span>Range: {tasks.from || 0} — {tasks.to || 0}</span>
+                    <span>Total Tasks Logged: {tasks.total || 0}</span>
+                </div>
+            </div>
+        </AppLayout>
     );
 }
