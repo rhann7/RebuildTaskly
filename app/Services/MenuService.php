@@ -53,6 +53,7 @@ class MenuService
                 'items'    => [
                     ['title' => 'Modules', 'href' => route('product-management.modules.index'), 'isActive' => $request->routeIs('product-management.modules.*')],
                     ['title' => 'Plans', 'href' => route('product-management.plans.index'), 'isActive' => $request->routeIs('product-management.plans.*')],
+                    ['title' => 'Subscriptions', 'href' => route('product-management.subscriptions.index'), 'isActive' => $request->routeIs('product-management.subscriptions.*')],
                 ]
             ],
             [
