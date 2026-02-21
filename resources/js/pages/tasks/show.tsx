@@ -45,7 +45,7 @@ export default function TaskShow({ workspace, project, task, isManager }: any) {
 
                 <div className="min-h-[600px] transition-all duration-500">
                     {activeTab === 'brief' &&
-                        <TaskOverview
+                    <TaskOverview
                             workspace={workspace}
                             project={project}
                             task={enrichedTask}

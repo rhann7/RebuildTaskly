@@ -20,42 +20,39 @@ interface Props {
 export const TaskOverview = ({ task, isManager = false, workspace, project }: Props) => {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-    /**
-     * LOGIC: Operatives In-Field
-     * Karena sistemnya bebas (siapa aja di project bisa ngerjain), 
-     * kita ambil data dari project.users.
-     */
     const operatives = useMemo(() => {
-        // 1. Ambil semua user dari project (Data utama)
         const projectUsers = project.users || [];
-        
-        // 2. Ambil user yang pernah nyelesain subtask (Jaga-jaga kalau ada user history)
         const completers = task.subtasks?.map((s: any) => s.completer).filter(Boolean) || [];
-        
-        // 3. Gabungkan keduanya
         const combined = [...projectUsers, ...completers];
-        
-        // 4. Buat unik berdasarkan ID supaya foto gak double
         return Array.from(new Map(combined.map(user => [user.id, user])).values());
     }, [project.users, task.subtasks]);
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
 
-            {/* --- KIRI: MISSION PARAMETERS & SUB-TASKS --- */}
-            <div className="lg:col-span-2 flex flex-col gap-8">
+            {/* --- LEFT: MISSION PARAMETERS & OBJECTIVES --- */}
+            <div className="lg:col-span-2 flex flex-col gap-10">
 
                 {/* 1. Description Card */}
-                <div className="bg-white dark:bg-zinc-900/40 border border-border rounded-[40px] p-8 md:p-10 relative overflow-hidden shadow-sm group">
-                    <div className="absolute right-0 bottom-0 translate-x-1/4 translate-y-1/4 opacity-[0.03] dark:opacity-[0.05] rotate-12 select-none pointer-events-none text-sada-red transition-transform duration-1000 group-hover:scale-110">
-                        <StickyNote size={300} />
+                <div className="bg-white dark:bg-zinc-900/40 border border-border rounded-[40px] p-8 md:p-10 relative overflow-hidden shadow-sm group transition-all duration-500 hover:shadow-xl hover:shadow-black/[0.02]">
+                    <div className="absolute right-0 bottom-0 translate-x-1/4 translate-y-1/4 opacity-[0.03] dark:opacity-[0.05] rotate-12 select-none pointer-events-none text-sada-red transition-transform duration-1000 group-hover:scale-110 group-hover:-rotate-12">
+                        <StickyNote size={320} />
                     </div>
-                    <div className="relative z-10 flex flex-col gap-2">
-                        <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-black text-sada-red uppercase tracking-[0.2em] italic">Description</span>
-                            {isManager && <Shield size={10} className="text-sada-red opacity-50" />}
+                    
+                    <div className="relative z-10 flex flex-col gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className="px-3 py-1 bg-sada-red/10 rounded-full">
+                                <span className="text-[10px] font-black text-sada-red uppercase tracking-[0.2em] ">Description</span>
+                            </div>
+                            {isManager && (
+                                <div className="flex items-center gap-1 opacity-40">
+                                    <Shield size={12} className="text-zinc-500" />
+                                    <span className="text-[9px] font-bold uppercase">Restricted</span>
+                                </div>
+                            )}
                         </div>
-                        <p className="text-zinc-600 dark:text-zinc-400 text-sm leading-relaxed italic opacity-90 max-w-2xl font-medium mt-2 whitespace-pre-line">
+                        
+                        <p className="text-zinc-600 dark:text-zinc-400 text-base leading-relaxed opacity-90 max-w-3xl font-medium whitespace-pre-line tracking-tight">
                             {task.description || "No specific mission parameters defined for this task."}
                         </p>
                     </div>
@@ -63,36 +60,32 @@ export const TaskOverview = ({ task, isManager = false, workspace, project }: Pr
 
                 {/* 2. Sub-Tasks Section */}
                 <div className="flex flex-col gap-6">
-                    <div className="flex justify-between items-end px-4">
+                    <div className="flex justify-between items-center px-4">
                         <div className="flex flex-col gap-1">
-                            <h3 className="text-xl font-black uppercase flex items-center gap-3 tracking-tighter">
-                                <Target className="text-sada-red" size={20} />
-                                Operational Objectives
+                            <h3 className="text-2xl font-black flex items-center gap-3 ">
+                                <Target className="text-sada-red" size={24} strokeWidth={2.5} />
+                                SubTasks
                             </h3>
-                            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-50">
-                                {task.subtasks?.length || 0} Objectives Identified
-                            </p>
+                            <div className="flex items-center gap-2">
+                                <div className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-60">
+                                    {task.subtasks?.length || 0} active checkpoints
+                                </p>
+                            </div>
                         </div>
 
                         {isManager && (
                             <button
                                 onClick={() => setIsAddModalOpen(true)}
-                                className="h-10 px-5 bg-zinc-900 text-white dark:bg-white dark:text-black rounded-xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest hover:bg-sada-red hover:text-white transition-all shadow-lg active:scale-95"
+                                className="h-11 px-6 bg-zinc-900 text-white dark:bg-white dark:text-black rounded-2xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest hover:bg-sada-red hover:text-white transition-all shadow-xl active:scale-95 group"
                             >
-                                <Plus size={14} strokeWidth={3} /> Add Objective
+                                <Plus size={16} strokeWidth={3} className="group-hover:rotate-90 transition-transform duration-300" /> 
+                                Add Objective
                             </button>
                         )}
                     </div>
 
-                    <AddSubTaskModal
-                        isOpen={isAddModalOpen}
-                        setIsOpen={setIsAddModalOpen}
-                        workspace={workspace}
-                        project={project}
-                        task={task}
-                    />
-
-                    <div className="grid grid-cols-1 gap-4">
+                    <div className="flex flex-col gap-4">
                         {task.subtasks && task.subtasks.length > 0 ? (
                             task.subtasks.map((sub: any) => (
                                 <SubTaskItem
@@ -104,62 +97,40 @@ export const TaskOverview = ({ task, isManager = false, workspace, project }: Pr
                                 />
                             ))
                         ) : (
-                            <div className="py-20 border-2 border-dashed border-zinc-200 dark:border-white/5 rounded-[40px] flex flex-col items-center justify-center opacity-30">
-                                <Target size={48} className="mb-4 text-muted-foreground" />
-                                <p className="text-[11px] font-black uppercase tracking-[0.4em]">Zero Objectives Found</p>
+                            <div className="py-24 border-2 border-dashed border-zinc-200 dark:border-white/5 rounded-[48px] flex flex-col items-center justify-center opacity-20 group hover:opacity-40 transition-opacity">
+                                <Target size={56} className="mb-4 text-muted-foreground group-hover:scale-110 transition-transform duration-500" />
+                                <p className="text-[11px] font-black uppercase tracking-[0.5em] italic">Zero Objectives Found</p>
                             </div>
                         )}
                     </div>
                 </div>
             </div>
 
-            {/* --- KANAN: SIDEBAR --- */}
+            {/* --- RIGHT: INTELLIGENCE SIDEBAR --- */}
             <div className="lg:col-span-1 flex flex-col gap-6">
                 
-                {/* Integrity Card */}
-                <div className="bg-white dark:bg-zinc-900/40 border border-border flex flex-col gap-6 rounded-[40px] p-8 shadow-sm relative overflow-hidden group">
-                    <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:scale-110 transition-transform duration-700 text-sada-red">
-                        <Activity size={120} />
+                {/* Field Operatives Card */}
+                <div className="bg-zinc-50 dark:bg-zinc-900/20 border border-border rounded-[40px] p-8 flex flex-col gap-6 relative overflow-hidden">
+                    <div className="flex flex-col gap-1 relative z-10">
+                        <span className="text-[9px] font-black text-sada-red uppercase tracking-[0.2em] flex items-center gap-2">
+                            <UserIcon size={12} strokeWidth={3} /> Assignee 
+                        </span>
                     </div>
-                    <div className="relative z-10 flex flex-col gap-4">
-                        <span className="text-[9px] font-black text-sada-red uppercase tracking-[0.3em] italic">Integrity Score</span>
-                        <div className="flex items-baseline gap-2">
-                            <span className="text-5xl font-black italic tracking-tighter text-zinc-900 dark:text-white">
-                                {task.progress || 0}%
-                            </span>
-                            <span className={`text-[10px] font-black uppercase italic ${task.progress === 100 ? 'text-emerald-500' : 'text-amber-500'}`}>
-                                {task.progress === 100 ? 'Mission Complete' : 'In Progress'}
-                            </span>
-                        </div>
-                        <div className="w-full h-2 bg-zinc-100 dark:bg-white/5 rounded-full overflow-hidden p-[2px] border border-zinc-200 dark:border-white/5">
-                            <div
-                                className="h-full bg-gradient-to-r from-sada-red to-red-500 rounded-full shadow-[0_0_15px_rgba(227,6,19,0.5)] transition-all duration-1000 ease-out"
-                                style={{ width: `${task.progress || 0}%` }}
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                {/* Field Operatives Card (Sekarang dari Project Users) */}
-                <div className="bg-zinc-50 dark:bg-white/[0.02] border border-dashed border-zinc-200 dark:border-white/10 rounded-[32px] p-6 flex flex-col gap-5">
-                    <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest italic opacity-60 flex items-center gap-2">
-                        <UserIcon size={10} className="text-sada-red" /> Operatives In-Field
-                    </span>
                     
-                    <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-3 relative z-10">
                         {operatives.length > 0 ? (
                             operatives.map((user: any) => (
                                 <div key={user.id} className="group relative">
-                                    <div className="size-11 rounded-xl ring-2 ring-background bg-zinc-800 border border-border overflow-hidden shadow-lg hover:scale-110 hover:-translate-y-1 transition-all duration-300">
+                                    <div className="size-12 rounded-[18px] ring-4 ring-background bg-zinc-800 border border-border overflow-hidden shadow-lg transition-all duration-500 group-hover:rounded-full group-hover:scale-110 group-hover:-translate-y-2 group-hover:ring-sada-red/20">
                                         <img 
-                                            src={user.profile_photo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random&color=fff`} 
+                                            src={user.profile_photo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=27272a&color=fff`} 
                                             alt={user.name} 
                                             className="w-full h-full object-cover"
                                         />
                                     </div>
-                                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-zinc-900 text-white text-[9px] font-bold px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all pointer-events-none whitespace-nowrap shadow-xl z-30 border border-white/10">
+                                    <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-zinc-900 dark:bg-white text-white dark:text-black text-[9px] font-black px-3 py-2 rounded-xl opacity-0 group-hover:opacity-100 transition-all pointer-events-none whitespace-nowrap shadow-2xl z-30 border border-white/10 uppercase tracking-widest translate-y-2 group-hover:translate-y-0">
                                         {user.name}
-                                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-zinc-900 rotate-45" />
+                                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-zinc-900 dark:bg-white rotate-45" />
                                     </div>
                                 </div>
                             ))
@@ -169,21 +140,33 @@ export const TaskOverview = ({ task, isManager = false, workspace, project }: Pr
                     </div>
                 </div>
 
-                {/* Meta Card */}
-                <div className="px-6 py-5 bg-zinc-900 dark:bg-white border border-zinc-800 dark:border-zinc-200 rounded-[32px] shadow-xl shadow-black/10">
-                   <div className="flex justify-between items-center">
-                        <div className="flex flex-col">
-                            <span className="text-[8px] font-black text-sada-red dark:text-zinc-400 uppercase tracking-widest">Deadline Terminal</span>
-                            <span className="text-xs font-black text-white dark:text-black uppercase italic tracking-tight">
-                                {task.due_date || 'Undetermined'}
+                {/* Status/Deadline Meta Card */}
+                <div className="bg-zinc-50 dark:bg-zinc-900/20 border border-border rounded-[40px] p-8 flex flex-col gap-6 relative overflow-hidden group">
+                    {/* Background Glow */}
+                    <div className="absolute top-0 right-0 size-32 bg-sada-red/20 blur-[60px] rounded-full -mr-10 -mt-10" />
+                    
+                    <div className="flex justify-between items-center relative z-10">
+                        <div className="flex flex-col gap-1">
+                            <span className="text-[9px] font-black text-sada-red/80 dark:text-zinc-400 uppercase tracking-[0.2em] italic">Deadline Tracker</span>
+                            <span className="text-lg font-black uppercase tracking-widest text-foreground">
+                                {task.due_date ? new Date(task.due_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'No Deadline Set'}
                             </span>
                         </div>
-                        <div className="size-8 rounded-lg bg-white/5 dark:bg-black/5 flex items-center justify-center border border-white/10 dark:border-black/10">
-                            <Activity size={14} className="text-sada-red animate-pulse" />
+                        <div className="size-12 rounded-2xl bg-white/5 dark:bg-black/5 flex items-center justify-center border border-white/10 dark:border-black/10 transition-transform duration-700 group-hover:rotate-[360deg]">
+                            <Activity size={18} strokeWidth={2.5} className="text-sada-red animate-pulse" />
                         </div>
-                   </div>
+                    </div>
                 </div>
             </div>
+
+            {/* Modal Logic */}
+            <AddSubTaskModal
+                isOpen={isAddModalOpen}
+                setIsOpen={setIsAddModalOpen}
+                workspace={workspace}
+                project={project}
+                task={task}
+            />
         </div>
     );
 };
