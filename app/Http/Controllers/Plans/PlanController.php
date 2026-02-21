@@ -65,19 +65,13 @@ class PlanController extends Controller
 
     public function store(PlanRequest $request)
     {
-        DB::transaction(function () use ($request) {
-            Plan::create($request->validated());
-        });
-
+        Plan::create($request->validated());
         return redirect()->route('product-management.plans.index')->with('success', 'Plan created successfully.');
     }
 
     public function update(PlanRequest $request, Plan $plan)
     {
-        DB::transaction(function () use ($request, $plan) {
-            $plan->update($request->validated());
-        });
-
+        $plan->update($request->validated());
         return redirect()->route('product-management.plans.index')->with('success', 'Plan updated successfully.');
     }
 
@@ -112,38 +106,22 @@ class PlanController extends Controller
 
     private function transformSinglePlan(Plan $plan)
     {
-        return [
-            'id'                       => $plan->id,
+        $data = $plan->toArray();
+
+        $data['modules_count'] = $plan->modules_count ?? 0;
+        $data['form_default'] = [
             'name'                     => $plan->name,
-            'slug'                     => $plan->slug,
-            'description'              => $plan->description,
-            'price_monthly'            => (float) $plan->price_monthly,
-            'price_yearly'             => (float) $plan->price_yearly,
+            'description'              => $plan->description ?? '',
+            'price_monthly'            => (int) $plan->price_monthly,
+            'price_yearly'             => (int) $plan->price_yearly,
             'discount_monthly_percent' => $plan->discount_monthly_percent,
             'discount_yearly_percent'  => $plan->discount_yearly_percent,
-            'final_price_monthly'      => $plan->final_price_monthly,
-            'final_price_yearly'       => $plan->final_price_yearly,
-            'has_monthly'              => $plan->has_monthly,
-            'has_yearly'               => $plan->has_yearly,
-            'is_free'                  => $plan->is_free,
-            'is_yearly'                => $plan->is_yearly,
-            'is_active'                => $plan->is_active,
-            'modules_count'            => $plan->modules_count,
-            'modules'                  => $plan->relationLoaded('modules') 
-                ? $plan->modules->map(fn($m) => ['id' => $m->id, 'name' => $m->name]) 
-                : [],
-            'form_default' => [
-                'name'                     => $plan->name,
-                'description'              => $plan->description ?? '',
-                'price_monthly'            => $plan->price_monthly,
-                'price_yearly'             => $plan->price_yearly,
-                'discount_monthly_percent' => $plan->discount_monthly_percent,
-                'discount_yearly_percent'  => $plan->discount_yearly_percent,
-                'is_free'                  => $plan->is_free,
-                'is_yearly'                => $plan->is_yearly,
-                'is_active'                => $plan->is_active,
-            ]
+            'is_free'                  => (bool) $plan->is_free,
+            'is_yearly'                => (bool) $plan->is_yearly,
+            'is_active'                => (bool) $plan->is_active,
         ];
+
+        return $data;
     }
 
     private function transformPlans($pagination)
