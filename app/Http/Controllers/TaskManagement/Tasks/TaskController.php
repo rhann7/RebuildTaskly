@@ -104,7 +104,7 @@ class TaskController extends Controller
     }
 
 
-   public function show(Request $request, Workspace $workspace, Project $project, Task $task)
+    public function show(Request $request, Workspace $workspace, Project $project, Task $task)
     {
         // 1. Pastikan hirarki bener
         abort_if($task->project_id !== $project->id || $project->workspace_id !== $workspace->id, 404);
@@ -119,14 +119,14 @@ class TaskController extends Controller
         ]);
 
         // 3. Ambil user yang terdaftar di PROJECT ini
-        $project->load('users'); 
+        $project->load('users');
 
         return Inertia::render('tasks/show', [
             'workspace' => $workspace,
-            'project'   => $project, 
+            'project'   => $project,
             'task'      => $task,
-            'isManager' => $request->user()->id === $workspace->manager_id 
-                        || $request->user()->role === 'manager',
+            'isManager' => $request->user()->id === $workspace->manager_id
+                || $request->user()->role === 'manager',
         ]);
     }
 
@@ -158,5 +158,24 @@ class TaskController extends Controller
         $task->delete();
 
         return back()->with('success', 'Task deleted successfully.');
+    }
+
+    // TaskController.php
+
+    public function globalIndex(Request $request)
+    {
+        $tasks = Task::query()
+            ->with(['project.workspace']) // INI KUNCINYA
+            ->when($request->search, function ($query, $search) {
+                $query->where('title', 'like', "%{$search}%");
+            })
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
+
+        return Inertia::render('tasks', [ // Ganti sesuai path file kamu
+            'tasks' => $tasks,
+            'filters' => $request->only(['search']),
+        ]);
     }
 }
