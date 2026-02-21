@@ -1,5 +1,5 @@
 import AppLayout from '@/layouts/app-layout';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, usePage } from '@inertiajs/react'; // Tambah usePage
 import { BreadcrumbItem } from '@/types';
 import { Users, ShieldCheck } from 'lucide-react';
 import { useState, useMemo } from 'react';
@@ -27,6 +27,13 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function TeamIndex({ members, workspaces, availableRoles }: Props) {
+    // 1. Ambil data user yang sedang login dari Global Props Inertia
+    const { auth } = usePage<any>().props;
+    
+    // 2. Logic Proteksi: Tentukan siapa yang berhak menambah unit
+    // Sesuaikan 'admin' atau 'owner' dengan string role yang lo pake di DB
+    const canDeploy = auth.user.role === 'admin' || auth.user.role === 'owner' || auth.user.role === 'super-admin';
+
     const [isAddOpen, setIsAddOpen] = useState(false);
     const columns = useMemo(() => getTeamColumns(), []);
 
@@ -39,6 +46,9 @@ export default function TeamIndex({ members, workspaces, availableRoles }: Props
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
+        // Proteksi tambahan sebelum kirim request
+        if (!canDeploy) return;
+
         post('/team', {
             onSuccess: () => {
                 reset();
@@ -53,7 +63,7 @@ export default function TeamIndex({ members, workspaces, availableRoles }: Props
 
             <div className="mx-auto w-full max-w-[1600px] flex flex-col gap-8 p-6 md:p-10 animate-in fade-in duration-700">
                 
-                {/* 1. Pakai HeaderBase (Standardization) */}
+                {/* HeaderBase dengan kontrol visibilitas tombol */}
                 <HeaderBase 
                     title="Personnel" 
                     subtitle="Deployment"
@@ -64,12 +74,13 @@ export default function TeamIndex({ members, workspaces, availableRoles }: Props
                     addButton={{
                         label: isAddOpen ? "Abort Operation" : "Deploy New Unit",
                         onClick: () => setIsAddOpen(!isAddOpen),
-                        show: true
+                        // Tombol cuma muncul jika canDeploy = true
+                        show: canDeploy 
                     }}
                 />
 
-                {/* 2. Form Add Member (Tetap pakai style lama lo yang keren) */}
-                {isAddOpen && (
+                {/* Form Add Member dengan proteksi ganda */}
+                {isAddOpen && canDeploy && (
                     <div className="bg-card border-2 border-dashed border-sada-red/30 rounded-[32px] p-8 animate-in zoom-in-95 duration-300">
                         <form onSubmit={submit} className="grid grid-cols-1 md:grid-cols-4 gap-6">
                             <div className="space-y-2">
@@ -77,7 +88,7 @@ export default function TeamIndex({ members, workspaces, availableRoles }: Props
                                 <input 
                                     value={data.name}
                                     onChange={e => setData('name', e.target.value)}
-                                    className="w-full bg-muted/30 border-none rounded-2xl h-12 px-4 text-sm focus:ring-2 focus:ring-sada-red" 
+                                    className="w-full bg-muted/30 border-none rounded-2xl h-12 px-4 text-sm focus:ring-2 focus:ring-sada-red outline-none" 
                                     placeholder="Full Name"
                                 />
                                 {errors.name && <p className="text-red-500 text-[9px] uppercase font-bold">{errors.name}</p>}
@@ -89,7 +100,7 @@ export default function TeamIndex({ members, workspaces, availableRoles }: Props
                                     type="email"
                                     value={data.email}
                                     onChange={e => setData('email', e.target.value)}
-                                    className="w-full bg-muted/30 border-none rounded-2xl h-12 px-4 text-sm focus:ring-2 focus:ring-sada-red" 
+                                    className="w-full bg-muted/30 border-none rounded-2xl h-12 px-4 text-sm focus:ring-2 focus:ring-sada-red outline-none" 
                                     placeholder="email@tactical.com"
                                 />
                                 {errors.email && <p className="text-red-500 text-[9px] uppercase font-bold">{errors.email}</p>}
@@ -100,7 +111,7 @@ export default function TeamIndex({ members, workspaces, availableRoles }: Props
                                 <select 
                                     value={data.role}
                                     onChange={e => setData('role', e.target.value)}
-                                    className="w-full bg-muted/30 border-none rounded-2xl h-12 px-4 text-sm focus:ring-2 focus:ring-sada-red"
+                                    className="w-full bg-muted/30 border-none rounded-2xl h-12 px-4 text-sm focus:ring-2 focus:ring-sada-red outline-none"
                                 >
                                     {availableRoles.map(r => (
                                         <option key={r} value={r}>{r.toUpperCase()}</option>
@@ -114,7 +125,7 @@ export default function TeamIndex({ members, workspaces, availableRoles }: Props
                                     <select 
                                         value={data.workspace_id}
                                         onChange={e => setData('workspace_id', e.target.value)}
-                                        className="w-full bg-muted/30 border-none rounded-2xl h-12 px-4 text-sm focus:ring-2 focus:ring-sada-red"
+                                        className="w-full bg-muted/30 border-none rounded-2xl h-12 px-4 text-sm focus:ring-2 focus:ring-sada-red outline-none"
                                     >
                                         <option value="">Select Workspace</option>
                                         {workspaces.map(w => (
@@ -127,7 +138,7 @@ export default function TeamIndex({ members, workspaces, availableRoles }: Props
                             <div className="md:col-span-4 flex justify-end">
                                 <button 
                                     disabled={processing}
-                                    className="bg-foreground text-background px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] hover:opacity-90 disabled:opacity-50"
+                                    className="bg-foreground text-background px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-sada-red hover:text-white transition-all disabled:opacity-50"
                                 >
                                     {processing ? 'Processing...' : 'Confirm Authorization'}
                                 </button>
@@ -136,7 +147,7 @@ export default function TeamIndex({ members, workspaces, availableRoles }: Props
                     </div>
                 )}
 
-                {/* 3. DataTableBase (Standardization - Poin 3) */}
+                {/* Table Area */}
                 <div className="bg-card rounded-[32px] border border-border shadow-2xl overflow-hidden min-h-[400px]">
                     <DataTableBase 
                         data={members} 

@@ -22,20 +22,12 @@ export const TaskOverview = ({ task, isManager = false, workspace, project }: Pr
 
     /**
      * LOGIC: Operatives In-Field
-     * Karena sistemnya bebas (siapa aja di project bisa ngerjain), 
-     * kita ambil data dari project.users.
+     * Mengambil data unik dari project users dan completer subtask.
      */
     const operatives = useMemo(() => {
-        // 1. Ambil semua user dari project (Data utama)
         const projectUsers = project.users || [];
-        
-        // 2. Ambil user yang pernah nyelesain subtask (Jaga-jaga kalau ada user history)
         const completers = task.subtasks?.map((s: any) => s.completer).filter(Boolean) || [];
-        
-        // 3. Gabungkan keduanya
         const combined = [...projectUsers, ...completers];
-        
-        // 4. Buat unik berdasarkan ID supaya foto gak double
         return Array.from(new Map(combined.map(user => [user.id, user])).values());
     }, [project.users, task.subtasks]);
 
@@ -65,7 +57,7 @@ export const TaskOverview = ({ task, isManager = false, workspace, project }: Pr
                 <div className="flex flex-col gap-6">
                     <div className="flex justify-between items-end px-4">
                         <div className="flex flex-col gap-1">
-                            <h3 className="text-xl font-black uppercase flex items-center gap-3 tracking-tighter">
+                            <h3 className="text-xl font-black uppercase flex items-center gap-3 tracking-tighter text-zinc-900 dark:text-white">
                                 <Target className="text-sada-red" size={20} />
                                 Operational Objectives
                             </h3>
@@ -74,14 +66,14 @@ export const TaskOverview = ({ task, isManager = false, workspace, project }: Pr
                             </p>
                         </div>
 
-                        {isManager && (
-                            <button
-                                onClick={() => setIsAddModalOpen(true)}
-                                className="h-10 px-5 bg-zinc-900 text-white dark:bg-white dark:text-black rounded-xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest hover:bg-sada-red hover:text-white transition-all shadow-lg active:scale-95"
-                            >
-                                <Plus size={14} strokeWidth={3} /> Add Objective
-                            </button>
-                        )}
+                        {/* TOMBOL DIBUKA UNTUK SEMUA ROLE (isManager dihapus) */}
+                        <button
+                            onClick={() => setIsAddModalOpen(true)}
+                            className="h-10 px-5 bg-zinc-900 text-white dark:bg-white dark:text-black rounded-xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest hover:bg-sada-red hover:text-white transition-all shadow-lg active:scale-95 group/btn"
+                        >
+                            <Plus size={14} strokeWidth={3} className="group-hover/btn:rotate-90 transition-transform duration-300" /> 
+                            Add Objective
+                        </button>
                     </div>
 
                     <AddSubTaskModal
@@ -140,7 +132,7 @@ export const TaskOverview = ({ task, isManager = false, workspace, project }: Pr
                     </div>
                 </div>
 
-                {/* Field Operatives Card (Sekarang dari Project Users) */}
+                {/* Field Operatives Card */}
                 <div className="bg-zinc-50 dark:bg-white/[0.02] border border-dashed border-zinc-200 dark:border-white/10 rounded-[32px] p-6 flex flex-col gap-5">
                     <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest italic opacity-60 flex items-center gap-2">
                         <UserIcon size={10} className="text-sada-red" /> Operatives In-Field
