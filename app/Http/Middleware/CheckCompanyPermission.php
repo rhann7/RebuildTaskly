@@ -14,14 +14,14 @@ class CheckCompanyPermission
         abort_if(!$user, 403, 'Anda belum login.');
 
         $isImpersonating = app('impersonate')->isImpersonating();
+        if ($isImpersonating && !$request->isMethod('GET') && !$request->isMethod('HEAD')) {
+            if (!$request->routeIs('impersonate.leave')) abort(403, "Mode Lihat Saja: Anda tidak diizinkan mengubah data saat dalam mode penyamaran.");
+        }
+
         if ($user->isSuperAdmin() && !$isImpersonating) return $next($request);
         
         $company = $user->company;
         abort_if(!$company, 403, 'Akun ini tidak terhubung dengan company.');
-
-        if ($isImpersonating && !$request->isMethod('GET') && !$request->isMethod('HEAD')) {
-            if (!$request->routeIs('impersonate.leave')) abort(403, "Mode Lihat Saja: Anda tidak diizinkan mengubah data saat dalam mode penyamaran.");
-        }
 
         $routeName = $request->route()->getName();
         $whiteList = ['dashboard', 'impersonate.take', 'impersonate.leave'];
