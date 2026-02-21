@@ -13,7 +13,8 @@ return new class extends Migration
             $table->string('name');
             $table->string('slug')->unique();
             $table->string('type')->default('standard');
-            $table->decimal('price', 15, 2)->default(0); 
+            $table->string('scope')->default('company');
+            $table->decimal('price', 15, 2)->default(0);
             $table->text('description')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
