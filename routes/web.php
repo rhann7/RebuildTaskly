@@ -7,6 +7,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Modules\ModuleController;
 use App\Http\Controllers\Plans\PlanController;
 use App\Http\Controllers\Rules\PermissionController;
+use App\Http\Controllers\Subscriptions\SubscriptionController;
 use App\Http\Controllers\Workspaces\WorkspaceController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -46,6 +47,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 ->name('plans.modules.assign')  ;
             Route::delete('plans/{plan}/modules/{module}', [PlanController::class, 'removeModule'])
                 ->name('plans.modules.remove');
+
+            Route::get('subscriptions', [SubscriptionController::class, 'index'])
+                ->name('subscriptions.index');
         });
 
         Route::prefix('company-management')->name('company-management.')->group(function () {
