@@ -62,6 +62,27 @@ class PlanController extends Controller
         ]);
     }
 
+    public function pricing()
+    {
+        $plans = Plan::where('is_active', true)
+            ->with(['modules' => function($q) {
+                $q->where('is_active', true)->orderBy('name', 'asc');
+            }])
+            ->withCount('modules')
+            ->orderBy('price', 'asc')
+            ->get();
+
+        return Inertia::render('plans/pricing', [
+            'plans' => $plans->map(function (Plan $plan) {
+                return $this->transformSinglePlan($plan);
+            }),
+            'pageConfig' => [
+                'title' => 'Choose Your Plan',
+                'description' => 'Select a plan that fits your business needs.',
+            ]
+        ]);
+    }
+
     public function store(PlanRequest $request)
     {
         Plan::create($request->validated());
