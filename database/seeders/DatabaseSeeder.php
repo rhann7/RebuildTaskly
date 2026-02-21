@@ -7,7 +7,6 @@ use App\Models\CompanyCategory;
 use App\Models\Module;
 use App\Models\Permission;
 use App\Models\Plan;
-use App\Models\Subscription;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -87,7 +86,7 @@ class DatabaseSeeder extends Seeder
             ]
         )->syncRoles('company');
 
-        $companyProfile = Company::firstOrCreate(
+        Company::firstOrCreate(
             ['email' => 'starbhaktech@gmail.com'],
             [
                 'company_category_id' => CompanyCategory::where('name', 'Technology')->first()->id,
@@ -100,14 +99,5 @@ class DatabaseSeeder extends Seeder
                 'is_active'           => true,
             ]
         );
-
-        Subscription::create([
-            'company_id'    => $companyProfile->id,
-            'plan_id'       => $plan->id,
-            'starts_at'     => now(),
-            'ends_at'       => now()->addDays(30),
-            'billing_cycle' => 'monthly',
-            'status'        => 'active',
-        ]);
     }
 }

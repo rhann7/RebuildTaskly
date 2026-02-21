@@ -100,9 +100,4 @@ class Plan extends Model
     {
         return $this->belongsToMany(Module::class, 'plan_module');
     }
-
-    public function subscriptions()
-    {
-        return $this->hasMany(Subscription::class, 'plan_id');
-    }
 }

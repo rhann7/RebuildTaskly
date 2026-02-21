@@ -26,20 +26,6 @@ class HandleInertiaRequests extends Middleware
 
         $company = $user?->company;
 
-        $subscription = null;
-        if ($company) {
-            $latestSub = $company->subscription;
-            if ($latestSub) {
-                $subscription = [
-                    'plan_name'      => $latestSub->plan->name,
-                    'ends_at'        => $latestSub->ends_at->format('d M Y'),
-                    'is_expiring'    => $latestSub->is_expiring_soon,
-                    'is_active'      => $latestSub->status === 'active' && $latestSub->ends_at->isFuture(),
-                    'remaining_days' => (int) now()->diffInDays($latestSub->ends_at, false),
-                ];
-            }
-        }
-
         return [
             ...parent::share($request),
             'name' => config('app.name'),
@@ -63,7 +49,6 @@ class HandleInertiaRequests extends Middleware
                         'name' => $company->name,
                         'logo' => $company->logo ? asset('storage/' . $company->logo) : null,
                         'slug' => $company->slug,
-                        'subscription' => $subscription,
                     ] : null,
                     'menu' => (new MenuService())->getSidebarMenu($request),
                 ] : null,

@@ -29,8 +29,6 @@ class CheckCompanyPermission
 
         $dbPermission = Permission::with('module')->where('route_name', $routeName)->first();
         if ($dbPermission) {
-            // if (!$company->hasAccess($dbPermission->name)) abort(403, "Fitur ini tidak tersedia dalam paket Anda.");
-
             $module = $dbPermission->module;
             if ($module) {
                 $workspaceParam = $request->route('workspace');
