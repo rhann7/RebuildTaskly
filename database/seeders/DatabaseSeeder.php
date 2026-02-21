@@ -7,7 +7,6 @@ use App\Models\CompanyCategory;
 use App\Models\Module;
 use App\Models\Permission;
 use App\Models\Plan;
-use App\Models\Subscription;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
