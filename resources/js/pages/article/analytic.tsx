@@ -125,7 +125,7 @@ export default function ArticleAnalytic({ topKeywords, deviceIssues, keywordSear
                 </div>
 
                 {/* Stats Cards */}
-                <div className="grid gap-4 md:grid-cols-4">
+                <div className="grid gap-4 md:grid-cols-3">
                     <StatCard
                         title="Total Searches"
                         value={String(stats.total_searches)}
@@ -143,12 +143,6 @@ export default function ArticleAnalytic({ topKeywords, deviceIssues, keywordSear
                         value={String(stats.total_unique_users)}
                         icon={Users}
                         description="Users who searched"
-                    />
-                    <StatCard
-                        title="Avg. Keyword Rate"
-                        value={(stats.avg_keyword_rate ?? 0).toFixed(2)}
-                        icon={TrendingUp}
-                        description="Average keyword rating"
                     />
                 </div>
 
@@ -216,8 +210,8 @@ export default function ArticleAnalytic({ topKeywords, deviceIssues, keywordSear
                                         <div
                                             key={index}
                                             className={`flex flex-col p-4 rounded-lg border-2 transition-all ${device.is_critical
-                                                    ? 'border-red-500 bg-red-50 dark:bg-red-950/20 shadow-lg'
-                                                    : 'border-border bg-card hover:border-primary/50'
+                                                ? 'border-red-500 bg-red-50 dark:bg-red-950/20 shadow-lg'
+                                                : 'border-border bg-card hover:border-primary/50'
                                                 }`}
                                         >
                                             <div className="flex items-start gap-3 mb-3">

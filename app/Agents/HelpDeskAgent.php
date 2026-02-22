@@ -13,7 +13,6 @@ class HelpDeskAgent extends BaseLlmAgent
 {
     protected string $name = 'help_desk_agent';
     protected string $description = 'Handles customer inquiries and support requests';
-    protected string $instructions = 'You are Help Desk Agent. See resources/prompts/help_desk_agent/default.blade.php for full instructions.';
 
     // Model Configuration
     protected string $model = 'gemini-2.5-flash';
