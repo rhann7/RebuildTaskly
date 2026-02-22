@@ -56,7 +56,7 @@ export default function Pricing({ plans, pageConfig }: PageProps) {
             </div>
 
             <header className="max-w-4xl mx-auto text-center px-4 pt-4 pb-16">
-                <h1 className="text-3xl font-bold tracking-tight mb-3">
+                <h1 className="text-3xl font-bold tracking-tight">
                     {pageConfig.title}
                 </h1>
                 <p className="text-muted-foreground text-sm max-w-xl mx-auto leading-relaxed">
@@ -69,7 +69,7 @@ export default function Pricing({ plans, pageConfig }: PageProps) {
                     {plans.map((plan) => (
                         <Card key={plan.id} className="flex flex-col border-border bg-card shadow-sm transition-all hover:ring-1 hover:ring-ring">
                             <CardHeader className="pb-6">
-                                <div className="flex justify-between items-start mb-2">
+                                <div className="flex justify-between items-start">
                                     <CardTitle className="text-lg font-bold">{plan.name}</CardTitle>
                                     {plan.duration === 365 && (
                                         <Badge variant="outline" className="text-[10px] uppercase font-bold tracking-wider">
