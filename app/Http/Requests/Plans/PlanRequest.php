@@ -15,13 +15,14 @@ class PlanRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name'         => ['required', 'string', 'max:255'],
-            'description'  => ['nullable', 'string'],
-            'price'        => ['required', 'numeric', 'min:0'],
-            'duration'     => ['required', 'integer', Rule::in([30, 365])],
-            'is_active'    => ['boolean'],
-            'module_ids'   => ['nullable', 'array'],
-            'module_ids.*' => ['integer', Rule::exists('modules', 'id')->where('is_active', true)],
+            'name'           => ['required', 'string', 'max:255'],
+            'description'    => ['nullable', 'string'],
+            'price'          => ['required', 'numeric', 'min:0'],
+            'original_price' => ['nullable', 'numeric', 'min:0'],
+            'duration'       => ['required', 'integer', Rule::in([30, 365])],
+            'is_active'      => ['boolean'],
+            'module_ids'     => ['nullable', 'array'],
+            'module_ids.*'   => ['integer', Rule::exists('modules', 'id')->where('is_active', true)],
         ];
     }
 }

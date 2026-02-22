@@ -132,17 +132,19 @@ class PlanController extends Controller
             'slug'            => $plan->slug,
             'description'     => $plan->description,
             'price'           => (float) $plan->price,
+            'original_price'  => (float) $plan->original_price,
             'duration'        => $plan->duration,
             'is_active'       => $plan->is_active,
             'is_free'         => $plan->is_free,
             'modules_count'   => $plan->relationLoaded('modules') ? $plan->modules->count() : ($plan->modules_count ?? 0),
             'modules'         => $plan->relationLoaded('modules') ? $plan->modules : [],
-            'form_default'    => [
-                'name'        => $plan->name,
-                'description' => $plan->description ?? '',
-                'price'       => (float) $plan->price,
-                'duration'    => $plan->duration ?? 30,
-                'is_active'   => (bool) $plan->is_active,
+            'form_default'       => [
+                'name'           => $plan->name,
+                'description'    => $plan->description ?? '',
+                'price'          => (float) $plan->price,
+                'original_price' => (float) $plan->original_price,
+                'duration'       => $plan->duration ?? 30,
+                'is_active'      => (bool) $plan->is_active,
             ]
         ];
     }

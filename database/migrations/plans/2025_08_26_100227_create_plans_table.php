@@ -14,6 +14,7 @@ return new class extends Migration
             $table->string('slug')->unique();
             $table->text('description')->nullable();
             $table->decimal('price', 15, 2);
+            $table->decimal('original_price', 15, 2)->nullable();
             $table->integer('duration');
             $table->boolean('is_active')->default(true);
             $table->timestamps();

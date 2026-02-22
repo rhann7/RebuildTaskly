@@ -11,14 +11,16 @@ class Plan extends Model
         'slug',
         'description',
         'price',
+        'original_price',
         'duration',
         'is_active',
     ];
 
     protected $casts = [
-        'is_active' => 'boolean',
-        'price'     => 'decimal:2',
-        'duration'  => 'integer',
+        'is_active'      => 'boolean',
+        'price'          => 'decimal:2',
+        'original_price' => 'decimal:2',
+        'duration'       => 'integer',
     ];
 
     protected static function booted()
@@ -46,5 +48,10 @@ class Plan extends Model
     public function modules()
     {
         return $this->belongsToMany(Module::class, 'plan_module');
+    }
+
+    public function invoices()
+    {
+        return $this->hasMany(Invoice::class);
     }
 }
