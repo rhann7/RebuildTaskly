@@ -20,6 +20,7 @@ type Plan = {
     slug: string;
     description: string;
     price: number;
+    original_price: number;
     duration: number;
     is_free: boolean;
     is_active: boolean;
@@ -28,6 +29,7 @@ type Plan = {
         name: string;
         description: string;
         price: number;
+        original_price: number;
         duration: number;
         is_active: boolean;
     };
@@ -54,6 +56,7 @@ export default function PlanIndex({ plans, filters, pageConfig }: PageProps) {
         name: '',
         description: '',
         price: 0,
+        original_price: 0,
         duration: 30,
         is_active: true,
     });
@@ -98,6 +101,14 @@ export default function PlanIndex({ plans, filters, pageConfig }: PageProps) {
         if (confirm(`Are you sure you want to delete plan "${p.name}"? This action cannot be undone.`)) {
             router.delete(route('product-management.plans.destroy', { plan: p.slug }));
         }
+    };
+
+    const formatCurrency = (value: number) => {
+        return new Intl.NumberFormat('id-ID', { 
+            style: 'currency', 
+            currency: 'IDR', 
+            maximumFractionDigits: 0 
+        }).format(value);
     };
 
     const FilterWidget = (
@@ -159,6 +170,7 @@ export default function PlanIndex({ plans, filters, pageConfig }: PageProps) {
                             <TableHead className="w-[50px] text-center">#</TableHead>
                             <TableHead>Plan Details</TableHead>
                             <TableHead>Price & Billing</TableHead>
+                            <TableHead>Original Price</TableHead>
                             <TableHead>Modules</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead className="text-right px-6">Actions</TableHead>
@@ -177,8 +189,13 @@ export default function PlanIndex({ plans, filters, pageConfig }: PageProps) {
                                 </TableCell>
                                 <TableCell>
                                     <div className="flex flex-col">
-                                        <span className="font-mono text-sm font-semibold">{plan.is_free ? 'FREE' : new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(plan.price)}</span>
+                                        <span className="font-mono text-sm font-semibold">{plan.is_free ? 'FREE' : formatCurrency(plan.price)}</span>
                                         <span className="text-[10px] text-muted-foreground">{plan.duration === 365 ? 'Yearly Billed' : 'Monthly Billed'}</span>
+                                    </div>
+                                </TableCell>
+                                <TableCell>
+                                    <div className="flex flex-col">
+                                        <span className="font-mono text-sm font-semibold">{plan.is_free ? 'FREE' : formatCurrency(plan.original_price)}</span>
                                     </div>
                                 </TableCell>
                                 <TableCell>
@@ -225,33 +242,39 @@ export default function PlanIndex({ plans, filters, pageConfig }: PageProps) {
                             <InputError message={errors.description} />
                         </div>
 
+                        <div className="space-y-2">
+                            <Label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Billing Cycle</Label>
+                            <Select value={data.duration.toString()} onValueChange={(val) => setData('duration', parseInt(val))}>
+                                <SelectTrigger className="h-9 border-zinc-200 shadow-none focus-visible:ring-zinc-200">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="30">30 Days (Monthly)</SelectItem>
+                                    <SelectItem value="365">365 Days (Yearly)</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <InputError message={errors.duration} />
+                        </div>
+
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="price" className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Price (IDR)</Label>
-                                <Input id="price" type="number" value={data.price === 0 && !isEditing ? '' : data.price} onChange={(e) => { const val = e.target.value; setData('price', val === '' ? 0 : Number(val)); }} placeholder="Enter price..." className="h-9 border-zinc-200 shadow-none focus-visible:ring-zinc-200" />
-                                <InputError message={errors.price} />
+                                <Label htmlFor="original_price" className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Original Price (Optional)</Label>
+                                <Input id="original_price" type="number" value={data.original_price === 0 ? '' : data.original_price} onChange={(e) => { const val = e.target.value; setData('original_price', val === '' ? 0 : Number(val)); }} placeholder="Enter original price..." className="h-9 border-zinc-200 shadow-none focus-visible:ring-zinc-200" />
+                                <InputError message={errors.original_price} />
                             </div>
 
                             <div className="space-y-2">
-                                <Label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Billing Cycle</Label>
-                                <Select value={data.duration.toString()} onValueChange={(val) => setData('duration', parseInt(val))}>
-                                    <SelectTrigger><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="30">30 Days (Monthly)</SelectItem>
-                                        <SelectItem value="365">365 Days (Yearly)</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                <InputError message={errors.duration} />
+                                <Label htmlFor="price" className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Selling Price (IDR)</Label>
+                                <Input id="price" type="number" value={data.price === 0 ? '' : data.price} onChange={(e) => { const val = e.target.value; setData('price', val === '' ? 0 : Number(val)); }} placeholder="Enter price..." className="h-9 border-zinc-200 shadow-none focus-visible:ring-zinc-200" />
+                                <InputError message={errors.price} />
                             </div>
                         </div>
 
                         {isEditing && (
                             <div className="flex items-center justify-between p-4 rounded-lg border border-zinc-100">
                                 <div className="space-y-0.5">
-                                    <Label htmlFor="is_active" className="text-sm font-medium text-zinc-100">Active Status</Label>
-                                    <p className="text-[11px] text-zinc-500 italic">
-                                        Turn off to hide this plan from the registration page.
-                                    </p>
+                                    <Label htmlFor="is_active" className="text-sm font-medium text-foreground">Active Status</Label>
+                                    <p className="text-[11px] text-zinc-500 italic">Turn off to hide this plan from the registration page.</p>
                                 </div>
                                 <Switch id="is_active" checked={data.is_active} onCheckedChange={(val) => setData('is_active', val)} />
                             </div>

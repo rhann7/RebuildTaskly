@@ -22,6 +22,7 @@ interface PlanData {
     slug: string;
     description: string | null;
     price: number;
+    original_price: number | null;
     duration: number;
     is_active: boolean;
     modules_count: number;
@@ -72,6 +73,10 @@ export default function PlanShow({ plan, available_modules, pageConfig }: PagePr
         }
     };
 
+    const calculateDiscount = (original: number, price: number) => {
+        return Math.round(((original - price) / original) * 100);
+    };
+
     return (
         <ResourceListLayout
             title={pageConfig.title}
@@ -118,11 +123,25 @@ export default function PlanShow({ plan, available_modules, pageConfig }: PagePr
                                 <Label className="text-xs text-zinc-400">
                                     {plan.duration === 365 ? 'Yearly Price' : 'Monthly Price'}
                                 </Label>
-                                <p className="text-2xl font-bold text-foreground">
-                                    {plan.price === 0 ? 'FREE' : formatIDR(plan.price)}
-                                </p>
+
+                                {plan.original_price !== null && plan.original_price !== 0 && (
+                                    <p className="text-sm text-zinc-400 line-through">{formatIDR(plan.original_price)}</p>
+                                )}
+
+                                <div className="flex items-center gap-2">
+                                    <p className="text-2xl font-bold text-foreground">
+                                        {plan.price === 0 ? 'FREE' : formatIDR(plan.price)}
+                                    </p>
+
+                                    {plan.original_price !== null && plan.original_price !== 0 && (
+                                        <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700">
+                                            -{calculateDiscount(plan.original_price, plan.price)}%
+                                        </span>
+                                    )}
+                                </div>
+
                                 <p className="text-xs text-zinc-400">
-                                    Billed every {plan.duration} days
+                                    Billed every {plan.duration === 365 ? 'year' : 'month'}.
                                 </p>
                             </div>
 
