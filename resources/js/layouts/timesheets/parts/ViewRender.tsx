@@ -66,11 +66,11 @@ export const ViewRenderer = ({ currentView, data }: any) => {
                             timeEntries={data.timeEntries}
                             projects={data.projects}
                             stats={data.stats}
-                            currentDateProp={data.currentDate} />
+                            currentDateProp={data.currentDate}
+                        />
                     </div>
                 </ViewContainer>
             );
-
         case 'calendar':
             return (
                 <ViewContainer>

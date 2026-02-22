@@ -17,10 +17,10 @@ class Timesheet extends Model
         'workspace_id',
         'task_id',
         'sub_task_id',
-        'note',             // Di DB kamu 'note', bukan 'description'
-        'start_at',         // Di DB kamu 'start_at', bukan 'start_time'
-        'end_at',           // Di DB kamu 'end_at', bukan 'end_time'
-        'duration_minutes'  // Di DB kamu pakai menit, bukan decimal jam
+        'note',
+        'start_at',
+        'end_at',
+        'total_hours'
     ];
 
     protected $casts = [
@@ -38,7 +38,6 @@ class Timesheet extends Model
     {
         return $this->belongsTo(User::class);
     }
-
     public function calculateTotals()
     {
         $this->total_hours = $this->entries()->sum('hours');

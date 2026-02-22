@@ -31,10 +31,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('projects.global');
         Route::get('/tasks', [TaskController::class, 'globalIndex'])
             ->name('tasks.global');
-        Route::resource('timesheets', TimesheetController::class)
-            ->only(['index', 'store', 'destroy']);
+        Route::resource('timesheets', TimesheetController::class);
+        Route::patch('/timesheets/{id}/time', [TimesheetController::class, 'updateTime'])->name('timesheets.time.update');
     });
-    
+
     Route::impersonate();
     Route::middleware('role:super-admin')->group(function () {
         Route::prefix('access-control')->name('access-control.')->group(function () {

@@ -49,10 +49,10 @@ export default function TimesheetIndex({ timesheets, projects, stats, currentDat
         // PANGGIL APPLAYOUT TANPA OPER AUTH MANUAL AGAR SIDEBAR TIDAK KOSONG
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Work Registry" />
-            
+
             {/* Wrapper utama disamain lebarnya sama TeamIndex agar Sidebar aman */}
             <div className="mx-auto w-full flex flex-col gap-8 p-6 md:p-10 animate-in fade-in duration-700">
-                
+
                 {/* 1. Header Section */}
                 <TimesheetHeader isManager={isManager} />
 
@@ -91,8 +91,7 @@ export default function TimesheetIndex({ timesheets, projects, stats, currentDat
                         <ViewRenderer
                             currentView={currentView}
                             data={{
-                                timeEntries: entriesForGrid,
-                                rawTimesheets: timesheets,
+                                timeEntries: timesheets?.mapped || [],
                                 projects: projects,
                                 stats: stats,
                                 currentDate: currentDateProp,

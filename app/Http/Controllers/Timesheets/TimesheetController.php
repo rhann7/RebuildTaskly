@@ -82,14 +82,32 @@ class TimesheetController extends Controller
             $stats['pendingHours']   = round($entries->where('status', 'submitted')->sum('duration_minutes') / 60, 2);
             $stats['draftHours']     = round($entries->where('status', 'draft')->sum('duration_minutes') / 60, 2);
         }
+        //  
+        $mappedEntries = [];
+        if ($currentTimesheet) {
+            $mappedEntries = $currentTimesheet->entries->map(function ($entry) {
+                return [
+                    'id'          => $entry->id,
+                    'taskName'    => $entry->task?->title ?? $entry->description,
+                    'date'        => $entry->date,
+                    'startTime'   => \Carbon\Carbon::parse($entry->start_at)->format('H:i'),
+                    'endTime'     => \Carbon\Carbon::parse($entry->end_at)->format('H:i'),
+                    'status'      => $entry->status ?? 'draft',
 
-        // 4. Return to Inertia (HAPUS BAGIAN AUTH!)
+                    // --- WAJIB TAMBAHKAN INI AGAR BISA DI-EDIT ---
+                    'project_id'  => $entry->project_id,
+                    'task_id'     => $entry->task_id,
+                    'sub_task_id' => $entry->sub_task_id,
+                    'description' => $entry->description,
+                ];
+            });
+        }
+        // 5. Return to Inertia (HAPUS BAGIAN AUTH!)
         return Inertia::render('timesheets/index', [
-            // 'auth' => [...]  <-- HAPUS INI BRO! JANGAN DIKIRIM LAGI!
-            
             'projects'   => $projects,
             'timesheets' => [
                 'current' => $currentTimesheet,
+                'mapped'  => $mappedEntries,
                 'history' => Timesheet::where('user_id', $user->id)
                     ->latest()
                     ->paginate(20)
@@ -105,79 +123,106 @@ class TimesheetController extends Controller
     public function storeTask(Request $request)
     {
         $validated = $request->validate([
-            'project_id'  => 'required|exists:projects,id',
-            'title'       => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'priority'    => 'required|in:low,medium,high',
+            'project_id' => 'required|exists:projects,id',
+            'title'      => 'required|string|max:255',
+            'priority'   => 'required|in:low,medium,high',
         ]);
 
-        $task = DB::transaction(function () use ($validated) {
-            return Task::create([
-                'project_id'  => $validated['project_id'],
-                'title'       => $validated['title'],
-                'slug'        => Str::slug($validated['title']) . '-' . Str::lower(Str::random(5)),
-                'description' => $validated['description'] ?? null,
-                'status'      => 'todo',
-                'priority'    => $validated['priority'],
-            ]);
-        });
+        // Simpan task baru ke project tersebut
+        // Sesuaikan dengan logic Task management kamu, ini contoh umum:
+        $project = Project::findOrFail($validated['project_id']);
 
-        return back()->with('success', 'Tactical task deployed to registry.');
+        $task = $project->tasks()->create([
+            'title' => $validated['title'],
+            'priority' => $validated['priority'],
+            'status' => 'backlog', // atau status default kamu
+            'workspace_id' => $project->workspace_id,
+        ]);
+
+        return back()->with('success', 'Task created and linked.');
     }
 
     public function store(Request $request)
     {
-        $user = $request->user();
-
         $validated = $request->validate([
             'project_id'  => 'required|exists:projects,id',
             'task_id'     => 'required|exists:tasks,id',
             'sub_task_id' => 'nullable|exists:sub_tasks,id',
             'date'        => 'required|date',
-            'start_time'  => 'required', // Format HH:mm
-            'end_time'    => 'required', // Format HH:mm
+            'start_time'  => 'required',
+            'end_time'    => 'required',
             'description' => 'required|string',
         ]);
 
-        return DB::transaction(function () use ($user, $validated) {
-            $date = Carbon::parse($validated['date']);
+        // Pakai Transaction supaya kalau Header gagal, Entry gak nyangkut
+        return DB::transaction(function () use ($request, $validated) {
+            $user = $request->user();
+
+            // 1. Cari/Buat Header Timesheet berdasarkan minggu tersebut
+            $date = \Carbon\Carbon::parse($validated['date']);
             $startOfWeek = $date->copy()->startOfWeek();
 
-            $project = Project::findOrFail($validated['project_id']);
-
-            // 1. Ambil/Buat Header (Timesheet)
             $timesheet = Timesheet::firstOrCreate([
                 'user_id'  => $user->id,
                 'start_at' => $startOfWeek->toDateString(),
             ], [
-                'workspace_id' => $project->workspace_id,
+                'workspace_id' => Project::find($validated['project_id'])->workspace_id,
+                'task_id'      => $validated['task_id'],
+                'sub_task_id'  => $validated['sub_task_id'],
+                'note'         => $validated['description'], // Kalau kamu mau simpan note di header juga
                 'end_at'       => $startOfWeek->copy()->endOfWeek()->toDateString(),
                 'status'       => 'draft',
             ]);
 
-            // 2. Kalkulasi Jam (Hours) untuk kolom decimal
-            $startTime = Carbon::parse($validated['start_time']);
-            $endTime   = Carbon::parse($validated['end_time']);
-            if ($endTime->lessThan($startTime)) $endTime->addDay();
+            // 2. Hitung selisih jam (Decimal)
+            $start = \Carbon\Carbon::parse($validated['start_time']);
+            $end = \Carbon\Carbon::parse($validated['end_time']);
+            $hours = $end->diffInMinutes($start) / 60;
 
-            // Hitung selisih dalam jam (misal 2.5)
-            $hours = $endTime->diffInMinutes($startTime) / 60;
-
-            // 3. Simpan ke TimesheetEntry (Sesuai $fillable Model kamu)
+            // 3. Simpan ke Entry
             $timesheet->entries()->create([
-                'user_id'      => $user->id,
-                'project_id'   => $project->id,
-                'task_id'      => $validated['task_id'],
-                'sub_task_id'  => $validated['sub_task_id'],
-                'date'         => $validated['date'],
-                'start_at'     => $validated['start_time'], // Sesuai nama kolom di Migration
-                'end_at'       => $validated['end_time'],   // Sesuai nama kolom di Migration
-                'hours'        => $hours,                   // Decimal 5,2
-                'description'  => $validated['description'],
-                'is_billable'  => true,
+                'user_id'     => $user->id,
+                'project_id'  => $validated['project_id'],
+                'task_id'     => $validated['task_id'],
+                'sub_task_id' => $validated['sub_task_id'],
+                'date'        => $validated['date'],
+                'start_at'    => $validated['start_time'],
+                'end_at'      => $validated['end_time'],
+                'hours'       => number_format($hours, 2),
+                'description' => $validated['description'],
             ]);
 
-            return back()->with('success', 'Log entry synchronized.');
+            return back()->with('success', 'Work log deployed successfully!');
         });
+    }
+
+    // Tambahkan fungsi ini di dalam class TimesheetController
+
+    public function updateTime(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'start_time' => 'required|date_format:H:i',
+            'end_time'   => 'required|date_format:H:i',
+        ]);
+
+        $entry = \App\Models\Timesheet\TimesheetEntry::findOrFail($id);
+
+        $start = \Carbon\Carbon::parse($validated['start_time']);
+        $end = \Carbon\Carbon::parse($validated['end_time']);
+
+        // PERBAIKAN PENTING: $start duluan, baru $end agar hasilnya POSITIF
+        $hours = $start->diffInMinutes($end) / 60;
+
+        $entry->update([
+            'start_at' => $validated['start_time'],
+            'end_at'   => $validated['end_time'],
+            'hours'    => round($hours, 2),
+        ]);
+
+        if ($entry->timesheet) {
+            $entry->timesheet->calculateTotals();
+        }
+
+        return back()->with('success', 'Operational time modified successfully.');
     }
 }

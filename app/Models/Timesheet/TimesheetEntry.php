@@ -2,6 +2,7 @@
 
 namespace App\Models\Timesheet;
 
+use App\Models\ProjectManagement\Project;
 use App\Models\TaskManagement\SubTask;
 use App\Models\TaskManagement\Task;
 use App\Models\User;
@@ -17,8 +18,8 @@ class TimesheetEntry extends Model
         'task_id',
         'sub_task_id',
         'date',
-        'start_time',
-        'end_time',
+        'start_at',
+        'end_at',
         'hours',
         'description',
         'is_billable'
@@ -28,6 +29,15 @@ class TimesheetEntry extends Model
     public function timesheet()
     {
         return $this->belongsTo(Timesheet::class);
+    }
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function project()
+    {
+        return $this->belongsTo(Project::class);
     }
 
     public function task()
