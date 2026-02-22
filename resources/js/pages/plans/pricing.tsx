@@ -1,4 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
+import { router } from '@inertiajs/react';
 import { Check, ArrowLeft, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,6 +36,12 @@ const formatIDR = (amount: number) => {
 };
 
 export default function Pricing({ plans, pageConfig }: PageProps) {
+    const handleSubscribe = (planId: number) => {
+        router.post(route('invoices.store'), { plan_id: planId }, {
+            onBefore: () => confirm('Are you sure you want to subscribe to this plan?'),
+        });
+    };
+
     return (
         <div className="min-h-screen bg-background text-foreground flex flex-col">
             <Head title={pageConfig.title} />
@@ -110,14 +117,8 @@ export default function Pricing({ plans, pageConfig }: PageProps) {
                             </CardContent>
 
                             <CardFooter className="pt-6 pb-6 border-t border-border/50 bg-muted/20">
-                                <Button 
-                                    className="w-full font-bold shadow-sm"
-                                    variant={plan.price === 0 ? "outline" : "default"}
-                                    asChild
-                                >
-                                    <a href="#">
-                                        {plan.price === 0 ? 'Get Started' : 'Subscribe Now'}
-                                    </a>
+                                <Button className="w-full font-bold shadow-sm" variant={plan.price === 0 ? "outline" : "default"} onClick={() => handleSubscribe(plan.id)}>
+                                    {plan.price === 0 ? 'Get Started' : 'Subscribe Now'}
                                 </Button>
                             </CardFooter>
                         </Card>
