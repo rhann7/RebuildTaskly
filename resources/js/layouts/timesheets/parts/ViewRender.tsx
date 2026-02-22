@@ -62,7 +62,11 @@ export const ViewRenderer = ({ currentView, data }: any) => {
             return (
                 <ViewContainer>
                     <div>
-                        <MemberRoutineView timeEntries={data.timeEntries} />
+                        <MemberRoutineView
+                            timeEntries={data.timeEntries}
+                            projects={data.projects}
+                            stats={data.stats}
+                            currentDateProp={data.currentDate} />
                     </div>
                 </ViewContainer>
             );

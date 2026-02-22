@@ -20,8 +20,8 @@ return new class extends Migration
             $table->foreignId('sub_task_id')->nullable()->constrained(); // Sub-task/Objective
 
             $table->date('date'); // Hari kerja (misal: 2026-02-04)
-            $table->time('start_time'); // Jam mulai (09:00)
-            $table->time('end_time');   // Jam selesai (11:30)
+            $table->time('start_at'); // Jam mulai (09:00)
+            $table->time('end_at');   // Jam selesai (11:30)
             $table->decimal('hours', 5, 2); // Durasi otomatis (2.5)
 
             $table->text('description'); // Note per task (Transmission log)

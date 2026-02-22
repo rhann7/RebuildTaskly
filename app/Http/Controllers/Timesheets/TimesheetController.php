@@ -3,24 +3,50 @@
 namespace App\Http\Controllers\Timesheets;
 
 use App\Http\Controllers\Controller;
+use App\Models\ProjectManagement\Project;
 use App\Models\TaskManagement\Task;
 use App\Models\Timesheet\Timesheet;
-use App\Models\Timesheet\TimesheetEntry;
-use App\Models\Workspace;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Carbon\Carbon;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
 
 class TimesheetController extends Controller
 {
-    // Tambahkan helper ini agar sinkron dengan sistem Company
+    /**
+     * Resolve company context based on user role.
+     */
     private function resolveCompany($user)
     {
         if ($user->isSuperAdmin()) return null;
         $company = $user->company ?? $user->companyOwner?->company;
-        abort_if(!$company, 403, 'Anda tidak terikat dengan perusahaan manapun.');
+        abort_if(!$company, 403, 'Unauthorized: No company association found.');
         return $company;
+    }
+
+    /**
+     * Helper to get clean project list with tasks for dropdowns.
+     */
+    private function getProjectsForRegistry($user, $company)
+    {
+        return Project::query()
+            ->whereHas('workspace', function ($q) use ($company, $user) {
+                if ($company) $q->where('company_id', $company->id);
+            })
+            // Hanya ambil project dimana user terlibat atau dia managernya
+            ->where(function ($q) use ($user) {
+                $q->whereHas('users', fn($sq) => $sq->where('user_id', $user->id))
+                    ->orWhereHas('workspace', fn($sq) => $sq->where('manager_id', $user->id));
+            })
+            ->where('status', 'active')
+            ->with([
+                'tasks' => function ($query) {
+                    $query->select('id', 'project_id', 'title')
+                        ->with('subtasks:id,task_id,title,is_completed');
+                }
+            ])
+            ->get(['id', 'name', 'workspace_id']);
     }
 
     public function index(Request $request)
@@ -28,128 +54,131 @@ class TimesheetController extends Controller
         $user = $request->user();
         $company = $this->resolveCompany($user);
 
-        $currentDate = Carbon::parse($request->input('date', now()));
-        $startOfWeek = $currentDate->copy()->startOfWeek();
-        $endOfWeek = $currentDate->copy()->endOfWeek();
-
-        // Security: Hanya ambil workspace milik company user ini
-        $defaultWorkspace = Workspace::where(function ($q) use ($user, $company) {
-            if (!$user->isSuperAdmin()) {
-                $q->where('company_id', $company->id);
-            }
-        })
-            ->where(function ($q) use ($user) {
-                $q->whereHas('members', fn($sq) => $sq->where('user_id', $user->id))
-                    ->orWhere('manager_id', $user->id);
-            })->first();
-
-        $timesheet = Timesheet::where('user_id', $user->id)
-            ->where('start_at', $startOfWeek->toDateString())
-            ->with(['entries.task', 'entries.subTask'])
-            ->first();
-
-        $stats = [
-            'totalHoursWeek' => (float)($timesheet ? $timesheet->total_hours : 0),
-            'approvedHours'  => (float)($timesheet ? $timesheet->entries()->where('status', 'approved')->sum('hours') : 0),
-            'pendingHours'   => (float)($timesheet ? $timesheet->entries()->where('status', 'submitted')->sum('hours') : 0),
-            'draftHours'     => (float)($timesheet ? $timesheet->entries()->where('status', 'draft')->sum('hours') : 0),
-        ];
-        $formattedEntries = $timesheet ? $timesheet->entries->map(fn($entry) => [
-            'id' => (string)$entry->id,
-            'taskName' => $entry->task?->title,
-            'subtaskName' => $entry->subTask?->title,
-            'startTime' => Carbon::parse($entry->start_at)->format('H:i'), // Pakai start_at
-            'endTime' => Carbon::parse($entry->end_at)->format('H:i'),     // Pakai end_at
-            'date' => Carbon::parse($entry->start_at)->format('Y-m-d'),
-            'description' => $entry->note, // Pakai note
-            'status' => $timesheet->status,
-        ]) : [];
-
-        // Ambil tanggal dari request, default ke hari ini
+        // 1. Time Context
         $dateParam = $request->input('date', now()->toDateString());
         $currentDate = Carbon::parse($dateParam);
-
-        // Hitung range minggu berdasarkan tanggal tersebut
         $startOfWeek = $currentDate->copy()->startOfWeek();
-        $endOfWeek = $currentDate->copy()->endOfWeek();
 
-        // Ambil data berdasarkan range tersebut
-        $timesheet = Timesheet::where('user_id', $request->user()->id)
+        // 2. Fetch Data
+        $projects = $this->getProjectsForRegistry($user, $company);
+
+        $currentTimesheet = Timesheet::where('user_id', $user->id)
             ->where('start_at', $startOfWeek->toDateString())
-            ->with(['entries.task'])
+            ->with(['entries.task', 'entries.subTask', 'entries.project'])
             ->first();
 
+        // 3. Stats Calculation (Using the fetched timesheet)
+        $stats = [
+            'totalHoursWeek' => 0,
+            'approvedHours'  => 0,
+            'pendingHours'   => 0,
+            'draftHours'     => 0,
+        ];
+
+        if ($currentTimesheet) {
+            $entries = $currentTimesheet->entries;
+            $stats['totalHoursWeek'] = round($entries->sum('duration_minutes') / 60, 2);
+            $stats['approvedHours']  = round($entries->where('status', 'approved')->sum('duration_minutes') / 60, 2);
+            $stats['pendingHours']   = round($entries->where('status', 'submitted')->sum('duration_minutes') / 60, 2);
+            $stats['draftHours']     = round($entries->where('status', 'draft')->sum('duration_minutes') / 60, 2);
+        }
+
+        // 4. Return to Inertia
         return Inertia::render('timesheets/index', [
+            'auth' => [
+                'user' => $user->load('roles')
+            ],
+            'projects'   => $projects,
             'timesheets' => [
-                'data' => $formattedEntries
+                'current' => $currentTimesheet,
+                'history' => Timesheet::where('user_id', $user->id)
+                    ->latest()
+                    ->paginate(20)
             ],
-            // Security: Hanya tampilkan task yang relevan dengan workspace user
-            'tasks' => Task::with('subtasks')->get(),
-            'workspace' => $defaultWorkspace,
+            'stats'           => $stats,
             'currentDateProp' => $currentDate->toDateString(),
-            'stats' => [
-                'total' => $timesheet ? (float)$timesheet->total_hours : 0,
-                'status' => $timesheet->status ?? 'draft'
+            'pageConfig'      => [
+                'can_manage' => $user->hasAnyPermission(['manage-timesheets', 'create-timesheets'])
             ],
-            'pageConfig' => [
-                'can_manage' => $user->hasAnyPermission(['manage-timesheets', 'create-timesheets']) // Tambahkan ini
-            ],
-            'stats' => $stats,
         ]);
+    }
+
+    public function storeTask(Request $request)
+    {
+        $validated = $request->validate([
+            'project_id'  => 'required|exists:projects,id',
+            'title'       => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'priority'    => 'required|in:low,medium,high',
+        ]);
+
+        $task = DB::transaction(function () use ($validated) {
+            return Task::create([
+                'project_id'  => $validated['project_id'],
+                'title'       => $validated['title'],
+                'slug'        => Str::slug($validated['title']) . '-' . Str::lower(Str::random(5)),
+                'description' => $validated['description'] ?? null,
+                'status'      => 'todo',
+                'priority'    => $validated['priority'],
+            ]);
+        });
+
+        return back()->with('success', 'Tactical task deployed to registry.');
     }
 
     public function store(Request $request)
     {
         $user = $request->user();
-        $company = $this->resolveCompany($user);
 
         $validated = $request->validate([
-            'task_id' => 'required|exists:tasks,id',
+            'project_id'  => 'required|exists:projects,id',
+            'task_id'     => 'required|exists:tasks,id',
             'sub_task_id' => 'nullable|exists:sub_tasks,id',
-            'date' => 'required|date',
-            'start_time' => 'required',
-            'end_time' => 'required',
+            'date'        => 'required|date',
+            'start_time'  => 'required', // Format HH:mm
+            'end_time'    => 'required', // Format HH:mm
             'description' => 'required|string',
-            'workspace_id' => 'required|exists:workspaces,id',
         ]);
 
-        // Security: Pastikan workspace yang dikirim milik company si user
-        if (!$user->isSuperAdmin()) {
-            $ws = Workspace::find($validated['workspace_id']);
-            abort_if($ws->company_id !== $company->id, 403, 'Unauthorized workspace.');
-        }
+        return DB::transaction(function () use ($user, $validated) {
+            $date = Carbon::parse($validated['date']);
+            $startOfWeek = $date->copy()->startOfWeek();
 
-        $date = Carbon::parse($validated['date']);
-        $startOfWeek = $date->copy()->startOfWeek();
-        $endOfWeek = $date->copy()->endOfWeek();
+            $project = Project::findOrFail($validated['project_id']);
 
-        return DB::transaction(function () use ($user, $validated, $startOfWeek, $endOfWeek) {
-
+            // 1. Ambil/Buat Header (Timesheet)
             $timesheet = Timesheet::firstOrCreate([
-                'user_id' => $user->id,
-                'start_at' => $startOfWeek->toDateString(), // Pastikan kolom ini ada di tabel 'timesheets'
-                'end_at' => $endOfWeek->toDateString(),
+                'user_id'  => $user->id,
+                'start_at' => $startOfWeek->toDateString(),
             ], [
-                'workspace_id' => $validated['workspace_id'],
-                'status' => 'draft',
+                'workspace_id' => $project->workspace_id,
+                'end_at'       => $startOfWeek->copy()->endOfWeek()->toDateString(),
+                'status'       => 'draft',
             ]);
 
-            $start = Carbon::parse($validated['date'] . ' ' . $validated['start_time']);
-            $end = Carbon::parse($validated['date'] . ' ' . $validated['end_time']);
-            $duration = $end->diffInMinutes($start);
+            // 2. Kalkulasi Jam (Hours) untuk kolom decimal
+            $startTime = Carbon::parse($validated['start_time']);
+            $endTime   = Carbon::parse($validated['end_time']);
+            if ($endTime->lessThan($startTime)) $endTime->addDay();
 
+            // Hitung selisih dalam jam (misal 2.5)
+            $hours = $endTime->diffInMinutes($startTime) / 60;
+
+            // 3. Simpan ke TimesheetEntry (Sesuai $fillable Model kamu)
             $timesheet->entries()->create([
-                'user_id' => $user->id,
-                'workspace_id' => $validated['workspace_id'],
-                'task_id' => $validated['task_id'],
-                'sub_task_id' => $validated['sub_task_id'],
-                'note' => $validated['description'], // Mapping description ke note
-                'start_at' => $start,
-                'end_at' => $end,
-                'duration_minutes' => $duration,
+                'user_id'      => $user->id,
+                'project_id'   => $project->id,
+                'task_id'      => $validated['task_id'],
+                'sub_task_id'  => $validated['sub_task_id'],
+                'date'         => $validated['date'],
+                'start_at'     => $validated['start_time'], // Sesuai nama kolom di Migration
+                'end_at'       => $validated['end_time'],   // Sesuai nama kolom di Migration
+                'hours'        => $hours,                   // Decimal 5,2
+                'description'  => $validated['description'],
+                'is_billable'  => true,
             ]);
 
-            return back()->with('success', 'Time logged successfully.');
+            return back()->with('success', 'Log entry synchronized.');
         });
     }
 }
