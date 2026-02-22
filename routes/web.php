@@ -55,12 +55,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         });
 
         Route::prefix('article-management')->name('article-management.')->group(function () {
-            Route::post('/sync', [ArticleController::class, 'syncDocArticle']);
-
-            Route::get('/sync-info', [ArticleController::class, 'getSyncInfo']);
-            Route::get('/sync-history', [ArticleController::class, 'getSyncHistory']);
-            Route::get('/unsynced', [ArticleController::class, 'getUnsyncedArticles']);
-
             // Article Analytics Routes
             Route::get('/analytics', [\App\Http\Controllers\Articles\ArticleAnalyticController::class, 'index'])->name('article-analytics.index');
             Route::get('/analytics/export', [\App\Http\Controllers\Articles\ArticleAnalyticController::class, 'export'])->name('article-analytics.export');

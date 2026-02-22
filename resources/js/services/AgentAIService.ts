@@ -10,7 +10,7 @@ export const AgentTask = async (req: string) => {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                model: "pdf_assistant",
+                model: "article_knowledge_agent",
                 messages: [
                     {
                         role: "user",
