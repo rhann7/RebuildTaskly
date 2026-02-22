@@ -135,7 +135,7 @@ class PlanController extends Controller
             'duration'        => $plan->duration,
             'is_active'       => $plan->is_active,
             'is_free'         => $plan->is_free,
-            'modules_count'   => $plan->modules_count ?? 0,
+            'modules_count'   => $plan->relationLoaded('modules') ? $plan->modules->count() : ($plan->modules_count ?? 0),
             'modules'         => $plan->relationLoaded('modules') ? $plan->modules : [],
             'form_default'    => [
                 'name'        => $plan->name,
