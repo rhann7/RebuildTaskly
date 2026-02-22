@@ -51,11 +51,11 @@ class MenuService
                         'href'  => '/article-management/category',
                         'isActive' => $request->routeIs('article-management.category.*'),
                     ],
-                    // [
-                    //     'title' => 'Article Analytics',
-                    //     'href'  => '/article-management/analytics',
-                    //     'isActive' => $request->routeIs('article-management.analytics.*'),
-                    // ]
+                    [
+                        'title' => 'Article Analytics',
+                        'href'  => '/article-management/analytics',
+                        'isActive' => $request->routeIs('article-management.analytics.*'),
+                    ]
                 ]
             ];
 

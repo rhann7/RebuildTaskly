@@ -5,9 +5,13 @@ namespace App\Http\Controllers\Articles;
 use App\Http\Controllers\Controller;
 use App\Models\Article;
 use App\Models\ArticleCategory;
+use App\Models\ArticleKeyword;
+use App\Models\ArticleKeySearch;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
+use Jenssegers\Agent\Agent;
 
 class ArticleCenterController extends Controller
 {
@@ -29,6 +33,10 @@ class ArticleCenterController extends Controller
         $hasSearch = $request->has('search') && !empty($request->search);
         if ($hasSearch) {
             $search = $request->search;
+            
+            // Track this search for analytics
+            $this->trackSearch($search, $request);
+            
             $query->where(function ($q) use ($search) {
                 $q->where('articles.name', 'like', "%{$search}%")
                     ->orWhere('articles.tag_code', 'like', "%{$search}%")
@@ -96,5 +104,105 @@ class ArticleCenterController extends Controller
             'article' => $article,
             'relatedArticles' => $relatedArticles,
         ]);
+    }
+
+    /**
+     * Track search keyword and device for analytics
+     */
+    private function trackSearch(string $searchQuery, Request $request): void
+    {
+        try {
+            // Clean and normalize search query
+            $keyword = trim(strtolower($searchQuery));
+            
+            if (empty($keyword) || strlen($keyword) < 2) {
+                return; // Skip very short searches
+            }
+
+            // Detect device type using Agent library
+            $agent = new Agent();
+            $deviceType = $this->getDeviceType($agent);
+
+            // Find or create keyword
+            $articleKeyword = ArticleKeyword::firstOrCreate(
+                ['name' => $keyword],
+                ['rate_keyword' => 1.0] // Initial rate
+            );
+
+            // Update keyword rate based on search frequency
+            // Rate increases slightly with each search (capped at 10.0)
+            if ($articleKeyword->wasRecentlyCreated) {
+                $articleKeyword->rate_keyword = 1.0;
+            } else {
+                // Increment rate by 0.1 for each search, max 10.0
+                $articleKeyword->rate_keyword = min(10.0, $articleKeyword->rate_keyword + 0.1);
+            }
+            $articleKeyword->save();
+
+            // Get authenticated user ID (or null for guests)
+            $userId = Auth::id();
+
+            // Record the search
+            ArticleKeySearch::create([
+                'article_keyword_id' => $articleKeyword->id,
+                'users_id' => $userId,
+                'device_type' => $deviceType,
+                'search_at' => now(),
+            ]);
+
+            \Log::info('Search tracked', [
+                'keyword' => $keyword,
+                'device' => $deviceType,
+                'user_id' => $userId,
+                'rate' => $articleKeyword->rate_keyword,
+            ]);
+
+        } catch (\Exception $e) {
+            // Don't break user experience if tracking fails
+            \Log::error('Failed to track search', [
+                'keyword' => $searchQuery,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Get detailed device type from user agent
+     */
+    private function getDeviceType(Agent $agent): string
+    {
+        // Get device name (iPhone, Samsung, etc)
+        $device = $agent->device();
+        
+        // Get platform (Windows, iOS, Android, macOS, etc)
+        $platform = $agent->platform();
+        
+        // Get browser
+        $browser = $agent->browser();
+
+        // Build descriptive device type
+        if ($agent->isDesktop()) {
+            $version = $platform ? " {$platform}" : '';
+            return "Desktop{$version}";
+        } elseif ($agent->isPhone()) {
+            if ($agent->isAndroidOS()) {
+                return $device ? "Android {$device}" : 'Android Mobile';
+            } elseif ($agent->is('iPhone')) {
+                return 'iPhone';
+            }
+            return $device ?: 'Mobile Phone';
+        } elseif ($agent->isTablet()) {
+            if ($agent->is('iPad')) {
+                return 'iPad';
+            } elseif ($agent->isAndroidOS()) {
+                return $device ? "Android {$device} Tablet" : 'Android Tablet';
+            }
+            return $device ?: 'Tablet';
+        } elseif ($agent->isRobot()) {
+            return "Bot ({$agent->robot()})";
+        }
+
+        // Fallback
+        return $platform ?: 'Unknown Device';
     }
 }

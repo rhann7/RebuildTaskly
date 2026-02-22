@@ -57,7 +57,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::prefix('article-management')->name('article-management.')->group(function () {
             // Article Analytics Routes
             Route::get('/analytics', [\App\Http\Controllers\Articles\ArticleAnalyticController::class, 'index'])->name('article-analytics.index');
-            Route::get('/analytics/export', [\App\Http\Controllers\Articles\ArticleAnalyticController::class, 'export'])->name('article-analytics.export');
 
             Route::resource('category', ArticleCategoryController::class)
                 ->names('category')
