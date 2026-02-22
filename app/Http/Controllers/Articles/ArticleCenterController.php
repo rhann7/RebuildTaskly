@@ -33,10 +33,10 @@ class ArticleCenterController extends Controller
         $hasSearch = $request->has('search') && !empty($request->search);
         if ($hasSearch) {
             $search = $request->search;
-            
+
             // Track this search for analytics
             $this->trackSearch($search, $request);
-            
+
             $query->where(function ($q) use ($search) {
                 $q->where('articles.name', 'like', "%{$search}%")
                     ->orWhere('articles.tag_code', 'like', "%{$search}%")
@@ -114,7 +114,7 @@ class ArticleCenterController extends Controller
         try {
             // Clean and normalize search query
             $keyword = trim(strtolower($searchQuery));
-            
+
             if (empty($keyword) || strlen($keyword) < 2) {
                 return; // Skip very short searches
             }
@@ -156,7 +156,6 @@ class ArticleCenterController extends Controller
                 'user_id' => $userId,
                 'rate' => $articleKeyword->rate_keyword,
             ]);
-
         } catch (\Exception $e) {
             // Don't break user experience if tracking fails
             \Log::error('Failed to track search', [
@@ -173,10 +172,10 @@ class ArticleCenterController extends Controller
     {
         // Get device name (iPhone, Samsung, etc)
         $device = $agent->device();
-        
+
         // Get platform (Windows, iOS, Android, macOS, etc)
         $platform = $agent->platform();
-        
+
         // Get browser
         $browser = $agent->browser();
 

@@ -36,7 +36,11 @@ interface DeviceIssue {
     search_count: number;
     unique_keywords: number;
     top_keyword: string | null;
+    top_keyword_rate: number;
     top_keyword_count: number;
+    high_rate_keywords: string[];
+    similar_keywords: string[];
+    is_critical: boolean;
 }
 
 interface KeywordSearch {
@@ -211,37 +215,116 @@ export default function ArticleAnalytic({ topKeywords, deviceIssues, keywordSear
                                     deviceIssues.map((device, index) => (
                                         <div
                                             key={index}
-                                            className="flex items-start justify-between p-3 rounded-lg border border-border hover:border-primary/50 transition-colors"
+                                            className={`flex flex-col p-4 rounded-lg border-2 transition-all ${device.is_critical
+                                                    ? 'border-red-500 bg-red-50 dark:bg-red-950/20 shadow-lg'
+                                                    : 'border-border bg-card hover:border-primary/50'
+                                                }`}
                                         >
-                                            <div className="flex items-start gap-3 flex-1">
+                                            <div className="flex items-start gap-3 mb-3">
                                                 <div className="text-2xl mt-0.5">
                                                     {getDeviceIcon(device.device_type)}
                                                 </div>
                                                 <div className="flex-1 min-w-0">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <p className="font-medium text-sm truncate">
+                                                    <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                                        <p className="font-medium text-sm">
                                                             {device.device_type || 'Unknown Device'}
                                                         </p>
+
+                                                        {device.is_critical && (
+                                                            <Badge className="bg-red-600 text-white hover:bg-red-700">
+                                                                🚨 CRITICAL
+                                                            </Badge>
+                                                        )}
+
                                                         <Badge className={getDeviceColor(device.search_count)}>
-                                                            {device.search_count} searches
+                                                            {device.search_count} high-rate searches
                                                         </Badge>
                                                     </div>
-                                                    <p className="text-xs text-muted-foreground mb-1">
-                                                        {device.unique_keywords} unique keywords searched
+
+                                                    <p className="text-xs text-muted-foreground mb-2">
+                                                        {device.unique_keywords} unique error keywords (rate &gt; 50%)
                                                     </p>
+
+                                                    {/* Top Keyword with Rate */}
                                                     {device.top_keyword && (
-                                                        <p className="text-xs font-medium text-primary">
-                                                            Top: "{device.top_keyword}" ({device.top_keyword_count}x)
-                                                        </p>
+                                                        <div className="mb-3 p-2 bg-background/50 dark:bg-background/30 rounded border border-border">
+                                                            <p className="text-xs font-semibold text-muted-foreground mb-1">
+                                                                Most Searched Error:
+                                                            </p>
+                                                            <div className="flex items-center justify-between gap-2">
+                                                                <p className="text-sm font-bold text-red-700 dark:text-red-400">
+                                                                    "{device.top_keyword}"
+                                                                </p>
+                                                                <div className="flex items-center gap-2">
+                                                                    <Badge variant="outline" className="font-mono text-xs">
+                                                                        Rate: {device.top_keyword_rate.toFixed(1)}/10
+                                                                    </Badge>
+                                                                    <Badge variant="secondary" className="text-xs">
+                                                                        {device.top_keyword_count}x
+                                                                    </Badge>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* High Rate Keywords List */}
+                                                    {device.high_rate_keywords && device.high_rate_keywords.length > 1 && (
+                                                        <div className="mb-2">
+                                                            <p className="text-xs font-semibold text-muted-foreground mb-1.5">
+                                                                Related Error Keywords:
+                                                            </p>
+                                                            <div className="flex flex-wrap gap-1.5">
+                                                                {device.high_rate_keywords.slice(1, 4).map((keyword, idx) => (
+                                                                    <Badge
+                                                                        key={idx}
+                                                                        variant="outline"
+                                                                        className="text-xs bg-yellow-50 dark:bg-yellow-950/20 border-yellow-300 dark:border-yellow-700"
+                                                                    >
+                                                                        {keyword}
+                                                                    </Badge>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Similar Keywords */}
+                                                    {device.similar_keywords && device.similar_keywords.length > 0 && (
+                                                        <div>
+                                                            <p className="text-xs font-semibold text-muted-foreground mb-1.5">
+                                                                Similar Issues Found:
+                                                            </p>
+                                                            <div className="flex flex-wrap gap-1.5">
+                                                                {device.similar_keywords.map((keyword, idx) => (
+                                                                    <Badge
+                                                                        key={idx}
+                                                                        variant="outline"
+                                                                        className="text-xs bg-orange-50 dark:bg-orange-950/20 border-orange-300 dark:border-orange-700"
+                                                                    >
+                                                                        {keyword}
+                                                                    </Badge>
+                                                                ))}
+                                                            </div>
+                                                        </div>
                                                     )}
                                                 </div>
                                             </div>
+
+                                            {/* Alert Message for Critical Issues */}
+                                            {device.is_critical && (
+                                                <div className="mt-2 p-2 bg-red-100 dark:bg-red-900/20 rounded border border-red-300 dark:border-red-700">
+                                                    <p className="text-xs font-semibold text-red-800 dark:text-red-300">
+                                                        ⚠️ High Priority: This device shows repeated searches for high-severity errors.
+                                                        Immediate investigation recommended.
+                                                    </p>
+                                                </div>
+                                            )}
                                         </div>
                                     ))
                                 ) : (
                                     <div className="text-center py-8 text-muted-foreground">
                                         <Smartphone className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                                        <p className="text-sm">No device data available</p>
+                                        <p className="text-sm">No high-activity devices found</p>
+                                        <p className="text-xs mt-1">Devices will appear here when error keywords reach rate &gt; 5.0</p>
                                     </div>
                                 )}
                             </div>
