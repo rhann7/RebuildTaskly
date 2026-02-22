@@ -67,7 +67,7 @@ class TimesheetController extends Controller
             ->with(['entries.task', 'entries.subTask', 'entries.project'])
             ->first();
 
-        // 3. Stats Calculation (Using the fetched timesheet)
+        // 3. Stats Calculation
         $stats = [
             'totalHoursWeek' => 0,
             'approvedHours'  => 0,
@@ -83,11 +83,10 @@ class TimesheetController extends Controller
             $stats['draftHours']     = round($entries->where('status', 'draft')->sum('duration_minutes') / 60, 2);
         }
 
-        // 4. Return to Inertia
+        // 4. Return to Inertia (HAPUS BAGIAN AUTH!)
         return Inertia::render('timesheets/index', [
-            'auth' => [
-                'user' => $user->load('roles')
-            ],
+            // 'auth' => [...]  <-- HAPUS INI BRO! JANGAN DIKIRIM LAGI!
+            
             'projects'   => $projects,
             'timesheets' => [
                 'current' => $currentTimesheet,
