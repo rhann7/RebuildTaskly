@@ -44,10 +44,9 @@ class TimesheetController extends Controller
                 'workspace:id,slug',
                 'tasks' => function ($query) {
                     $query->select('id', 'project_id', 'title', 'slug')
-                        // PERBAIKAN DI SINI:
                         ->with(['subtasks' => function ($q) {
                             $q->select('id', 'task_id', 'title', 'is_completed', 'completed_by', 'created_at')
-                                ->with('completer:id,name'); // Load nama yang mencentang
+                                ->with('completer:id,name');
                         }]);
                 }
             ])
@@ -59,14 +58,19 @@ class TimesheetController extends Controller
         $user = $request->user();
         $company = $this->resolveCompany($user);
 
-        // 1. Time Context
+        // 1. Time Context - Kunci awal minggu ke hari SENIN
         $dateParam = $request->input('date', now()->toDateString());
         $currentDate = Carbon::parse($dateParam);
-        $startOfWeek = $currentDate->copy()->startOfWeek();
+
+        // PASTIKAN START OF WEEK ADALAH SENIN (MONDAY)
+        $startOfWeek = $currentDate->copy()->startOfWeek(Carbon::MONDAY);
+        // PASTIKAN END OF WEEK ADALAH MINGGU (SUNDAY)
+        $endOfWeek = $currentDate->copy()->endOfWeek(Carbon::SUNDAY);
 
         // 2. Fetch Data
         $projects = $this->getProjectsForRegistry($user, $company);
 
+        // Cari Timesheet berdasarkan tanggal mulai (Senin)
         $currentTimesheet = Timesheet::where('user_id', $user->id)
             ->where('start_at', $startOfWeek->toDateString())
             ->with(['entries.task', 'entries.subTask', 'entries.project'])
@@ -82,12 +86,13 @@ class TimesheetController extends Controller
 
         if ($currentTimesheet) {
             $entries = $currentTimesheet->entries;
-            $stats['totalHoursWeek'] = round($entries->sum('duration_minutes') / 60, 2);
-            $stats['approvedHours']  = round($entries->where('status', 'approved')->sum('duration_minutes') / 60, 2);
-            $stats['pendingHours']   = round($entries->where('status', 'submitted')->sum('duration_minutes') / 60, 2);
-            $stats['draftHours']     = round($entries->where('status', 'draft')->sum('duration_minutes') / 60, 2);
+            $stats['totalHoursWeek'] = round($entries->sum('hours'), 2);
+            $stats['approvedHours']  = round($entries->where('status', 'approved')->sum('hours'), 2);
+            $stats['pendingHours']   = round($entries->where('status', 'submitted')->sum('hours'), 2);
+            $stats['draftHours']     = round($entries->whereIn('status', ['draft', 'revision'])->sum('hours'), 2);
         }
-        //  
+
+        // Mapping Entries untuk Frontend Grid
         $mappedEntries = [];
         if ($currentTimesheet) {
             $mappedEntries = $currentTimesheet->entries->map(function ($entry) {
@@ -95,42 +100,40 @@ class TimesheetController extends Controller
                     'id'          => $entry->id,
                     'taskName'    => $entry->task?->title ?? $entry->description,
                     'date'        => $entry->date,
-                    'startTime'   => \Carbon\Carbon::parse($entry->start_at)->format('H:i'),
-                    'endTime'     => \Carbon\Carbon::parse($entry->end_at)->format('H:i'),
+                    'startTime'   => Carbon::parse($entry->start_at)->format('H:i'),
+                    'endTime'     => Carbon::parse($entry->end_at)->format('H:i'),
                     'status'      => $entry->status ?? 'draft',
 
-                    // --- WAJIB TAMBAHKAN INI AGAR BISA DI-EDIT ---
                     'project_id'  => $entry->project_id,
                     'task_id'     => $entry->task_id,
                     'sub_task_id' => $entry->sub_task_id,
                     'description' => $entry->description,
+                    'reject_reason' => $entry->reject_reason, // Tambahkan ini agar pesan reject masuk ke modal
                 ];
             });
         }
-        //
+
+        // Data untuk tab Manager Review
         $pendingLogs = [];
         if ($user->hasAnyRole(['company', 'manager', 'super-admin'])) {
-            // Ambil timesheet yang statusnya 'submitted' dari user yang perusahaannya sama
             $pendingLogs = Timesheet::where('status', 'submitted')
                 ->whereHas('user', function ($q) use ($company) {
                     if ($company) {
                         $q->where('company_id', $company->id);
                     }
                 })
-                ->with('user:id,name') // Ambil data karyawannya
+                ->with(['user:id,name', 'entries.project', 'entries.task']) 
                 ->get();
         }
-        //
+
         return Inertia::render('timesheets/index', [
             'projects'   => $projects,
             'timesheets' => [
                 'current' => $currentTimesheet,
                 'mapped'  => $mappedEntries,
-
-                // --- UBAH BAGIAN HISTORY INI ---
                 'history' => Timesheet::where('user_id', $user->id)
-                    ->with(['entries.project', 'entries.task']) // <--- TAMBAHKAN BARIS INI
-                    ->latest()
+                    ->with(['entries.project', 'entries.task'])
+                    ->latest('start_at') // Urutkan berdasarkan minggu terbaru
                     ->paginate(20)
             ],
             'stats'           => $stats,
@@ -150,14 +153,12 @@ class TimesheetController extends Controller
             'priority'   => 'required|in:low,medium,high',
         ]);
 
-        // Simpan task baru ke project tersebut
-        // Sesuaikan dengan logic Task management kamu, ini contoh umum:
         $project = Project::findOrFail($validated['project_id']);
 
         $task = $project->tasks()->create([
             'title' => $validated['title'],
             'priority' => $validated['priority'],
-            'status' => 'backlog', // atau status default kamu
+            'status' => 'backlog',
             'workspace_id' => $project->workspace_id,
         ]);
 
@@ -172,41 +173,24 @@ class TimesheetController extends Controller
             'sub_task_id' => 'nullable|exists:sub_tasks,id',
             'date'        => 'required|date',
             'start_time'  => 'required|date_format:H:i',
-            'end_time'    => 'required|date_format:H:i|after:start_time', // Pastikan end_time setelah start_time
+            'end_time'    => 'required|date_format:H:i',
             'description' => 'required|string',
         ]);
 
         $user = $request->user();
-
-
-        $hasOverlap = TimesheetEntry::where('user_id', $user->id)
-            ->where('date', $validated['date'])
-            ->where(function ($query) use ($validated) {
-                // Logika Overlap: StartA < EndB DAN EndA > StartB
-                $query->where('start_at', '<', $validated['end_time'])
-                    ->where('end_at', '>', $validated['start_time']);
-            })
-            ->exists();
-        if ($hasOverlap) {
-            // Lemparkan error ke frontend Inertia (akan otomatis masuk ke props.errors.start_time)
-            throw \Illuminate\Validation\ValidationException::withMessages([
-                'start_time' => 'Waktu bertabrakan dengan tugas lain di hari ini.',
-                'end_time'   => 'Cek kembali jam operasional Anda.'
-            ]);
-        }
-
         $project = Project::findOrFail($validated['project_id']);
+        $date = Carbon::parse($validated['date']);
 
-        $date = \Carbon\Carbon::parse($validated['date']);
-        $startOfWeek = $date->copy()->startOfWeek(\Carbon\Carbon::MONDAY);
-        $endOfWeek = $date->copy()->endOfWeek(\Carbon\Carbon::SUNDAY);
+        // 1. Kunci start_at di Senin, end_at di Minggu
+        $startOfWeek = $date->copy()->startOfWeek(Carbon::MONDAY);
+        $endOfWeek = $date->copy()->endOfWeek(Carbon::SUNDAY);
 
-        // 1. Create or Find the Parent Timesheet
+        // 2. Create or Find the Parent Timesheet
         $timesheet = Timesheet::firstOrCreate(
             [
-                'user_id'    => $user->id,
-                'start_at'   => $startOfWeek->format('Y-m-d'),
-                'end_at'     => $endOfWeek->format('Y-m-d'),
+                'user_id'  => $user->id,
+                'start_at' => $startOfWeek->format('Y-m-d'),
+                'end_at'   => $endOfWeek->format('Y-m-d'),
             ],
             [
                 'workspace_id' => $project->workspace_id,
@@ -215,15 +199,13 @@ class TimesheetController extends Controller
             ]
         );
 
-        $start = \Carbon\Carbon::parse($validated['start_time']);
-        $end = \Carbon\Carbon::parse($validated['end_time']);
-
-        // Ensure hours are calculated correctly (End minus Start)
+        $start = Carbon::parse($validated['start_time']);
+        $end = Carbon::parse($validated['end_time']);
         $hours = $start->diffInMinutes($end) / 60;
 
-        // 2. Create the Timesheet Entry (Adding user_id here!)
+        // 3. Create the Timesheet Entry
         $timesheet->entries()->create([
-            'user_id'     => $user->id, // <--- ADDED THIS LINE
+            'user_id'     => $user->id,
             'project_id'  => $validated['project_id'],
             'task_id'     => $validated['task_id'],
             'sub_task_id' => $validated['sub_task_id'],
@@ -232,9 +214,10 @@ class TimesheetController extends Controller
             'end_at'      => $validated['end_time'],
             'hours'       => round($hours, 2),
             'description' => $validated['description'],
+            'status'      => 'draft', // Set default status for entry
         ]);
 
-        // 3. Update the total hours
+        // 4. Update the total hours
         $timesheet->calculateTotals();
 
         return back()->with('success', 'Time entry logged successfully.');
@@ -242,7 +225,6 @@ class TimesheetController extends Controller
 
     public function update(Request $request, $id)
     {
-        // 1. Validate the incoming data
         $validated = $request->validate([
             'project_id'  => 'required|exists:projects,id',
             'task_id'     => 'nullable|exists:tasks,id',
@@ -253,17 +235,12 @@ class TimesheetController extends Controller
             'description' => 'required|string',
         ]);
 
-        // 2. Find the entry by ID
         $entry = TimesheetEntry::findOrFail($id);
 
-        // 3. Calculate total hours for this specific entry
-        $start = \Carbon\Carbon::parse($validated['start_time']);
-        $end = \Carbon\Carbon::parse($validated['end_time']);
-
-        // Ensure start time is before end time for calculation
+        $start = Carbon::parse($validated['start_time']);
+        $end = Carbon::parse($validated['end_time']);
         $hours = $start->diffInMinutes($end) / 60;
 
-        // 4. Update the database record
         $entry->update([
             'project_id'  => $validated['project_id'],
             'task_id'     => $validated['task_id'],
@@ -273,14 +250,15 @@ class TimesheetController extends Controller
             'end_at'      => $validated['end_time'],
             'hours'       => round($hours, 2),
             'description' => $validated['description'],
+            // Jika direvisi dan diedit kembali, hapus reject reason dan ubah ke draft
+            'status'        => 'draft',
+            'reject_reason' => null,
         ]);
 
-        // 5. Recalculate total hours for the parent Timesheet
         if ($entry->timesheet) {
             $entry->timesheet->calculateTotals();
         }
 
-        // 6. Return response
         return back()->with('success', 'Time entry updated successfully.');
     }
 
@@ -293,16 +271,17 @@ class TimesheetController extends Controller
 
         $entry = TimesheetEntry::findOrFail($id);
 
-        $start = \Carbon\Carbon::parse($validated['start_time']);
-        $end = \Carbon\Carbon::parse($validated['end_time']);
-
-        // PERBAIKAN PENTING: $start duluan, baru $end agar hasilnya POSITIF
+        $start = Carbon::parse($validated['start_time']);
+        $end = Carbon::parse($validated['end_time']);
         $hours = $start->diffInMinutes($end) / 60;
 
         $entry->update([
             'start_at' => $validated['start_time'],
             'end_at'   => $validated['end_time'],
             'hours'    => round($hours, 2),
+            // Jika direvisi (lewat drag n drop), otomatis hapus pesan reject
+            'status'        => 'draft',
+            'reject_reason' => null,
         ]);
 
         if ($entry->timesheet) {
@@ -311,6 +290,7 @@ class TimesheetController extends Controller
 
         return back()->with('success', 'Operational time modified successfully.');
     }
+
     public function destroy($id)
     {
         $entry = TimesheetEntry::findOrFail($id);
@@ -318,7 +298,6 @@ class TimesheetController extends Controller
 
         $entry->delete();
 
-        // Kalkulasi ulang total jam di header setelah detail dihapus
         if ($timesheet) {
             $timesheet->calculateTotals();
         }
@@ -326,33 +305,42 @@ class TimesheetController extends Controller
         return back()->with('success', 'Time entry deleted successfully.');
     }
 
-    public function submit(Request $request, Timesheet $timesheet)
+    public function submit(Request $request, $id)
     {
-        // Pastikan yang submit adalah pemilik timesheet-nya
+        // Gunakan findOrFail agar kebal dari error Route Model Binding
+        $timesheet = Timesheet::findOrFail($id);
+
         abort_if($timesheet->user_id !== $request->user()->id, 403, 'Akses ditolak.');
 
-        // Gunakan DB query langsung untuk menghindari Model Events yang mungkin tersembunyi
-        DB::table('timesheets')
-            ->where('id', $timesheet->id)
-            ->update([
+        DB::transaction(function () use ($timesheet) {
+            // Ubah status timesheet induk
+            $timesheet->update([
                 'status' => 'submitted',
                 'updated_at' => now(),
             ]);
 
+            // Ubah status anak-anaknya (entries)
+            $timesheet->entries()->update([
+                'status' => 'submitted',
+                'reject_reason' => null
+            ]);
+        });
+
         return back()->with('success', 'Timesheet berhasil dikirim untuk di-review Manager.');
     }
 
-    public function approve(Request $request, Timesheet $timesheet)
+    public function approve(Request $request, $id)
     {
-        // $this->authorizeProject($request->user(), $timesheet->workspace->project); 
+        $timesheet = Timesheet::findOrFail($id);
 
-        \DB::transaction(function () use ($request, $timesheet) {
-            // 1. HANYA update status timesheet (header-nya saja)
+        DB::transaction(function () use ($request, $timesheet) {
             $timesheet->update(['status' => 'approved']);
 
-            // HAPUS BARIS INI: $timesheet->entries()->update(['status' => 'approved']);
+            $timesheet->entries()->update([
+                'status' => 'approved',
+                'reject_reason' => null
+            ]);
 
-            // 2. Catat di tabel Approval
             $timesheet->approvals()->create([
                 'approver_id' => $request->user()->id,
                 'status'      => 'approved',
@@ -363,17 +351,15 @@ class TimesheetController extends Controller
         return back()->with('success', 'Timesheet Authorized.');
     }
 
-    public function reject(Request $request, Timesheet $timesheet)
+    public function reject(Request $request, $id)
     {
         $request->validate(['reason' => 'required|string']);
 
-        \DB::transaction(function () use ($request, $timesheet) {
-            // 1. HANYA update status timesheet
+        $timesheet = Timesheet::findOrFail($id);
+
+        DB::transaction(function () use ($request, $timesheet) {
             $timesheet->update(['status' => 'revision']);
 
-            // HAPUS BARIS INI: $timesheet->entries()->update(['status' => 'revision']);
-
-            // 2. Catat alasan penolakan di tabel Approval
             $timesheet->approvals()->create([
                 'approver_id' => $request->user()->id,
                 'status'      => 'rejected',
@@ -390,15 +376,12 @@ class TimesheetController extends Controller
 
         $entry = TimesheetEntry::findOrFail($id);
 
-        \DB::transaction(function () use ($request, $entry) {
-            // 1. Ubah status entry menjadi revision & simpan alasannya
+        DB::transaction(function () use ($request, $entry) {
             $entry->update([
                 'status'        => 'revision',
                 'reject_reason' => $request->reason,
             ]);
 
-            // 2. Otomatis ubah status induk Timesheet-nya jadi 'revision' juga 
-            //    biar karyawan tau ada yang harus diperbaiki
             if ($entry->timesheet && $entry->timesheet->status !== 'revision') {
                 $entry->timesheet->update(['status' => 'revision']);
             }

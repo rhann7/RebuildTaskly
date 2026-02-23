@@ -7,12 +7,12 @@ use App\Models\TaskManagement\SubTasks\SubTask;
 use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany; // Tambahkan ini
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Timesheet extends Model
 {
     protected $fillable = [
-        'timesheet_id', // Pastikan ini ada jika pakai sistem header-detail
+        'timesheet_id',
         'user_id',
         'workspace_id',
         'task_id',
@@ -20,12 +20,13 @@ class Timesheet extends Model
         'note',
         'start_at',
         'end_at',
-        'total_hours'
+        'total_hours',
+        'status', 
     ];
 
     protected $casts = [
-        'start_at' => 'date', // Sesuaikan dengan migration
-        'end_date' => 'date',
+        'start_at' => 'date',
+        'end_at'   => 'date', 
     ];
 
     // INI PENTING: Relasi ke baris-baris detailnya
@@ -38,11 +39,13 @@ class Timesheet extends Model
     {
         return $this->belongsTo(User::class);
     }
+
     public function calculateTotals()
     {
         $this->total_hours = $this->entries()->sum('hours');
         $this->save();
     }
+
     public function approvals()
     {
         return $this->hasMany(TimesheetApproval::class);

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { router } from '@inertiajs/react';
-import { Send, Eye, Clock, CheckCircle2, AlertCircle, FileEdit, CalendarDays, Layers, Calendar as CalendarIcon } from 'lucide-react';
+import { Send, Eye, Clock, CheckCircle2, AlertCircle, FileEdit, CalendarDays, Layers, Calendar as CalendarIcon, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
@@ -37,8 +37,21 @@ export function MemberLogsTab({ history }: { history: any }) {
         return acc;
     }, {});
 
-    // Urutkan tanggal
     const sortedDates = groupedEntries ? Object.keys(groupedEntries).sort() : [];
+
+    // --- FUNGSI BARU: DETEKSI OVERLAP (MULTITASKING) ---
+    const checkOverlap = (dayEntries: any[]) => {
+        if (!dayEntries || dayEntries.length < 2) return false;
+        // Urutkan berdasarkan jam mulai
+        const sorted = [...dayEntries].sort((a, b) => a.start_at.substring(0, 5).localeCompare(b.start_at.substring(0, 5)));
+        for (let i = 0; i < sorted.length - 1; i++) {
+            // Jika jam selesai tugas ke-1 LEBIH BESAR dari jam mulai tugas ke-2, berarti tabrakan!
+            if (sorted[i].end_at.substring(0, 5) > sorted[i + 1].start_at.substring(0, 5)) {
+                return true;
+            }
+        }
+        return false;
+    };
 
     return (
         <div className="space-y-4">
@@ -59,7 +72,7 @@ export function MemberLogsTab({ history }: { history: any }) {
                                     </div>
                                     <div className="flex flex-col gap-1.5">
                                         <h4 className="text-sm font-black uppercase tracking-widest text-foreground">
-                                            Week of {new Date(timesheet.start_at).toLocaleDateString('en-GB', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                            {new Date(timesheet.start_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} — {new Date(timesheet.end_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                                         </h4>
                                         <div className="flex flex-wrap items-center gap-3 text-xs font-bold text-muted-foreground">
                                             <span>Total Logged: <span className="text-foreground">{timesheet.total_hours} hrs</span></span>
@@ -115,16 +128,20 @@ export function MemberLogsTab({ history }: { history: any }) {
                             <div className="flex-1 p-8 overflow-y-auto space-y-10">
                                 {sortedDates.length > 0 ? (
                                     sortedDates.map((date, index) => {
-                                        const dayTotal = groupedEntries[date].reduce((sum: number, e: any) => sum + parseFloat(e.hours), 0);
+                                        const dayEntries = groupedEntries[date];
+                                        const dayTotal = dayEntries.reduce((sum: number, e: any) => sum + parseFloat(e.hours), 0);
                                         const dateObj = new Date(date);
                                         const dayName = dateObj.toLocaleDateString('en-GB', { weekday: 'long' });
                                         const formattedDate = dateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+
+                                        // Panggil fungsi cek overlap
+                                        const isOverlapping = checkOverlap(dayEntries);
 
                                         return (
                                             <div key={date} className="relative animate-in slide-in-from-left-4 duration-500" style={{ animationDelay: `${index * 100}ms` }}>
                                                 {/* Header Hari */}
                                                 <div className="flex items-center justify-between mb-4 pb-2 border-b border-border">
-                                                    <div className="flex items-center gap-3">
+                                                    <div className="flex items-center gap-3 flex-wrap">
                                                         <div className="size-8 rounded-full bg-sada-red/10 text-sada-red flex items-center justify-center border border-sada-red/20">
                                                             <CalendarIcon size={14} />
                                                         </div>
@@ -132,16 +149,22 @@ export function MemberLogsTab({ history }: { history: any }) {
                                                             <h4 className="text-sm font-black text-foreground uppercase tracking-widest leading-none">{dayName}</h4>
                                                             <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{formattedDate}</span>
                                                         </div>
+                                                        {/* --- BADGE MULTITASKING --- */}
+                                                        {isOverlapping && (
+                                                            <div className="ml-2 px-2 py-0.5 bg-amber-500/10 text-amber-600 border border-amber-500/20 rounded text-[9px] font-black uppercase tracking-widest flex items-center gap-1 shadow-sm">
+                                                                <AlertTriangle size={10} /> Multitasking
+                                                            </div>
+                                                        )}
                                                     </div>
                                                     <div className="px-3 py-1 bg-muted rounded-lg text-[10px] font-black uppercase tracking-widest text-foreground border border-border">
-                                                        {dayTotal} Hrs Logged
+                                                        {dayTotal} Hrs
                                                     </div>
                                                 </div>
 
                                                 {/* Daftar Task Hari Tersebut */}
                                                 <div className="space-y-3 pl-4 border-l-2 border-muted ml-4">
-                                                    {groupedEntries[date].map((entry: any) => (
-                                                        <div key={entry.id} className="p-4 border border-border rounded-2xl bg-background shadow-sm hover:border-sada-red/30 transition-colors">
+                                                    {dayEntries.map((entry: any) => (
+                                                        <div key={entry.id} className={`p-4 border rounded-2xl transition-colors ${entry.status === 'revision' ? 'bg-red-500/5 border-red-500/30' : 'bg-background border-border hover:border-sada-red/30'}`}>
                                                             <div className="flex items-start justify-between mb-2">
                                                                 <div className="flex-1 pr-4">
                                                                     <p className="text-[9px] font-black uppercase tracking-[0.2em] text-sada-red mb-1">
@@ -160,6 +183,19 @@ export function MemberLogsTab({ history }: { history: any }) {
                                                             <p className="text-xs text-muted-foreground italic leading-relaxed bg-muted/30 p-3 rounded-xl border border-border/50">
                                                                 "{entry.description || 'No operational notes provided.'}"
                                                             </p>
+
+                                                            {/* INFO JIKA DI-REJECT MANAGER */}
+                                                            {entry.status === 'revision' && entry.reject_reason && (
+                                                                <div className="mt-3 p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex gap-2">
+                                                                    <AlertCircle size={14} className="text-red-500 shrink-0 mt-0.5" />
+                                                                    <div>
+                                                                        <span className="text-[10px] font-black uppercase tracking-widest text-red-500 block mb-1">Manager Note</span>
+                                                                        <p className="text-xs text-red-600 dark:text-red-400 font-medium leading-relaxed">
+                                                                            {entry.reject_reason}
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     ))}
                                                 </div>

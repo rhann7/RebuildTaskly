@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { router } from "@inertiajs/react";
-import { Layers, CheckCircle2, XCircle, Clock, Search, Eye, Calendar as CalendarIcon, Flag, AlertCircle } from "lucide-react";
+import { Layers, CheckCircle2, XCircle, Clock, Search, Eye, Calendar as CalendarIcon, Flag, AlertCircle, AlertTriangle } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 
@@ -15,7 +15,6 @@ export function ManagerReviewTab({ pendingLogs }: { pendingLogs: any[] }) {
         setIsSheetOpen(true);
     };
 
-    // APPROVE KESELURUHAN
     const handleApprove = () => {
         if (!selectedSheet) return;
         setIsProcessing(true);
@@ -28,7 +27,6 @@ export function ManagerReviewTab({ pendingLogs }: { pendingLogs: any[] }) {
         });
     };
 
-    // REJECT KESELURUHAN (Jika salah semua)
     const handleReject = () => {
         if (!selectedSheet) return;
         const reason = prompt("Enter overall revision instructions / reason for rejection:");
@@ -44,7 +42,6 @@ export function ManagerReviewTab({ pendingLogs }: { pendingLogs: any[] }) {
         });
     };
 
-    // REJECT PER-ENTRY (Flagging 1 tugas saja)
     const handleRejectEntry = (entryId: number) => {
         const reason = prompt("Enter reason for rejecting this specific entry:");
         if (!reason) return;
@@ -54,7 +51,6 @@ export function ManagerReviewTab({ pendingLogs }: { pendingLogs: any[] }) {
             preserveScroll: true,
             onSuccess: () => {
                 setIsProcessing(false);
-                // Update local state biar UI langsung merah tanpa harus tutup modal
                 setSelectedSheet((prev: any) => {
                     if (!prev) return prev;
                     return {
@@ -69,13 +65,11 @@ export function ManagerReviewTab({ pendingLogs }: { pendingLogs: any[] }) {
         });
     };
 
-    // Filter by name/ID
     const filteredLogs = pendingLogs.filter(log => {
         const query = searchQuery.toLowerCase();
         return log.user?.name?.toLowerCase().includes(query) || log.user?.id?.toString().includes(query);
     });
 
-    // Grouping Entries per hari untuk Sheet
     const groupedEntries = selectedSheet?.entries?.reduce((acc: any, entry: any) => {
         const date = entry.date;
         if (!acc[date]) acc[date] = [];
@@ -84,9 +78,20 @@ export function ManagerReviewTab({ pendingLogs }: { pendingLogs: any[] }) {
     }, {});
     const sortedDates = groupedEntries ? Object.keys(groupedEntries).sort() : [];
 
+    const checkOverlap = (dayEntries: any[]) => {
+        if (!dayEntries || dayEntries.length < 2) return false;
+        const sorted = [...dayEntries].sort((a, b) => a.start_at.substring(0,5).localeCompare(b.start_at.substring(0,5)));
+        for (let i = 0; i < sorted.length - 1; i++) {
+            if (sorted[i].end_at.substring(0,5) > sorted[i + 1].start_at.substring(0,5)) return true;
+        }
+        return false;
+    };
+
+    // --- LOGIKA BARU: Cek apakah ada entry yang di-flag merah ---
+    const hasFlaggedEntries = selectedSheet?.entries?.some((e: any) => e.status === 'revision');
+
     return (
         <div className="space-y-6">
-            {/* SEARCH BAR */}
             <div className="flex items-center gap-4 p-2 pl-4 border border-border rounded-2xl bg-card shadow-sm focus-within:border-sada-red/50 transition-colors">
                 <Search size={16} className="text-muted-foreground" />
                 <input 
@@ -98,7 +103,6 @@ export function ManagerReviewTab({ pendingLogs }: { pendingLogs: any[] }) {
                 />
             </div>
 
-            {/* LIST DAFTAR PENDING */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {filteredLogs.length > 0 ? (
                     filteredLogs.map((log: any, i: number) => (
@@ -150,7 +154,6 @@ export function ManagerReviewTab({ pendingLogs }: { pendingLogs: any[] }) {
                 )}
             </div>
 
-            {/* SLIDE-OUT PANEL UNTUK DETAIL REVIEW PER HARI */}
             <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
                 <SheetContent className="w-full sm:max-w-2xl overflow-hidden border-l-border bg-card p-0 flex flex-col">
                     {selectedSheet && (
@@ -169,15 +172,17 @@ export function ManagerReviewTab({ pendingLogs }: { pendingLogs: any[] }) {
                             <div className="flex-1 p-8 overflow-y-auto space-y-10">
                                 {sortedDates.length > 0 ? (
                                     sortedDates.map((date, index) => {
-                                        const dayTotal = groupedEntries[date].reduce((sum: number, e: any) => sum + parseFloat(e.hours), 0);
+                                        const dayEntries = groupedEntries[date];
+                                        const dayTotal = dayEntries.reduce((sum: number, e: any) => sum + parseFloat(e.hours), 0);
                                         const dateObj = new Date(date);
                                         const dayName = dateObj.toLocaleDateString('en-GB', { weekday: 'long' });
                                         const formattedDate = dateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+                                        const isOverlapping = checkOverlap(dayEntries);
 
                                         return (
                                             <div key={date} className="relative animate-in slide-in-from-left-4 duration-500" style={{ animationDelay: `${index * 100}ms` }}>
                                                 <div className="flex items-center justify-between mb-4 pb-2 border-b border-border">
-                                                    <div className="flex items-center gap-3">
+                                                    <div className="flex items-center gap-3 flex-wrap">
                                                         <div className="size-8 rounded-full bg-sada-red/10 text-sada-red flex items-center justify-center border border-sada-red/20">
                                                             <CalendarIcon size={14} />
                                                         </div>
@@ -185,6 +190,11 @@ export function ManagerReviewTab({ pendingLogs }: { pendingLogs: any[] }) {
                                                             <h4 className="text-sm font-black text-foreground uppercase tracking-widest leading-none">{dayName}</h4>
                                                             <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{formattedDate}</span>
                                                         </div>
+                                                        {isOverlapping && (
+                                                            <div className="ml-2 px-2 py-0.5 bg-amber-500/10 text-amber-600 border border-amber-500/20 rounded text-[9px] font-black uppercase tracking-widest flex items-center gap-1 shadow-sm">
+                                                                <AlertTriangle size={10} /> Multitasking
+                                                            </div>
+                                                        )}
                                                     </div>
                                                     <div className="px-3 py-1 bg-muted rounded-lg text-[10px] font-black uppercase tracking-widest text-foreground border border-border">
                                                         {dayTotal} Hrs
@@ -192,7 +202,7 @@ export function ManagerReviewTab({ pendingLogs }: { pendingLogs: any[] }) {
                                                 </div>
 
                                                 <div className="space-y-3 pl-4 border-l-2 border-muted ml-4">
-                                                    {groupedEntries[date].map((entry: any) => (
+                                                    {dayEntries.map((entry: any) => (
                                                         <div key={entry.id} className={`p-4 border rounded-2xl transition-colors ${entry.status === 'revision' ? 'bg-red-500/5 border-red-500/30' : 'bg-background border-border hover:border-sada-red/30'}`}>
                                                             <div className="flex items-start justify-between mb-2">
                                                                 <div className="flex-1 pr-4">
@@ -209,7 +219,6 @@ export function ManagerReviewTab({ pendingLogs }: { pendingLogs: any[] }) {
                                                                         <span>{entry.start_at.substring(0,5)} - {entry.end_at.substring(0,5)}</span>
                                                                     </div>
                                                                     
-                                                                    {/* TOMBOL FLAG REVISION */}
                                                                     {entry.status !== 'revision' ? (
                                                                         <button 
                                                                             onClick={() => handleRejectEntry(entry.id)}
@@ -229,7 +238,6 @@ export function ManagerReviewTab({ pendingLogs }: { pendingLogs: any[] }) {
                                                                 "{entry.description || 'No operational notes.'}"
                                                             </p>
 
-                                                            {/* TAMPILAN PESAN MANAGER JIKA DITOLAK */}
                                                             {entry.status === 'revision' && entry.reject_reason && (
                                                                 <div className="mt-3 p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex gap-2">
                                                                     <AlertCircle size={14} className="text-red-500 shrink-0 mt-0.5" />
@@ -255,22 +263,39 @@ export function ManagerReviewTab({ pendingLogs }: { pendingLogs: any[] }) {
                                 )}
                             </div>
 
+                            {/* --- PERBAIKAN FOOTER ACTION --- */}
                             <div className="p-6 border-t border-border bg-muted/30 flex items-center justify-between gap-4 shrink-0">
-                                <Button 
-                                    variant="outline" 
-                                    className="flex-1 h-12 border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white rounded-xl text-[10px] font-black uppercase tracking-widest"
-                                    onClick={handleReject}
-                                    disabled={isProcessing}
-                                >
-                                    <XCircle size={16} className="mr-2" /> Revise All
-                                </Button>
-                                <Button 
-                                    className="flex-1 h-12 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-emerald-500/20"
-                                    onClick={handleApprove}
-                                    disabled={isProcessing}
-                                >
-                                    <CheckCircle2 size={16} className="mr-2" /> Authorize
-                                </Button>
+                                {hasFlaggedEntries ? (
+                                    <div className="w-full flex flex-col items-center gap-3">
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-amber-600 flex items-center gap-1.5 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20">
+                                            <AlertTriangle size={12} /> Timesheet Flagged for Revision
+                                        </span>
+                                        <Button 
+                                            className="w-full h-12 bg-zinc-900 hover:bg-black dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-black rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl"
+                                            onClick={() => setIsSheetOpen(false)}
+                                        >
+                                            Return to Employee
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <Button 
+                                            variant="outline" 
+                                            className="flex-1 h-12 border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white rounded-xl text-[10px] font-black uppercase tracking-widest"
+                                            onClick={handleReject}
+                                            disabled={isProcessing}
+                                        >
+                                            <XCircle size={16} className="mr-2" /> Revise All
+                                        </Button>
+                                        <Button 
+                                            className="flex-1 h-12 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-emerald-500/20"
+                                            onClick={handleApprove}
+                                            disabled={isProcessing}
+                                        >
+                                            <CheckCircle2 size={16} className="mr-2" /> Authorize & ACC
+                                        </Button>
+                                    </>
+                                )}
                             </div>
                         </>
                     )}

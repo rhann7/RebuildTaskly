@@ -58,12 +58,12 @@ export default function WorkspaceMembers({ workspace, members, allEmployees = []
             className: "py-4",
             render: (data: Member) => `
                 <div class="flex items-center gap-3">
-                    <div class="h-10 w-10 rounded-full bg-red-50 flex items-center justify-center text-[11px] font-black text-red-600 border border-red-100 shadow-sm">
+                    <div class="h-10 w-10 rounded-full bg-sada-red/10 flex items-center justify-center text-[11px] font-black text-sada-red border border-sada-red/20 shadow-sm">
                         ${data.name.substring(0, 2).toUpperCase()}
                     </div>
                     <div>
-                        <div class="font-black text-[12px] uppercase tracking-wider text-zinc-900">${data.name}</div>
-                        <div class="text-[10px] font-bold text-zinc-400 uppercase tracking-tight">${data.email}</div>
+                        <div class="font-black text-[12px] uppercase tracking-wider text-foreground">${data.name}</div>
+                        <div class="text-[10px] font-bold text-muted-foreground uppercase tracking-tight">${data.email}</div>
                     </div>
                 </div>
             `
@@ -73,20 +73,20 @@ export default function WorkspaceMembers({ workspace, members, allEmployees = []
             data: null,
             render: (data: any) => {
                 if (data.is_manager) {
-                    return `<span class="px-3 py-1 rounded-lg bg-red-50 border border-red-100 text-[10px] font-black uppercase tracking-widest text-red-600 shadow-sm">MANAGER</span>`;
+                    return `<span class="px-3 py-1 rounded-lg bg-sada-red/10 border border-sada-red/20 text-[10px] font-black uppercase tracking-widest text-sada-red shadow-sm">MANAGER</span>`;
                 }
                 const roleName = data.roles[0]?.name || 'Member';
                 const isManagement = ['company', 'manager', 'super-admin', 'owner'].includes(roleName.toLowerCase());
                 
                 return isManagement 
-                    ? `<span class="px-3 py-1 rounded-lg bg-red-50 border border-red-100 text-[10px] font-black uppercase tracking-widest text-red-600 shadow-sm">${roleName.toUpperCase()}</span>`
-                    : `<span class="px-3 py-1 rounded-lg bg-zinc-100 border border-zinc-200 text-[10px] font-black uppercase tracking-widest text-zinc-600">${roleName.toUpperCase()}</span>`;
+                    ? `<span class="px-3 py-1 rounded-lg bg-sada-red/10 border border-sada-red/20 text-[10px] font-black uppercase tracking-widest text-sada-red shadow-sm">${roleName.toUpperCase()}</span>`
+                    : `<span class="px-3 py-1 rounded-lg bg-muted border border-border/50 text-[10px] font-black uppercase tracking-widest text-muted-foreground">${roleName.toUpperCase()}</span>`;
             }
         },
         {
             title: "Joined At",
             data: "joined_at",
-            render: (date: string) => `<span class="text-zinc-500 font-bold text-[11px] uppercase tracking-widest">${date}</span>`
+            render: (date: string) => `<span class="text-muted-foreground font-bold text-[11px] uppercase tracking-widest">${date}</span>`
         },
         {
             title: "Actions",
@@ -99,7 +99,7 @@ export default function WorkspaceMembers({ workspace, members, allEmployees = []
                 if (!canManageRoster || data.id === auth.user.id) return '';
                 
                 return `
-                    <button class="p-2.5 hover:bg-red-50 hover:text-red-600 rounded-xl transition-all cursor-pointer text-zinc-300 border border-transparent hover:border-red-100 active:scale-95">
+                    <button class="p-2.5 hover:bg-sada-red/10 hover:text-sada-red rounded-xl transition-all cursor-pointer text-muted-foreground/50 border border-transparent hover:border-sada-red/20 active:scale-95">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
                     </button>
                 `;
@@ -110,14 +110,14 @@ export default function WorkspaceMembers({ workspace, members, allEmployees = []
     return (
         <div className="space-y-6 mt-6 animate-in fade-in duration-500">
             {/* Header Section */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 bg-white p-8 rounded-[32px] border border-zinc-200 shadow-sm relative overflow-hidden">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 bg-card/30 backdrop-blur-sm p-8 rounded-[32px] border border-border/50 shadow-sm relative overflow-hidden transition-colors">
                 <div className="z-10">
-                    <h3 className="text-[14px] font-black uppercase tracking-[0.3em] text-zinc-900 flex items-center gap-3">
-                        <span className="w-10 h-[3px] bg-red-600 rounded-full"></span>
+                    <h3 className="text-[14px] font-black uppercase tracking-[0.3em] text-foreground flex items-center gap-3">
+                        <span className="w-10 h-[3px] bg-sada-red rounded-full"></span>
                         Workspace Members
                     </h3>
-                    <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider mt-3 ml-13 leading-relaxed">
-                        Manajemen personil aktif untuk <span className="text-red-600 font-black decoration-red-200 underline-offset-4 underline">{workspace.name}</span>
+                    <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mt-3 ml-13 leading-relaxed">
+                        Manajemen personil aktif untuk <span className="text-sada-red font-black decoration-sada-red/30 underline-offset-4 underline">{workspace.name}</span>
                     </p>
                 </div>
 
@@ -125,18 +125,18 @@ export default function WorkspaceMembers({ workspace, members, allEmployees = []
                 {canManageRoster && (
                     <Button
                         onClick={() => setIsInviteModalOpen(true)}
-                        className="z-10 bg-red-600 hover:bg-red-700 text-white font-black text-[10px] uppercase tracking-[0.2em] px-8 h-12 rounded-2xl shadow-xl shadow-red-600/10 border-none transition-all active:scale-95 shrink-0"
+                        className="z-10 bg-sada-red hover:bg-red-700 text-white font-black text-[10px] uppercase tracking-[0.2em] px-8 h-12 rounded-2xl shadow-xl shadow-sada-red/20 border-none transition-all active:scale-95 shrink-0"
                     >
                         <UserPlus size={16} className="mr-3" strokeWidth={3} /> Invite Employee
                     </Button>
                 )}
 
                 {/* Decorative Background Decor */}
-                <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/5 blur-[60px] -mr-16 -mt-16 pointer-events-none" />
+                <div className="absolute top-0 right-0 w-32 h-32 bg-sada-red/10 blur-[60px] -mr-16 -mt-16 pointer-events-none" />
             </div>
 
             {/* Table Section */}
-            <div className="bg-white border border-zinc-200 rounded-[32px] overflow-hidden shadow-sm">
+            <div className="bg-card/30 backdrop-blur-sm border border-border/50 rounded-[32px] overflow-hidden shadow-sm transition-colors">
                 <div className="p-2">
                     <DataTableBase
                         columns={columns}
@@ -152,46 +152,46 @@ export default function WorkspaceMembers({ workspace, members, allEmployees = []
             {/* Invite Modal */}
             {canManageRoster && (
                 <Dialog open={isInviteModalOpen} onOpenChange={setIsInviteModalOpen}>
-                    <DialogContent className="sm:max-w-[450px] bg-white border-zinc-200 rounded-[32px] p-8">
+                    <DialogContent className="sm:max-w-[450px] bg-background border border-border/50 rounded-[32px] p-8 shadow-2xl">
                         <DialogHeader className="space-y-3">
-                            <DialogTitle className="text-[16px] font-black uppercase tracking-[0.2em] text-zinc-900">Invite Employee</DialogTitle>
-                            <DialogDescription className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest leading-relaxed">
-                                Berikan akses operasional ke workspace <span className="text-red-600 font-black">{workspace.name}</span>.
+                            <DialogTitle className="text-[16px] font-black uppercase tracking-[0.2em] text-foreground">Invite Employee</DialogTitle>
+                            <DialogDescription className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest leading-relaxed">
+                                Berikan akses operasional ke workspace <span className="text-sada-red font-black">{workspace.name}</span>.
                             </DialogDescription>
                         </DialogHeader>
 
                         <form onSubmit={submitInvite} className="space-y-6 mt-6">
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Identity Selection</label>
+                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Identity Selection</label>
                                 <div className="relative">
                                     <select
-                                        className="w-full bg-zinc-50 border border-zinc-200 rounded-2xl px-5 py-4 text-[12px] font-bold text-zinc-900 focus:ring-4 focus:ring-red-500/5 focus:border-red-600 outline-none transition-all appearance-none cursor-pointer"
+                                        className="w-full bg-muted/20 border border-border/50 rounded-2xl px-5 py-4 text-[12px] font-bold text-foreground focus:ring-4 focus:ring-sada-red/10 focus:border-sada-red outline-none transition-all appearance-none cursor-pointer"
                                         value={data.user_id}
                                         onChange={e => setData('user_id', e.target.value)}
                                     >
-                                        <option value="">PILIH KARYAWAN...</option>
+                                        <option value="" className="text-muted-foreground">PILIH KARYAWAN...</option>
                                         {allEmployees.map((emp: any) => (
-                                            <option key={emp.id} value={emp.id}>{emp.name.toUpperCase()} — {emp.email}</option>
+                                            <option key={emp.id} value={emp.id} className="text-foreground">{emp.name.toUpperCase()} — {emp.email}</option>
                                         ))}
                                     </select>
-                                    <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 size-4 text-zinc-400 pointer-events-none" />
+                                    <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
                                 </div>
-                                {errors.user_id && <p className="text-red-600 text-[10px] font-black uppercase tracking-tighter mt-1 ml-1">{errors.user_id}</p>}
+                                {errors.user_id && <p className="text-sada-red text-[10px] font-black uppercase tracking-tighter mt-1 ml-1">{errors.user_id}</p>}
                             </div>
 
-                            <div className="flex gap-4 mt-8">
+                            <div className="flex gap-4 mt-8 pt-4 border-t border-border/50">
                                 <Button
                                     type="button"
                                     variant="ghost"
                                     onClick={() => setIsInviteModalOpen(false)}
-                                    className="flex-1 text-[10px] font-black uppercase tracking-widest rounded-2xl h-12 hover:bg-zinc-100"
+                                    className="flex-1 text-[10px] font-black uppercase tracking-widest rounded-2xl h-12 text-muted-foreground hover:text-foreground hover:bg-muted/50"
                                 >
                                     Abort
                                 </Button>
                                 <Button
                                     type="submit"
                                     disabled={processing}
-                                    className="flex-1 bg-zinc-900 text-white hover:bg-zinc-800 text-[10px] font-black uppercase tracking-widest h-12 rounded-2xl shadow-lg shadow-zinc-900/20 active:scale-95"
+                                    className="flex-1 bg-sada-red text-white hover:bg-red-600 text-[10px] font-black uppercase tracking-widest h-12 rounded-2xl shadow-lg shadow-sada-red/20 active:scale-95"
                                 >
                                     {processing ? 'Authorizing...' : 'Grant Access'}
                                 </Button>
