@@ -181,21 +181,44 @@ class WorkspaceController extends Controller
     public function update(Request $request, $slug)
     {
         $workspace = Workspace::where('slug', $slug)->firstOrFail();
+        $user = $request->user();
 
-        $this->authorizeWorkspace($request->user(), $workspace);
+        // 1. CEK OTORITAS ROLE (Pagar Utama)
+        // Pastikan hanya role yang berwenang yang bisa tembus
+        if (!$user->isSuperAdmin() && !$user->hasAnyRole(['company', 'owner', 'manager'])) {
+            abort(403, 'ACCESS DENIED: Your role is not authorized to reconfigure this sector.');
+        }
+
+        // 2. Cek apakah workspace ini milik company si user (kalo dia bukan superadmin)
+        if (!$user->isSuperAdmin()) {
+            // Asumsi user punya company_id atau relasi ke company
+            $companyId = $user->company_id ?? $user->companyOwner?->id;
+            if ($workspace->company_id !== $companyId) {
+                abort(403, 'UNAUTHORIZED: You can only manage workspaces within your own entity.');
+            }
+        }
+
+        // Tetep pake fungsi lama lo buat backup logic
+        $this->authorizeWorkspace($user, $workspace);
 
         $validated = $request->validate([
             'name'        => 'required|string|max:255',
             'description' => 'nullable|string',
             'status'      => 'required|in:active,inactive',
-            'company_id'  => $request->user()->isSuperAdmin() ? 'required|exists:companies,id' : 'nullable',
+            // Proteksi tambahan: kalo bukan superadmin, paksa pake company_id yang sudah ada
+            'company_id'  => $user->isSuperAdmin() ? 'required|exists:companies,id' : 'nullable',
         ]);
+
+        // Jika bukan superadmin, hapus company_id dari array validated biar gak bisa "nembak" ganti company
+        if (!$user->isSuperAdmin()) {
+            unset($validated['company_id']);
+        }
 
         $updated = $workspace->update($validated);
 
         \Log::info('Update Result for Slug '.$slug.': ' . ($updated ? 'Success' : 'Failed'));
 
-        return back()->with('success', 'Workspace updated successfully.');
+        return back()->with('success', 'Workspace protocol synchronized.');
     }
 
     public function destroy(Request $request, Workspace $workspace)

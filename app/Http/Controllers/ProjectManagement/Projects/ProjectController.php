@@ -145,24 +145,36 @@ class ProjectController extends Controller
         ]);
     }
 
-
     public function update(Request $request, Workspace $workspace, Project $project)
     {
-        $this->authorizeProject($request->user(), $project);
+        $user = $request->user();
+
+        // 1. CEK OTORITAS PROJECT (Pagar Utama)
+        // Pastikan fungsi bawaan lo tetap jalan untuk cek relasi user ke project
+        $this->authorizeProject($user, $project);
+        
+        // 2. CEK ROLE (Proteksi Akses Edit)
+        // Cuma role 'company', 'owner', 'manager', atau 'super-admin' yang boleh update detail project
+        if (!$user->isSuperAdmin() && !$user->hasAnyRole(['company', 'owner', 'manager'])) {
+            abort(403, 'ACTION DENIED: Your clearance level is insufficient to modify project parameters.');
+        }
+
+        // 3. VALIDASI INTEGRITAS (Cek apakah project ini emang bagian dari workspace ini)
         abort_if($project->workspace_id !== $workspace->id, 404);
 
         $validated = $request->validate([
             'name'        => 'required|string|max:255',
             'description' => 'nullable|string',
             'status'      => 'required|in:active,inactive',
-            'priority'    => 'required|in:low,medium,high', // Tambah ini
+            'priority'    => 'required|in:low,medium,high',
             'due_date'    => 'nullable|date',
         ]);
 
+        // 4. EXECUTE UPDATE
         $project->update($validated);
-        return back()->with('success', 'Project updated successfully.');
-    }
 
+        return back()->with('success', 'Project parameters synchronized successfully.');
+    }
     public function destroy(Request $request, Workspace $workspace, Project $project)
     {
         $project->delete();
