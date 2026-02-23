@@ -33,6 +33,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('tasks.global');
         Route::resource('timesheets', TimesheetController::class);
         Route::patch('/timesheets/{id}/time', [TimesheetController::class, 'updateTime'])->name('timesheets.time.update');
+        Route::patch('/timesheets/{timesheet}/submit', [TimesheetController::class, 'submit'])->name('timesheets.submit');
+        Route::patch('/timesheets/{timesheet}/approve', [TimesheetController::class, 'approve'])->name('timesheets.approve');
+        Route::patch('/timesheets/{timesheet}/reject', [TimesheetController::class, 'reject'])->name('timesheets.reject');
     });
 
     Route::impersonate();
@@ -80,6 +83,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 'tasks' => 'task:slug'
             ])
             ->except([]);
+        Route::patch('/workspaces/{workspace:slug}/projects/{project:slug}/tasks/{task:slug}/status', [TaskController::class, 'updateStatus'])
+            ->name('tasks.updateStatus');
 
         Route::resource('workspaces.projects.tasks.subtasks', SubTaskController::class)
             ->parameters([

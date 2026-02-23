@@ -106,21 +106,38 @@ class TimesheetController extends Controller
                 ];
             });
         }
-        // 5. Return to Inertia (HAPUS BAGIAN AUTH!)
+        //
+        $pendingLogs = [];
+        if ($user->hasAnyRole(['company', 'manager', 'super-admin'])) {
+            // Ambil timesheet yang statusnya 'submitted' dari user yang perusahaannya sama
+            $pendingLogs = Timesheet::where('status', 'submitted')
+                ->whereHas('user', function ($q) use ($company) {
+                    if ($company) {
+                        $q->where('company_id', $company->id);
+                    }
+                })
+                ->with('user:id,name') // Ambil data karyawannya
+                ->get();
+        }
+        //
         return Inertia::render('timesheets/index', [
             'projects'   => $projects,
             'timesheets' => [
                 'current' => $currentTimesheet,
                 'mapped'  => $mappedEntries,
+
+                // --- UBAH BAGIAN HISTORY INI ---
                 'history' => Timesheet::where('user_id', $user->id)
+                    ->with(['entries.project', 'entries.task']) // <--- TAMBAHKAN BARIS INI
                     ->latest()
                     ->paginate(20)
             ],
             'stats'           => $stats,
             'currentDateProp' => $currentDate->toDateString(),
             'pageConfig'      => [
-                'can_manage' => $user->hasAnyPermission(['manage-timesheets', 'create-timesheets'])
+                'can_manage' => $user->hasAnyRole(['company', 'manager', 'super-admin'])
             ],
+            'pendingLogs' => $pendingLogs,
         ]);
     }
 
@@ -289,5 +306,63 @@ class TimesheetController extends Controller
         }
 
         return back()->with('success', 'Time entry deleted successfully.');
+    }
+
+    public function submit(Request $request, Timesheet $timesheet)
+    {
+        // Pastikan yang submit adalah pemilik timesheet-nya
+        abort_if($timesheet->user_id !== $request->user()->id, 403, 'Akses ditolak.');
+
+        // Gunakan DB query langsung untuk menghindari Model Events yang mungkin tersembunyi
+        \Illuminate\Support\Facades\DB::table('timesheets')
+            ->where('id', $timesheet->id)
+            ->update([
+                'status' => 'submitted',
+                'updated_at' => now(),
+            ]);
+
+        return back()->with('success', 'Timesheet berhasil dikirim untuk di-review Manager.');
+    }
+
+    public function approve(Request $request, Timesheet $timesheet)
+    {
+        // $this->authorizeProject($request->user(), $timesheet->workspace->project); 
+
+        \DB::transaction(function () use ($request, $timesheet) {
+            // 1. HANYA update status timesheet (header-nya saja)
+            $timesheet->update(['status' => 'approved']);
+
+            // HAPUS BARIS INI: $timesheet->entries()->update(['status' => 'approved']);
+
+            // 2. Catat di tabel Approval
+            $timesheet->approvals()->create([
+                'approver_id' => $request->user()->id,
+                'status'      => 'approved',
+                'comments'    => 'Approved via Manager Review',
+            ]);
+        });
+
+        return back()->with('success', 'Timesheet Authorized.');
+    }
+
+    public function reject(Request $request, Timesheet $timesheet)
+    {
+        $request->validate(['reason' => 'required|string']);
+
+        \DB::transaction(function () use ($request, $timesheet) {
+            // 1. HANYA update status timesheet
+            $timesheet->update(['status' => 'revision']);
+
+            // HAPUS BARIS INI: $timesheet->entries()->update(['status' => 'revision']);
+
+            // 2. Catat alasan penolakan di tabel Approval
+            $timesheet->approvals()->create([
+                'approver_id' => $request->user()->id,
+                'status'      => 'rejected',
+                'comments'    => $request->reason,
+            ]);
+        });
+
+        return back()->with('success', 'Timesheet sent back for revision.');
     }
 }

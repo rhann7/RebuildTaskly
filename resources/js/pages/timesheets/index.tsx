@@ -8,7 +8,7 @@ import {
 import { TimesheetHeader } from '@/layouts/timesheets/partials/timesheetsHeader';
 import { ViewRenderer } from '@/layouts/timesheets/parts/ViewRender';
 
-export default function TimesheetIndex({ timesheets, projects, stats, currentDateProp }: any) {
+export default function TimesheetIndex({ timesheets, projects, stats, currentDateProp, pendingLogs, pageConfig }: any) {
     // 1. Ambil auth dari usePage (Global Props) biar Sidebar dapet data Menu yang bener
     const { auth } = usePage<any>().props;
 
@@ -88,16 +88,22 @@ export default function TimesheetIndex({ timesheets, projects, stats, currentDat
 
                     {/* 3. Renderer Area */}
                     <div className="relative min-h-[400px] w-full">
-                        <ViewRenderer
-                            currentView={currentView}
-                            data={{
-                                timeEntries: timesheets?.mapped || [],
-                                projects: projects,
-                                stats: stats,
-                                currentDate: currentDateProp,
-                                isManager: isManager,
-                            }}
-                        />
+                        <div className="relative min-h-[400px] w-full">
+                            <ViewRenderer
+                                currentView={currentView}
+                                data={{
+                                    timeEntries: timesheets?.mapped || [],
+                                    projects: projects,
+                                    stats: stats,
+                                    currentDate: currentDateProp,
+
+                                    isManager: isManager,
+
+                                    history: timesheets?.history,
+                                    pendingLogs: pendingLogs,
+                                }}
+                            />
+                        </div>
                     </div>
                 </div>
             </div>

@@ -148,6 +148,27 @@ class TaskController extends Controller
         return back()->with('success', 'Task updated successfully.');
     }
 
+    public function updateStatus(Request $request, Workspace $workspace, Project $project, Task $task)
+    {
+        // 1. Validasi Hirarki
+        abort_if($project->workspace_id !== $workspace->id, 404);
+        abort_if($task->project_id !== $project->id, 404);
+        $this->authorizeProject($request->user(), $project);
+
+        // 2. Validasi input status yang diterima dari drag & drop
+        $validated = $request->validate([
+            'status' => 'required|in:todo,in_progress,done',
+        ]);
+
+        // 3. Update database
+        $task->update([
+            'status' => $validated['status']
+        ]);
+
+        // Karena frontend pakai preserveState, kita cukup return back() tanpa pesan sukses yang mengganggu UI
+        return back();
+    }
+
     public function destroy(Request $request, Workspace $workspace, Project $project, Task $task)
     {
         abort_if($project->workspace_id !== $workspace->id, 404);

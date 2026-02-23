@@ -5,6 +5,8 @@ import {
     AlertCircle, Layers
 } from 'lucide-react';
 import MemberRoutineView from '../tabs/MemberRoutineView';
+import { ManagerReviewTab } from '../tabs/ManagerReviewTab';
+import { MemberLogsTab } from '../tabs/MemberLogsTab';
 
 // 1. Shared Layout: Container untuk setiap view agar tingginya seragam dan rapi
 const ViewContainer = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
@@ -87,14 +89,12 @@ export const ViewRenderer = ({ currentView, data }: any) => {
         case 'audit':
             return (
                 <ViewContainer>
-                    <SectionHeader title="Operational Audit" subtitle="System Transmission Logs" />
-                    <div className="bg-white dark:bg-zinc-900/40 border border-border rounded-[40px] overflow-hidden shadow-2xl shadow-black/5">
-                        {/* Nanti panggil <TimesheetTable entries={data.timeEntries} /> di sini */}
-                        <StandbyState
-                            icon={Database}
-                            title="Table Engine Standby"
-                            description="Initializing database interface..."
-                        />
+                    <SectionHeader title="Operational Logs" subtitle="Your Weekly Timesheet Submissions" />
+                    <div className="bg-white dark:bg-zinc-900/40 border border-border rounded-[40px] overflow-hidden shadow-2xl shadow-black/5 p-8">
+
+                        {/* UBAH BARIS INI: Cukup panggil data.history */}
+                        <MemberLogsTab history={data.history} />
+
                     </div>
                 </ViewContainer>
             );
@@ -107,37 +107,10 @@ export const ViewRenderer = ({ currentView, data }: any) => {
                         subtitle="Pending Authorization Protocol"
                         badge={data.pendingLogs?.length || 0}
                     />
-                    <div className="grid grid-cols-1 gap-4">
-                        {data.pendingLogs && data.pendingLogs.length > 0 ? (
-                            data.pendingLogs.map((log: any, i: number) => (
-                                <div key={log.id || i}
-                                    className="animate-in fade-in slide-in-from-right-4 duration-500 fill-mode-both"
-                                    style={{ animationDelay: `${i * 100}ms` }}
-                                >
-                                    <div className="p-6 border border-border rounded-[24px] bg-white dark:bg-zinc-900/40 flex items-center justify-between group hover:border-sada-red/30 transition-all">
-                                        <div className="flex items-center gap-4">
-                                            <div className="size-10 rounded-xl bg-muted flex items-center justify-center text-sada-red">
-                                                <Layers size={18} />
-                                            </div>
-                                            <div className="flex flex-col">
-                                                <span className="text-xs font-black uppercase  tracking-tight ">Pending Objective Review</span>
-                                                <span className="text-[9px] font-bold text-muted-foreground uppercase">UID: {log.id || 'N/A'}</span>
-                                            </div>
-                                        </div>
-                                        <button className="h-9 px-4 rounded-lg bg-zinc-900 text-white text-[9px] font-black uppercase tracking-widest hover:bg-sada-red transition-all">
-                                            Authorize
-                                        </button>
-                                    </div>
-                                </div>
-                            ))
-                        ) : (
-                            <StandbyState
-                                icon={ShieldCheck}
-                                title="No Pending Verification"
-                                description="All systems operating within normal parameters"
-                            />
-                        )}
-                    </div>
+
+                    {/* PASTIKAN BARIS INI SEPERTI INI */}
+                    <ManagerReviewTab pendingLogs={data.pendingLogs || []} />
+
                 </ViewContainer>
             );
 

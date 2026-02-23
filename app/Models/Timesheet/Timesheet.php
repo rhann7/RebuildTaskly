@@ -43,4 +43,8 @@ class Timesheet extends Model
         $this->total_hours = $this->entries()->sum('hours');
         $this->save();
     }
+    public function approvals()
+    {
+        return $this->hasMany(TimesheetApproval::class);
+    }
 }
