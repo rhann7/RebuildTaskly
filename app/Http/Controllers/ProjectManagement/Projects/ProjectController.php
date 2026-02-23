@@ -37,48 +37,45 @@ class ProjectController extends Controller
         $user = $request->user();
         $company = $this->resolveCompany($user);
 
-        // 1. Security check
         if (!$user->isSuperAdmin()) {
             abort_if($workspace->company_id !== $company->id, 403);
         }
 
-        // 2. Query Projects dengan Eager Loading Tasks
         $projects = Project::query()
             ->where('workspace_id', $workspace->id)
-            // Load relasi tasks untuk hitung progress di bawah
-            ->with(['tasks']) 
+            ->with(['tasks', 'workspace.manager']) // Tarik si Bedul di sini
             ->when($request->search, fn($q, $s) => $q->where('name', 'like', "%{$s}%"))
-            ->when($request->status, fn($q, $s) => $q->whereIn('status', (array)$s))
-            ->when($request->priority, fn($q, $p) => $q->whereIn('priority', (array)$p))
             ->latest()
-            ->paginate(12) // Gue naikin ke 12 biar gridnya cakep (3 atau 4 kolom)
-            ->withQueryString()
-            // 3. --- JURUS SUNTIK DATA PROGRESS ---
+            ->paginate(12)
             ->through(function ($project) {
-                $totalTasks = $project->tasks->count();
-                
-                // Hitung task yang berstatus done
-                $completedTasks = $project->tasks->filter(function($task) {
-                    return $task->status === 'done';
-                })->count();
+                // 1. Progress (Udah aman di Tinker lo keliatan +progress: 33.0)
+                $total = $project->tasks->count();
+                $done = $project->tasks->filter(fn($t) => $t->status === 'done')->count();
+                $project->progress = $total > 0 ? round(($done / $total) * 100) : 0;
 
-                // Masukin property progress ke dalam object project
-                $project->progress = $totalTasks > 0 
-                    ? round(($completedTasks / $totalTasks) * 100) 
-                    : 0;
+                // 2. Assignee Logic (Ambil data Bedul)
+                // Di Tinker lo: $project->workspace->manager->name
+                $manager = $project->workspace->manager ?? null;
 
-                // Opsional: Kasih tau total task juga buat di card
-                $project->total_tasks_count = $totalTasks;
-                $project->completed_tasks_count = $completedTasks;
+                if ($manager) {
+                    // KITA SET PROPERTY 'assignee' SUPAYA DIBACA REACT
+                    $project->assignee = [
+                        'name'   => $manager->name, // Ini bakal dapet "bedul"
+                        // Laravel User model biasanya pakai profile_photo_url kalau pakai Jetstream
+                        // Kalau gak ada, biarin null nanti dihandle sama UI-Avatars di React
+                        'avatar' => $manager->profile_photo_url ?? null, 
+                    ];
+                } else {
+                    $project->assignee = null;
+                }
 
                 return $project;
             });
 
-        // 4. Render ke Inertia
         return Inertia::render('projects/index', [
             'workspace' => $workspace,
             'projects'  => $projects,
-            'filters'   => $request->only(['search', 'status', 'priority']),
+            'filters'   => $request->only(['search']),
             'pageConfig' => $this->getPageConfig($request),
         ]);
     }
@@ -116,68 +113,78 @@ class ProjectController extends Controller
 
     public function show(Request $request, Workspace $workspace, Project $project)
     {
+        $user = $request->user();
+
+        // 1. VALIDASI DASAR & KEAMANAN
         abort_if($project->workspace_id !== $workspace->id, 404);
-        $this->authorizeProject($request->user(), $project);
 
-        // --- TAMBAHAN BARU: Hitung Total Task dan Progress ---
-        // 1. Hitung total seluruh task di project ini
+        // GATE KEEPER: Hanya Admin, Manager Workspace, atau Member Project yang bisa masuk
+        if (!$user->isSuperAdmin()) {
+            $isWorkspaceManager = $workspace->manager_id === $user->id;
+            $isProjectMember = $project->members()->where('users.id', $user->id)->exists();
+
+            if (!$isWorkspaceManager && !$isProjectMember) {
+                // Kita arahkan kembali ke halaman detail Workspace
+                return redirect()->route('workspaces.show', $workspace->slug)
+                    ->with('error', 'AUTHORIZATION ERROR: Unit not deployed to this project sector.');
+            }
+        }
+
+        // --- HITUNG PROGRESS (Pake manual load buat jaga-jaga appends gak kebaca) ---
         $project->tasks_count = $project->tasks()->count();
-
-        // 2. Hitung jumlah task yang statusnya 'done'
         $completedTasksCount = $project->tasks()->where('status', 'done')->count();
-
-        // 3. Kalkulasi presentase
         $project->progress = $project->tasks_count > 0
             ? round(($completedTasksCount / $project->tasks_count) * 100)
             : 0;
-        // -----------------------------------------------------
 
-        // 1. Ambil Manager tunggal dari Workspace & bungkus jadi Collection biar bisa di-map
+        // --- MANAJEMEN PERSONNEL ---
+        
+        // 1. Ambil Manager Workspace
         $managers = collect();
         if ($workspace->manager) {
-            $managers = collect([$workspace->manager])->map(fn($user) => [
-                'id'           => $user->id,
-                'name'         => $user->name,
-                'email'        => $user->email,
+            $managers = collect([$workspace->manager])->map(fn($m) => [
+                'id'           => $m->id,
+                'name'         => $m->name,
+                'email'        => $m->email,
+                'avatar'       => $m->profile_photo_url,
                 'project_role' => 'Workspace Manager',
                 'is_manager'   => true,
             ]);
         }
 
-        // 2. Ambil Member yang dideploy manual
+        // 2. Ambil Member Project (Pivot data)
         $members = $project->members()
-            ->with('roles')
             ->get()
-            ->map(fn($user) => [
-                'id'           => $user->id,
-                'name'         => $user->name,
-                'email'        => $user->email,
-                'project_role' => $user->pivot->project_role,
+            ->map(fn($m) => [
+                'id'           => $m->id,
+                'name'         => $m->name,
+                'email'        => $m->email,
+                'avatar'       => $m->profile_photo_url,
+                'project_role' => $m->pivot->project_role,
                 'is_manager'   => false,
             ]);
 
-        // 3. Gabungkan Manager & Member
+        // 3. Gabungkan Semua Personnel
         $allPersonnel = $managers->concat($members);
 
-        // 4. Update availableEmployees (Filter biar manager gak muncul di dropdown)
-        $managerId = $workspace->manager_id; // Pake ID manager langsung dari kolom DB
-
+        // 4. Filter Karyawan yang Bisa Ditambah (Exclude yang sudah jadi member/manager)
+        $managerId = $workspace->manager_id;
         $availableEmployees = $workspace->members()
             ->whereDoesntHave('projects', function ($q) use ($project) {
                 $q->where('project_id', $project->id);
             })
-            ->when($managerId, function ($q) use ($managerId) {
-                return $q->where('users.id', '!=', $managerId);
-            })
+            ->when($managerId, fn($q) => $q->where('users.id', '!=', $managerId))
             ->get(['users.id', 'users.name', 'users.email']);
 
         return Inertia::render('projects/show', [
             'workspace'          => $workspace,
-            'project'            => $project, // $project sekarang sudah membawa 'tasks_count' dan 'progress'
+            'project'            => $project,
             'tasks'              => $project->tasks()->latest()->get(),
             'projectMembers'     => $allPersonnel,
             'availableEmployees' => $availableEmployees,
-            'isSuperAdmin'       => $request->user()->isSuperAdmin(),
+            'isSuperAdmin'       => $user->isSuperAdmin(),
+            // Tambahin ini biar di frontend lo bisa sembunyiin tombol "Add Member" buat member biasa
+            'can_manage'         => $user->isSuperAdmin() || $user->id === $workspace->manager_id,
         ]);
     }
 

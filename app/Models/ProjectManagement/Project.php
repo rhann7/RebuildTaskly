@@ -56,7 +56,7 @@ class Project extends Model
             return $value;
         }
 
-        protected $appends = ['progress']; // Maksa property 'progress' selalu ada
+        protected $appends = ['progress', 'assignee']; // Maksa property 'progress' selalu ada
 
         public function getProgressAttribute()
         {
@@ -71,5 +71,18 @@ class Project extends Model
             
             // 4. Return hasil pembulatan persen
             return round(($completedTasks / $totalTasks) * 100);
+        }
+
+        public function getAssigneeAttribute()
+        {
+            // Ambil manager dari relasi workspace
+            $manager = $this->workspace->manager ?? null;
+
+            if (!$manager) return null;
+
+            return [
+                'name'   => $manager->name,
+                'avatar' => $manager->profile_photo_url ?? null,
+            ];
         }
 }

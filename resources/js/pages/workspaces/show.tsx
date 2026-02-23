@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { Head } from '@inertiajs/react';
+import { useState, useMemo, useEffect } from 'react'; // Tambah useEffect
+import { Head, usePage } from '@inertiajs/react'; // Tambah usePage
 import WorkspaceLayout from '@/layouts/workspaces/WorkspaceLayout';
 import DataTableBase from '@/components/DataTableBase';
 import { getProjectColumns } from '@/components/tabs-workspace/ProjectColumns';
@@ -20,20 +20,28 @@ export default function WorkspaceShow({ workspace, projects, auth, companies, me
     const [priorityFilter, setPriorityFilter] = useState<string[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
+    // --- LOGIC NOTIFIKASI DEFAULT BROWSER ---
+    const { flash }: any = usePage().props;
+
+    useEffect(() => {
+        if (flash.error) {
+            alert(`SADA SYSTEM ERROR: \n${flash.error}`);
+        }
+        if (flash.success) {
+            alert(`SUCCESS: \n${flash.success}`);
+        }
+    }, [flash]);
+    // ----------------------------------------
+
     const columns = useMemo(() => getProjectColumns(workspace.slug), [workspace.slug]);
     
     // Tactical Multi-Filter Logic
     const filteredProjects = useMemo(() => {
-        // Cek apakah projects itu object pagination atau array langsung
         const dataArray = Array.isArray(projects) ? projects : (projects.data || []);
         
         return dataArray.filter((p: any) => {
             const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
-            
-            // Filter Status (jika kosong berarti semua diperbolehkan)
             const matchesStatus = statusFilter.length === 0 || statusFilter.includes(p.status?.toLowerCase());
-            
-            // Filter Priority (jika kosong berarti semua diperbolehkan)
             const matchesPriority = priorityFilter.length === 0 || priorityFilter.includes(p.priority?.toLowerCase());
 
             return matchesSearch && matchesStatus && matchesPriority;
@@ -89,8 +97,19 @@ export default function WorkspaceShow({ workspace, projects, auth, companies, me
                     </div>
                 )}
 
-                {activeTab === 'members' && ( <div className="animate-in fade-in slide-in-from-bottom-4 duration-500"><WorkspaceMembers workspace={workspace} members={members} allEmployees={allEmployees}/></div>)}
-                {activeTab === 'settings' && ( <WorkspaceSettings workspace={workspace} isSuperAdmin={auth.user.roles?.includes('super-admin')} companies={companies} /> )}
+                {activeTab === 'members' && ( 
+                    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <WorkspaceMembers workspace={workspace} members={members} allEmployees={allEmployees}/>
+                    </div>
+                )}
+                
+                {activeTab === 'settings' && ( 
+                    <WorkspaceSettings 
+                        workspace={workspace} 
+                        isSuperAdmin={auth.user.roles?.includes('super-admin')} 
+                        companies={companies} 
+                    /> 
+                )}
             </div>
 
             <CreateProjectModal isOpen={isModalOpen} setIsOpen={setIsModalOpen} workspace={workspace} />

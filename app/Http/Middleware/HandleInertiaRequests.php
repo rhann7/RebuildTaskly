@@ -63,6 +63,10 @@ class HandleInertiaRequests extends Middleware
                 ] : null,
                 'is_impersonating' => app('impersonate')->isImpersonating()
             ],
+            'flash' => [
+            'success' => $request->session()->get('success'),
+            'error' => $request->session()->get('error'),
+            ],
             'categories' => fn () => $request->routeIs('register')
                 ? CompanyCategory::select(['id', 'name'])->get()
                 : [],

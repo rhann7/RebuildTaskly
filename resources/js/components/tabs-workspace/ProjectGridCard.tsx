@@ -61,16 +61,22 @@ export default function ProjectGridCard({ project, workspaceSlug }: any) {
                     <div className="justify-between w-full flex items-center">
                         {/* Member/Manager Info */}
                         <div className="flex items-center gap-2">
-                            <div className="size-6 rounded-full bg-muted border border-border overflow-hidden">
-                                <img src={project.assignee?.avatar || `https://ui-avatars.com/api/?name=${project.assignee?.name || 'User'}&background=1a1a1a&color=fff`} className="size-full object-cover" />
+                            <div className="size-6 rounded-full bg-zinc-800 border border-border overflow-hidden">
+                                <img 
+                                    src={project.assignee?.avatar || `https://ui-avatars.com/api/?name=${project.assignee?.name || 'U'}&background=1a1a1a&color=fff`} 
+                                    className="size-full object-cover" 
+                                    alt="manager"
+                                />
                             </div>
                             <div className="flex flex-col">
-                                <span className="text-[9px] font-black text-foreground uppercase tracking-tighter leading-none">{project.assignee?.name || 'Unassigned'}</span>
-                                <span className="text-[7px] font-bold text-muted-foreground uppercase">Manager</span>
+                                <span className="text-[9px] font-black text-foreground uppercase tracking-tighter leading-none">
+                                    {project.assignee?.name || 'No Personnel'}
+                                </span>
+                                <span className="text-[7px] font-bold text-sada-red uppercase tracking-widest">Lead Manager</span>
                             </div>
                         </div>
 
-                        {/* Deadline Info (Google Calendar Reference) */}
+                        {/* Deadline Info */}
                         <div className="flex items-center gap-1.5 text-muted-foreground border-l border-border/50 pl-4">
                             <Calendar size={12} className="text-sada-red" />
                             <span className="text-[9px] font-bold uppercase tracking-widest text-foreground">

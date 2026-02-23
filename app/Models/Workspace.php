@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Workspace extends Model
 {
-    protected $fillable = ['company_id', 'name', 'slug', 'description', 'status'];
+    protected $fillable = ['company_id', 'name', 'slug', 'description', 'status', 'manager_id'];
 
     public function company()
     {
