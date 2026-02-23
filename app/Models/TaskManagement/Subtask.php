@@ -3,12 +3,18 @@
 namespace App\Models\TaskManagement;
 
 use App\Models\ProjectManagement\Project;
+use App\Models\Timesheet\Timesheet;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 
 class SubTask extends Model
 {
     protected $fillable = ['task_id', 'title', 'is_completed', 'completed_by'];
+
+    // TAMBAHKAN INI AGAR REACT MEMBACANYA SEBAGAI BOOLEAN (TRUE/FALSE)
+    protected $casts = [
+        'is_completed' => 'boolean',
+    ];
 
     public function task()
     {
@@ -22,7 +28,6 @@ class SubTask extends Model
 
     public function completer()
     {
-        // Karena kolomnya user_id, kita kasih tau Laravel secara manual
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(User::class, 'completed_by');
     }
 }

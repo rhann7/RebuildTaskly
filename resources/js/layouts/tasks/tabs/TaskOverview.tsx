@@ -71,18 +71,22 @@ export const TaskOverview = ({ task, isManager = false, workspace, project }: Pr
                             onClick={() => setIsAddModalOpen(true)}
                             className="h-10 px-5 bg-zinc-900 text-white dark:bg-white dark:text-black rounded-xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest hover:bg-sada-red hover:text-white transition-all shadow-lg active:scale-95 group/btn"
                         >
-                            <Plus size={14} strokeWidth={3} className="group-hover/btn:rotate-90 transition-transform duration-300" /> 
+                            <Plus size={14} strokeWidth={3} className="group-hover/btn:rotate-90 transition-transform duration-300" />
                             Add Objective
                         </button>
                     </div>
 
-                    <AddSubTaskModal
-                        isOpen={isAddModalOpen}
-                        setIsOpen={setIsAddModalOpen}
-                        workspace={workspace}
-                        project={project}
-                        task={task}
-                    />
+                    <div className="space-y-3">
+                        {task.subtasks.map((sub: any) => (
+                            <SubTaskItem
+                                key={sub.id}
+                                sub={sub}
+                                workspace={workspace}
+                                project={project}
+                                task={task}
+                            />
+                        ))}
+                    </div>
 
                     <div className="grid grid-cols-1 gap-4">
                         {task.subtasks && task.subtasks.length > 0 ? (
@@ -92,7 +96,7 @@ export const TaskOverview = ({ task, isManager = false, workspace, project }: Pr
                                     sub={sub}
                                     workspace={workspace}
                                     project={project}
-                                    task={task} 
+                                    task={task}
                                 />
                             ))
                         ) : (
@@ -113,15 +117,15 @@ export const TaskOverview = ({ task, isManager = false, workspace, project }: Pr
                     <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest italic opacity-60 flex items-center gap-2">
                         <UserIcon size={10} className="text-sada-red" /> Operatives In-Field
                     </span>
-                    
+
                     <div className="flex flex-wrap items-center gap-3">
                         {operatives.length > 0 ? (
                             operatives.map((user: any) => (
                                 <div key={user.id} className="group relative">
                                     <div className="size-11 rounded-xl ring-2 ring-background bg-zinc-800 border border-border overflow-hidden shadow-lg hover:scale-110 hover:-translate-y-1 transition-all duration-300">
-                                        <img 
-                                            src={user.profile_photo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random&color=fff`} 
-                                            alt={user.name} 
+                                        <img
+                                            src={user.profile_photo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random&color=fff`}
+                                            alt={user.name}
                                             className="w-full h-full object-cover"
                                         />
                                     </div>
@@ -139,7 +143,7 @@ export const TaskOverview = ({ task, isManager = false, workspace, project }: Pr
 
                 {/* Meta Card */}
                 <div className="px-6 py-5 bg-zinc-900 dark:bg-white border border-zinc-800 dark:border-zinc-200 rounded-[32px] shadow-xl shadow-black/10">
-                   <div className="flex justify-between items-center">
+                    <div className="flex justify-between items-center">
                         <div className="flex flex-col">
                             <span className="text-[8px] font-black text-sada-red dark:text-zinc-400 uppercase tracking-widest">Deadline Terminal</span>
                             <span className="text-xs font-black text-white dark:text-black uppercase italic tracking-tight">
@@ -149,7 +153,7 @@ export const TaskOverview = ({ task, isManager = false, workspace, project }: Pr
                         <div className="size-8 rounded-lg bg-white/5 dark:bg-black/5 flex items-center justify-center border border-white/10 dark:border-black/10">
                             <Activity size={14} className="text-sada-red animate-pulse" />
                         </div>
-                   </div>
+                    </div>
                 </div>
             </div>
         </div>

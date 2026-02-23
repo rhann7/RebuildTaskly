@@ -11,7 +11,7 @@ import { Zap, CheckCircle2, Flag, Calendar, Plus, Trash2, ListTodo, X } from 'lu
 import InputError from '@/components/input-error';
 
 export default function CreateTaskModal({ isOpen, setIsOpen, project, workspace }: any) {
-    const { data, setData, post, processing, errors, reset } = useForm({
+    const { data, setData, post, processing, errors, reset, transform } = useForm({
         title: '',
         description: '',
         status: 'todo',
@@ -89,6 +89,12 @@ export default function CreateTaskModal({ isOpen, setIsOpen, project, workspace 
             },
         });
     };
+
+    // Ini akan memfilter subtask yang kosong agar tidak ikut terkirim ke database
+    transform((data) => ({
+        ...data,
+        subtasks: data.subtasks.filter((sub) => sub.title.trim() !== '')
+    }));
 
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>

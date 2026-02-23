@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('timesheet_id')->constrained()->onDelete('cascade');
             $table->foreignId('user_id')->constrained();
             $table->foreignId('project_id')->constrained();
-            $table->foreignId('task_id')->constrained();
+            $table->foreignId('task_id')->nullable()->constrained();
             $table->foreignId('sub_task_id')->nullable()->constrained(); // Sub-task/Objective
 
             $table->date('date'); // Hari kerja (misal: 2026-02-04)

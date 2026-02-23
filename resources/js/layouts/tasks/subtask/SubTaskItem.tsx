@@ -1,4 +1,4 @@
-import { router, Link } from '@inertiajs/react';
+import { router } from '@inertiajs/react';
 import { 
     Check, 
     Loader2, 
@@ -7,23 +7,12 @@ import {
     MoreVertical, 
     Trash2, 
     Info, 
-    Edit3 
+    Edit3,
+    UserCircle2 // Tambahan icon user
 } from 'lucide-react';
 import { useState } from 'react';
-import {
-    Sheet,
-    SheetContent,
-    SheetHeader,
-    SheetTitle,
-    SheetTrigger,
-} from "@/components/ui/sheet";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-    DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 
 export const SubTaskItem = ({ sub, workspace, project, task }: any) => {
     const [isUpdating, setIsUpdating] = useState(false);
@@ -49,7 +38,7 @@ export const SubTaskItem = ({ sub, workspace, project, task }: any) => {
                 <button
                     onClick={handleToggle}
                     disabled={isUpdating}
-                    className={`relative size-7 rounded-lg border-2 flex items-center justify-center transition-all duration-300 active:scale-90
+                    className={`relative size-7 rounded-lg border-2 flex items-center justify-center transition-all duration-300 active:scale-90 shrink-0
                         ${sub.is_completed 
                             ? 'bg-emerald-500 border-emerald-500 shadow-md shadow-emerald-500/20' 
                             : 'border-zinc-300 dark:border-white/20 bg-transparent hover:border-sada-red/50'}
@@ -62,11 +51,21 @@ export const SubTaskItem = ({ sub, workspace, project, task }: any) => {
                     ) : null}
                 </button>
 
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-col gap-1.5">
                     <span className={`text-[15px] font-black uppercase tracking-tight transition-all duration-500 
                         ${sub.is_completed ? 'text-zinc-400 line-through italic opacity-50' : 'text-zinc-900 dark:text-white'}`}>
                         {sub.title}
                     </span>
+                    
+                    {/* INFO SIAPA YANG MENCENTANG */}
+                    {sub.is_completed && sub.completer && (
+                        <div className="flex items-center gap-1.5 animate-in fade-in slide-in-from-left-2 duration-300">
+                            <UserCircle2 size={12} className="text-emerald-500" />
+                            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                                Completed by <span className="text-emerald-500">{sub.completer.name}</span>
+                            </span>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -79,8 +78,6 @@ export const SubTaskItem = ({ sub, workspace, project, task }: any) => {
                         </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-48 rounded-2xl p-2 shadow-2xl border-border">
-                        
-                        {/* Option: View Details (Trigger Sheet) */}
                         <Sheet>
                             <SheetTrigger asChild>
                                 <button className="w-full flex items-center gap-2 px-3 py-2 text-[11px] font-black uppercase tracking-widest text-zinc-600 dark:text-zinc-400 hover:bg-muted rounded-lg transition-all">
@@ -92,7 +89,7 @@ export const SubTaskItem = ({ sub, workspace, project, task }: any) => {
                                     <SheetTitle className="text-2xl font-black uppercase tracking-tighter">{sub.title}</SheetTitle>
                                     <div className="h-1 w-20 bg-sada-red" />
                                 </SheetHeader>
-                                {/* ... Content Sheet Tetap Sama ... */}
+                                
                                 <div className="flex flex-col gap-8">
                                     <div className="flex gap-6 relative">
                                         <div className="absolute left-[15px] top-10 bottom-[-30px] w-[2px] bg-zinc-100 dark:bg-zinc-800" />
@@ -105,6 +102,12 @@ export const SubTaskItem = ({ sub, workspace, project, task }: any) => {
                                             <p className="text-[11px] text-zinc-500 mt-1 flex items-center gap-2">
                                                 <Clock size={10} /> {new Date(sub.created_at).toLocaleString('id-ID')}
                                             </p>
+                                            {/* Tampilkan juga di detail sheet */}
+                                            {sub.is_completed && sub.completer && (
+                                                <p className="text-[11px] text-emerald-500 mt-1 flex items-center gap-2 font-bold">
+                                                    <Check size={10} /> Completed by {sub.completer.name}
+                                                </p>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -114,9 +117,7 @@ export const SubTaskItem = ({ sub, workspace, project, task }: any) => {
                         <DropdownMenuItem className="flex items-center gap-2 px-3 py-2 text-[11px] font-black uppercase tracking-widest cursor-pointer rounded-lg">
                             <Edit3 size={14} /> Update
                         </DropdownMenuItem>
-
                         <DropdownMenuSeparator />
-
                         <DropdownMenuItem 
                             className="flex items-center gap-2 px-3 py-2 text-[11px] font-black uppercase tracking-widest text-red-500 focus:text-red-500 focus:bg-red-50 dark:focus:bg-red-500/10 cursor-pointer rounded-lg"
                             onClick={() => {

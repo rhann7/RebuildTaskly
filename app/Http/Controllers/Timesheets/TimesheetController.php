@@ -34,19 +34,23 @@ class TimesheetController extends Controller
             ->whereHas('workspace', function ($q) use ($company, $user) {
                 if ($company) $q->where('company_id', $company->id);
             })
-            // Hanya ambil project dimana user terlibat atau dia managernya
             ->where(function ($q) use ($user) {
                 $q->whereHas('users', fn($sq) => $sq->where('user_id', $user->id))
                     ->orWhereHas('workspace', fn($sq) => $sq->where('manager_id', $user->id));
             })
             ->where('status', 'active')
             ->with([
+                'workspace:id,slug',
                 'tasks' => function ($query) {
-                    $query->select('id', 'project_id', 'title')
-                        ->with('subtasks:id,task_id,title,is_completed');
+                    $query->select('id', 'project_id', 'title', 'slug')
+                        // PERBAIKAN DI SINI:
+                        ->with(['subtasks' => function ($q) {
+                            $q->select('id', 'task_id', 'title', 'is_completed', 'completed_by', 'created_at')
+                                ->with('completer:id,name'); // Load nama yang mencentang
+                        }]);
                 }
             ])
-            ->get(['id', 'name', 'workspace_id']);
+            ->get(['id', 'name', 'slug', 'workspace_id']);
     }
 
     public function index(Request $request)
@@ -146,57 +150,104 @@ class TimesheetController extends Controller
     {
         $validated = $request->validate([
             'project_id'  => 'required|exists:projects,id',
-            'task_id'     => 'required|exists:tasks,id',
+            'task_id'     => 'nullable|exists:tasks,id',
             'sub_task_id' => 'nullable|exists:sub_tasks,id',
             'date'        => 'required|date',
-            'start_time'  => 'required',
-            'end_time'    => 'required',
+            'start_time'  => 'required|date_format:H:i',
+            'end_time'    => 'required|date_format:H:i',
             'description' => 'required|string',
         ]);
 
-        // Pakai Transaction supaya kalau Header gagal, Entry gak nyangkut
-        return DB::transaction(function () use ($request, $validated) {
-            $user = $request->user();
+        $user = $request->user();
 
-            // 1. Cari/Buat Header Timesheet berdasarkan minggu tersebut
-            $date = \Carbon\Carbon::parse($validated['date']);
-            $startOfWeek = $date->copy()->startOfWeek();
+        $project = \App\Models\ProjectManagement\Project::findOrFail($validated['project_id']);
 
-            $timesheet = Timesheet::firstOrCreate([
-                'user_id'  => $user->id,
-                'start_at' => $startOfWeek->toDateString(),
-            ], [
-                'workspace_id' => Project::find($validated['project_id'])->workspace_id,
-                'task_id'      => $validated['task_id'],
-                'sub_task_id'  => $validated['sub_task_id'],
-                'note'         => $validated['description'], // Kalau kamu mau simpan note di header juga
-                'end_at'       => $startOfWeek->copy()->endOfWeek()->toDateString(),
+        $date = \Carbon\Carbon::parse($validated['date']);
+        $startOfWeek = $date->copy()->startOfWeek(\Carbon\Carbon::MONDAY);
+        $endOfWeek = $date->copy()->endOfWeek(\Carbon\Carbon::SUNDAY);
+
+        // 1. Create or Find the Parent Timesheet
+        $timesheet = \App\Models\Timesheet\Timesheet::firstOrCreate(
+            [
+                'user_id'    => $user->id,
+                'start_at'   => $startOfWeek->format('Y-m-d'),
+                'end_at'     => $endOfWeek->format('Y-m-d'),
+            ],
+            [
+                'workspace_id' => $project->workspace_id,
                 'status'       => 'draft',
-            ]);
+                'total_hours'  => 0,
+            ]
+        );
 
-            // 2. Hitung selisih jam (Decimal)
-            $start = \Carbon\Carbon::parse($validated['start_time']);
-            $end = \Carbon\Carbon::parse($validated['end_time']);
-            $hours = $end->diffInMinutes($start) / 60;
+        $start = \Carbon\Carbon::parse($validated['start_time']);
+        $end = \Carbon\Carbon::parse($validated['end_time']);
 
-            // 3. Simpan ke Entry
-            $timesheet->entries()->create([
-                'user_id'     => $user->id,
-                'project_id'  => $validated['project_id'],
-                'task_id'     => $validated['task_id'],
-                'sub_task_id' => $validated['sub_task_id'],
-                'date'        => $validated['date'],
-                'start_at'    => $validated['start_time'],
-                'end_at'      => $validated['end_time'],
-                'hours'       => number_format($hours, 2),
-                'description' => $validated['description'],
-            ]);
+        // Ensure hours are calculated correctly (End minus Start)
+        $hours = $start->diffInMinutes($end) / 60;
 
-            return back()->with('success', 'Work log deployed successfully!');
-        });
+        // 2. Create the Timesheet Entry (Adding user_id here!)
+        $timesheet->entries()->create([
+            'user_id'     => $user->id, // <--- ADDED THIS LINE
+            'project_id'  => $validated['project_id'],
+            'task_id'     => $validated['task_id'],
+            'sub_task_id' => $validated['sub_task_id'],
+            'date'        => $validated['date'],
+            'start_at'    => $validated['start_time'],
+            'end_at'      => $validated['end_time'],
+            'hours'       => round($hours, 2),
+            'description' => $validated['description'],
+        ]);
+
+        // 3. Update the total hours
+        $timesheet->calculateTotals();
+
+        return back()->with('success', 'Time entry logged successfully.');
     }
 
-    // Tambahkan fungsi ini di dalam class TimesheetController
+    public function update(Request $request, $id)
+    {
+        // 1. Validate the incoming data
+        $validated = $request->validate([
+            'project_id'  => 'required|exists:projects,id',
+            'task_id'     => 'nullable|exists:tasks,id',
+            'sub_task_id' => 'nullable|exists:sub_tasks,id',
+            'date'        => 'required|date',
+            'start_time'  => 'required|date_format:H:i',
+            'end_time'    => 'required|date_format:H:i',
+            'description' => 'required|string',
+        ]);
+
+        // 2. Find the entry by ID
+        $entry = \App\Models\Timesheet\TimesheetEntry::findOrFail($id);
+
+        // 3. Calculate total hours for this specific entry
+        $start = \Carbon\Carbon::parse($validated['start_time']);
+        $end = \Carbon\Carbon::parse($validated['end_time']);
+
+        // Ensure start time is before end time for calculation
+        $hours = $start->diffInMinutes($end) / 60;
+
+        // 4. Update the database record
+        $entry->update([
+            'project_id'  => $validated['project_id'],
+            'task_id'     => $validated['task_id'],
+            'sub_task_id' => $validated['sub_task_id'],
+            'date'        => $validated['date'],
+            'start_at'    => $validated['start_time'],
+            'end_at'      => $validated['end_time'],
+            'hours'       => round($hours, 2),
+            'description' => $validated['description'],
+        ]);
+
+        // 5. Recalculate total hours for the parent Timesheet
+        if ($entry->timesheet) {
+            $entry->timesheet->calculateTotals();
+        }
+
+        // 6. Return response
+        return back()->with('success', 'Time entry updated successfully.');
+    }
 
     public function updateTime(Request $request, $id)
     {
@@ -224,5 +275,19 @@ class TimesheetController extends Controller
         }
 
         return back()->with('success', 'Operational time modified successfully.');
+    }
+    public function destroy($id)
+    {
+        $entry = \App\Models\Timesheet\TimesheetEntry::findOrFail($id);
+        $timesheet = $entry->timesheet;
+
+        $entry->delete();
+
+        // Kalkulasi ulang total jam di header setelah detail dihapus
+        if ($timesheet) {
+            $timesheet->calculateTotals();
+        }
+
+        return back()->with('success', 'Time entry deleted successfully.');
     }
 }

@@ -58,9 +58,10 @@ class SubTaskController extends Controller
 
         $subTask->update([
             'is_completed' => !$subTask->is_completed,
-            // Ganti 'completed_by' jadi 'user_id'
-            'user_id' => !$subTask->is_completed ? $request->user()->id : null, 
+            // PERBAIKAN: Gunakan 'completed_by' agar data masuk ke database!
+            'completed_by' => !$subTask->is_completed ? $request->user()->id : null,
         ]);
+
         return back();
     }
 

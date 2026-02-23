@@ -12,17 +12,17 @@ import { Clock, AlertTriangle } from 'lucide-react';
 export default function MemberRoutineView({ timeEntries, projects, stats, currentDateProp }: any) {
     const [currentDate, setCurrentDate] = useState(dayjs(currentDateProp));
     const [viewMode, setViewMode] = useState<"daily" | "weekly">("daily");
-    
+
     // --- STATE UNTUK MODAL FULL (CREATE/EDIT DETAIL) ---
     const [isFullModalOpen, setIsFullModalOpen] = useState(false);
-    
+
     // --- STATE UNTUK MODAL QUICK KONFIRMASI (DRAG & DROP) ---
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
     const [pendingUpdate, setPendingUpdate] = useState<any>(null);
 
     const { data, setData, post, patch, processing, reset, errors } = useForm({
         id: null as number | null, // Simpan ID kalau lagi edit
-        project_id: '', 
+        project_id: '',
         task_id: '',
         sub_task_id: '',
         date: '',
@@ -36,8 +36,8 @@ export default function MemberRoutineView({ timeEntries, projects, stats, curren
         const formattedDate = dayjs(newDate).format('YYYY-MM-DD');
         setCurrentDate(dayjs(newDate));
 
-        router.get('/timesheets', 
-            { date: formattedDate }, 
+        router.get('/timesheets',
+            { date: formattedDate },
             { preserveState: true, preserveScroll: true }
         );
     };
@@ -106,7 +106,7 @@ export default function MemberRoutineView({ timeEntries, projects, stats, curren
     // --- EKSEKUSI KONFIRMASI QUICK EDIT (HANYA JAM) ---
     const confirmTimeUpdate = () => {
         if (!pendingUpdate) return;
-        
+
         router.patch(`/timesheets/${pendingUpdate.id}/time`, {
             start_time: pendingUpdate.startTime,
             end_time: pendingUpdate.endTime,
@@ -117,6 +117,18 @@ export default function MemberRoutineView({ timeEntries, projects, stats, curren
                 setPendingUpdate(null);
             }
         });
+    };
+    // --- HAPUS ENTRY ---
+    const deleteEntry = (id: number) => {
+        if (confirm("Are you sure you want to permanently delete this entry?")) {
+            router.delete(`/timesheets/${id}`, {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setIsFullModalOpen(false); // Tutup modal jika sedang terbuka
+                    reset();
+                }
+            });
+        }
     };
 
     return (
@@ -135,7 +147,7 @@ export default function MemberRoutineView({ timeEntries, projects, stats, curren
             {/* --- GRID UTAMA --- */}
             <div className="bg-white dark:bg-zinc-900 rounded-[32px] border border-border overflow-hidden shadow-xl">
                 <TimeGrid
-                    viewMode={viewMode} 
+                    viewMode={viewMode}
                     currentDate={new Date(currentDateProp)}
                     entries={timeEntries || []}
                     onTimeSlotClick={handleTimeSlotClick} // Memicu Modal Full (New)
@@ -159,12 +171,29 @@ export default function MemberRoutineView({ timeEntries, projects, stats, curren
                 errors={errors}
                 processing={processing}
                 isEditing={!!data.id} // Lempar props biar modal tau ini lagi edit atau buat baru
+                onDeleteEntry={deleteEntry}
+            />
+
+            <TimeEntryModal
+                isOpen={isFullModalOpen}
+                setIsOpen={(open: boolean) => {
+                    setIsFullModalOpen(open);
+                    if (!open) reset();
+                }}
+                data={data}
+                setData={setData}
+                submitEntry={submitFullEntry}
+                projects={projects}
+                errors={errors}
+                processing={processing}
+                isEditing={!!data.id}
+                onDelete={() => deleteEntry(data.id as number)} // <--- PASSING FUNGSI DELETE KE MODAL
             />
 
             {/* --- MODAL 2: QUICK CONFIRMATION (DRAG & DROP) --- */}
             <Dialog open={isConfirmModalOpen} onOpenChange={(open) => {
                 setIsConfirmModalOpen(open);
-                if (!open) setPendingUpdate(null); 
+                if (!open) setPendingUpdate(null);
             }}>
                 <DialogContent className="sm:max-w-[420px] bg-card border border-border rounded-2xl p-0 shadow-2xl overflow-hidden">
                     <DialogHeader className="p-6 pb-4 border-b border-border bg-muted/20">
@@ -172,12 +201,12 @@ export default function MemberRoutineView({ timeEntries, projects, stats, curren
                             <AlertTriangle size={18} className="text-amber-500" /> Modify Schedule?
                         </DialogTitle>
                     </DialogHeader>
-                    
+
                     <div className="p-6 space-y-4">
                         <p className="text-sm text-muted-foreground">
                             You are about to modify the operational time for <strong className="text-foreground">"{pendingUpdate?.taskName}"</strong>.
                         </p>
-                        
+
                         <div className="bg-muted/40 border border-border rounded-xl p-4 flex items-center justify-between">
                             <div className="flex flex-col gap-1">
                                 <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">New Time Block</span>
