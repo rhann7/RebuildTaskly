@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\ProjectManagement\Project;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -78,7 +79,7 @@ class User extends Authenticatable
 
     public function projects()
     {
-        return $this->belongsToMany(\App\Models\ProjectManagement\Project::class, 'project_user')
+        return $this->belongsToMany(Project::class, 'project_user')
                     ->withPivot('project_role')
                     ->withTimestamps();
     }
