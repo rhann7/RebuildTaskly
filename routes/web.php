@@ -17,10 +17,19 @@ use Spatie\Permission\Models\Permission;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\TaskManagement\TaskDocumentController;
 use App\Http\Controllers\Timesheets\TimesheetController;
+use Illuminate\Support\Facades\Auth;
 
 Route::get('/', function () {
-    return Inertia::render('welcome', ['canRegister' => Features::enabled(Features::registration())]);
-})->name('home');
+    // JIKA USER SUDAH LOGIN, LANGSUNG LEMPAR KE DASHBOARD
+    if (Auth::check()) {
+        return redirect()->route('dashboard');
+    }
+
+    // JIKA BELUM LOGIN, TAMPILKAN LANDING PAGE (WELCOME)
+    return Inertia::render('welcome', [
+        'canRegister' => Route::has('register'),
+    ]);
+});
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
