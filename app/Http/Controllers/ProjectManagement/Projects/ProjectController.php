@@ -32,26 +32,49 @@ class ProjectController extends Controller
         );
     }
 
-    public function index(Request $request, Workspace $workspace)
+   public function index(Request $request, Workspace $workspace)
     {
         $user = $request->user();
         $company = $this->resolveCompany($user);
 
-        // Security check: Pastikan user tidak bisa intip workspace milik company lain via URL
+        // 1. Security check
         if (!$user->isSuperAdmin()) {
             abort_if($workspace->company_id !== $company->id, 403);
         }
 
+        // 2. Query Projects dengan Eager Loading Tasks
         $projects = Project::query()
             ->where('workspace_id', $workspace->id)
+            // Load relasi tasks untuk hitung progress di bawah
+            ->with(['tasks']) 
             ->when($request->search, fn($q, $s) => $q->where('name', 'like', "%{$s}%"))
-            // Pake whereIn karena datanya berupa array
             ->when($request->status, fn($q, $s) => $q->whereIn('status', (array)$s))
             ->when($request->priority, fn($q, $p) => $q->whereIn('priority', (array)$p))
             ->latest()
-            ->paginate(10)
-            ->withQueryString();
+            ->paginate(12) // Gue naikin ke 12 biar gridnya cakep (3 atau 4 kolom)
+            ->withQueryString()
+            // 3. --- JURUS SUNTIK DATA PROGRESS ---
+            ->through(function ($project) {
+                $totalTasks = $project->tasks->count();
+                
+                // Hitung task yang berstatus done
+                $completedTasks = $project->tasks->filter(function($task) {
+                    return $task->status === 'done';
+                })->count();
 
+                // Masukin property progress ke dalam object project
+                $project->progress = $totalTasks > 0 
+                    ? round(($completedTasks / $totalTasks) * 100) 
+                    : 0;
+
+                // Opsional: Kasih tau total task juga buat di card
+                $project->total_tasks_count = $totalTasks;
+                $project->completed_tasks_count = $completedTasks;
+
+                return $project;
+            });
+
+        // 4. Render ke Inertia
         return Inertia::render('projects/index', [
             'workspace' => $workspace,
             'projects'  => $projects,

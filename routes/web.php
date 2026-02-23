@@ -71,8 +71,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('workspaces', WorkspaceController::class)
             ->parameters(['workspaces' => 'workspace:slug'])
             ->except(['create', 'edit']);
-
-        Route::resource('workspaces.projects', ProjectController::class)
+        Route::get('/tasks', [TaskController::class, 'globalIndex'])
+        ->name('tasks.global');
+        Route::post('/tasks/quick-store', [TaskController::class, 'quickStore'])
+            ->name('tasks.quick-store');
+            Route::resource('workspaces.projects', ProjectController::class)
             ->parameters([
                 'workspaces' => 'workspace:slug',
                 'projects' => 'project:slug'

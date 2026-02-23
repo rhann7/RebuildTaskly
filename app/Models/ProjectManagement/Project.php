@@ -55,4 +55,21 @@ class Project extends Model
             // 3. Kalau belum lewat, balikin status aslinya (todo / in progress)
             return $value;
         }
+
+        protected $appends = ['progress']; // Maksa property 'progress' selalu ada
+
+        public function getProgressAttribute()
+        {
+            // 1. Ambil total task dalam project ini
+            $totalTasks = $this->tasks()->count();
+            
+            // 2. Jika gak ada task, project dianggap 0% (atau 100% terserah lo)
+            if ($totalTasks === 0) return 0;
+            
+            // 3. Hitung task yang statusnya 'done'
+            $completedTasks = $this->tasks()->where('status', 'done')->count();
+            
+            // 4. Return hasil pembulatan persen
+            return round(($completedTasks / $totalTasks) * 100);
+        }
 }

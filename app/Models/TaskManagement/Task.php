@@ -6,6 +6,8 @@ use App\Models\ProjectManagement\Project;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\TaskManagement\TaskDocument;
+use App\Models\Timesheet;
+use App\Models\Timesheet\Timesheet as ModelsTimesheet;
 
 class Task extends Model
 {
@@ -26,7 +28,7 @@ class Task extends Model
     }
     public function timesheets()
     {
-        return $this->hasMany(Timesheet::class);
+        return $this->hasMany(ModelsTimesheet::class);
     }
     public function users()
     {
@@ -37,5 +39,21 @@ class Task extends Model
     {
         // Pake hasMany karena satu task bisa punya banyak dokumen
         return $this->hasMany(TaskDocument::class);
+    }
+    protected $appends = ['manual_progress', 'total_objectives']; // Maksa data ini selalu ikut
+
+    public function getManualProgressAttribute()
+    {
+        // Hitung langsung di model tiap kali data diakses
+        $total = $this->subtasks()->count();
+        if ($total === 0) return null;
+        
+        $completed = $this->subtasks()->where('is_completed', true)->count();
+        return round(($completed / $total) * 100);
+    }
+
+    public function getTotalObjectivesAttribute()
+    {
+        return $this->subtasks()->count();
     }
 }
