@@ -115,6 +115,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             [SubTaskController::class, 'toggle']
         )
             ->name('workspaces.projects.tasks.subtasks.toggle');
+        Route::patch('/workspaces/{workspace:slug}/projects/{project:slug}/tasks/{task:slug}/subtasks/{subtask}', [SubTaskController::class, 'update'])->name('subtasks.update');
 
         if (Schema::hasTable('permissions') && Schema::hasColumns('permissions', ['route_path', 'route_name'])) {
             $dynamicRoutes = cache()->remember('dynamic_routes', 3600, function () {

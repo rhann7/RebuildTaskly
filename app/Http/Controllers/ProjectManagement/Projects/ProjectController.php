@@ -96,6 +96,19 @@ class ProjectController extends Controller
         abort_if($project->workspace_id !== $workspace->id, 404);
         $this->authorizeProject($request->user(), $project);
 
+        // --- TAMBAHAN BARU: Hitung Total Task dan Progress ---
+        // 1. Hitung total seluruh task di project ini
+        $project->tasks_count = $project->tasks()->count();
+
+        // 2. Hitung jumlah task yang statusnya 'done'
+        $completedTasksCount = $project->tasks()->where('status', 'done')->count();
+
+        // 3. Kalkulasi presentase
+        $project->progress = $project->tasks_count > 0
+            ? round(($completedTasksCount / $project->tasks_count) * 100)
+            : 0;
+        // -----------------------------------------------------
+
         // 1. Ambil Manager tunggal dari Workspace & bungkus jadi Collection biar bisa di-map
         $managers = collect();
         if ($workspace->manager) {
@@ -125,20 +138,20 @@ class ProjectController extends Controller
 
         // 4. Update availableEmployees (Filter biar manager gak muncul di dropdown)
         $managerId = $workspace->manager_id; // Pake ID manager langsung dari kolom DB
-        
+
         $availableEmployees = $workspace->members()
-            ->whereDoesntHave('projects', function($q) use ($project) {
+            ->whereDoesntHave('projects', function ($q) use ($project) {
                 $q->where('project_id', $project->id);
             })
-            ->when($managerId, function($q) use ($managerId) {
+            ->when($managerId, function ($q) use ($managerId) {
                 return $q->where('users.id', '!=', $managerId);
             })
             ->get(['users.id', 'users.name', 'users.email']);
 
         return Inertia::render('projects/show', [
             'workspace'          => $workspace,
-            'project'            => $project,
-            'tasks' => $project->tasks()->latest()->get(),
+            'project'            => $project, // $project sekarang sudah membawa 'tasks_count' dan 'progress'
+            'tasks'              => $project->tasks()->latest()->get(),
             'projectMembers'     => $allPersonnel,
             'availableEmployees' => $availableEmployees,
             'isSuperAdmin'       => $request->user()->isSuperAdmin(),
@@ -152,7 +165,7 @@ class ProjectController extends Controller
         // 1. CEK OTORITAS PROJECT (Pagar Utama)
         // Pastikan fungsi bawaan lo tetap jalan untuk cek relasi user ke project
         $this->authorizeProject($user, $project);
-        
+
         // 2. CEK ROLE (Proteksi Akses Edit)
         // Cuma role 'company', 'owner', 'manager', atau 'super-admin' yang boleh update detail project
         if (!$user->isSuperAdmin() && !$user->hasAnyRole(['company', 'owner', 'manager'])) {
@@ -179,9 +192,9 @@ class ProjectController extends Controller
     {
         $project->delete();
 
-    // Setelah hapus project, balik ke halaman detail workspace-nya
+        // Setelah hapus project, balik ke halaman detail workspace-nya
         return redirect()->route('workspaces.show', $workspace->slug)
-             ->with('success', 'Project removed from sector.');
+            ->with('success', 'Project removed from workspace.');
     }
 
     private function getPageConfig(Request $request)
@@ -206,24 +219,24 @@ class ProjectController extends Controller
                 }
             })
             ->with('workspace:id,name,slug') // Load relation buat kolom "Sector"
-            
+
             // 2. Filter Search (Nama Project)
-            ->when($request->search, function($q, $search) {
+            ->when($request->search, function ($q, $search) {
                 $q->where('name', 'like', "%{$search}%");
             })
-            
+
             // 3. Filter Status (Multi-select)
-            ->when($request->status, function($q, $status) {
+            ->when($request->status, function ($q, $status) {
                 $q->whereIn('status', (array)$status);
             })
-            
+
             // 4. Filter Priority (Multi-select)
-            ->when($request->priority, function($q, $priority) {
+            ->when($request->priority, function ($q, $priority) {
                 $q->whereIn('priority', (array)$priority);
             })
 
             // 5. Filter Workspace/Sector (Multi-select)
-            ->when($request->workspaces, function($q, $workspaces) {
+            ->when($request->workspaces, function ($q, $workspaces) {
                 $q->whereIn('workspace_id', (array)$workspaces);
             })
 
@@ -271,7 +284,7 @@ class ProjectController extends Controller
     public function removeMember(Request $request, Workspace $workspace, Project $project, $userId)
     {
         $this->authorizeProject($request->user(), $project);
-        
+
         $project->members()->detach($userId);
 
         return back()->with('success', 'Personnel withdrawn from project.');

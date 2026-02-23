@@ -186,7 +186,7 @@ class WorkspaceController extends Controller
         // 1. CEK OTORITAS ROLE (Pagar Utama)
         // Pastikan hanya role yang berwenang yang bisa tembus
         if (!$user->isSuperAdmin() && !$user->hasAnyRole(['company', 'owner', 'manager'])) {
-            abort(403, 'ACCESS DENIED: Your role is not authorized to reconfigure this sector.');
+            abort(403, 'ACCESS DENIED: Your role is not authorized to reconfigure this workspace.');
         }
 
         // 2. Cek apakah workspace ini milik company si user (kalo dia bukan superadmin)
@@ -229,7 +229,7 @@ class WorkspaceController extends Controller
 
         // Sesuai route: Route::resource('workspaces', ...)
         return redirect()->route('workspaces.index')
-                        ->with('success', 'Sector deleted successfully.');
+                        ->with('success', 'Workspace deleted successfully.');
     }
 
     public function addMember(Request $request, Workspace $workspace)

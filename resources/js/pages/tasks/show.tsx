@@ -37,19 +37,19 @@ export default function TaskShow({ workspace, project, task, isManager }: any) {
             <Head title={`${task.title} - Task Detail`} />
 
             <div className="mx-auto w-full max-w-[1200px] flex flex-col gap-8 p-6 md:p-10 animate-in fade-in duration-700">
-                
+
                 {/* 2. OPER PROJECT JUGA KE SINI */}
-                <TaskDetailHeader task={enrichedTask} project={project} />
+                <TaskDetailHeader task={enrichedTask} project={project} workspace={workspace} />
 
                 <TaskDetailTabs activeTab={activeTab} setActiveTab={setActiveTab} />
 
                 <div className="min-h-[600px] transition-all duration-500">
                     {activeTab === 'brief' &&
-                    <TaskOverview
+                        <TaskOverview
                             workspace={workspace}
                             project={project}
                             task={enrichedTask}
-                            isManager={isManager} 
+                            isManager={isManager}
                         />}
                     {activeTab === 'timesheets' &&
                         <TaskTimesheets

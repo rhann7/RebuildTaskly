@@ -1,6 +1,6 @@
 export const getGlobalProjectColumns = () => [
     {
-        title: 'OBJECTIVE / PROJECT',
+        title: 'Project',
         data: 'name',
         defaultContent: '-',
         render: (data: any, type: any, row: any) => `
@@ -11,12 +11,12 @@ export const getGlobalProjectColumns = () => [
         `
     },
     {
-        title: 'SECTOR / WORKSPACE',
+        title: 'Workspace',
         data: 'workspace.name',
-        defaultContent: '<span class="text-[10px] opacity-30 italic font-bold">PRIVATE SECTOR</span>',
+        defaultContent: '<span class="text-[10px] opacity-30 italic font-bold">PRIVATE WORKSPACE</span>',
         render: (data: any) => `
             <div class="flex items-center gap-2">
-                <div class="text-[10px] font-black uppercase tracking-widest text-foreground">${data || 'PRIVATE SECTOR'}</div>
+                <div class="text-[10px] font-black uppercase tracking-widest text-foreground">${data || 'PRIVATE WORKSPACE'}</div>
             </div>
         `
     },

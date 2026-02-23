@@ -52,6 +52,11 @@ class TaskController extends Controller
             ->paginate(10)
             ->withQueryString();
 
+        $project->tasks_count = Task::where('project_id', $project->id)->count();
+        $totalTasks = $project->tasks_count;
+        $completedTasks = Task::where('project_id', $project->id)->where('status', 'done')->count();
+        $project->progress = $totalTasks > 0 ? round(($completedTasks / $totalTasks) * 100) : 0;
+        
         return Inertia::render('tasks/index', [
             'workspace' => $workspace,
             'project' => $project,
@@ -138,9 +143,11 @@ class TaskController extends Controller
         $this->authorizeProject($request->user(), $project);
 
         $validated = $request->validate([
-            'title' => 'required|string|max:255',
+            'title'       => 'required|string|max:255',
             'description' => 'nullable|string',
-            'status' => 'required|in:todo,in_progress,done',
+            'status'      => 'required|in:todo,in_progress,done',
+            'priority'    => 'required|in:low,medium,high', // <--- TAMBAH INI
+            'due_date'    => 'nullable|date',               // <--- TAMBAH INI
         ]);
 
         $task->update($validated);

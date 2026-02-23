@@ -114,7 +114,7 @@ export default function WorkspaceMembers({ workspace, members, allEmployees = []
                 <div className="z-10">
                     <h3 className="text-[14px] font-black uppercase tracking-[0.3em] text-zinc-900 flex items-center gap-3">
                         <span className="w-10 h-[3px] bg-red-600 rounded-full"></span>
-                        Workspace Roster
+                        Workspace Members
                     </h3>
                     <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider mt-3 ml-13 leading-relaxed">
                         Manajemen personil aktif untuk <span className="text-red-600 font-black decoration-red-200 underline-offset-4 underline">{workspace.name}</span>

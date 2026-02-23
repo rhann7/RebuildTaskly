@@ -105,7 +105,7 @@ export function TimeEntryModal({
                                 className={`flex items-center gap-2 px-5 py-2 text-[13px] font-bold rounded-lg transition-all ${activeTab === 'checklist' ? 'bg-white text-foreground shadow-sm ring-1 ring-black/5' : 'text-muted-foreground hover:text-foreground'}`}
                             >
                                 <CheckSquare size={16} />
-                                Checklist
+                                Subtask
                                 {subtasks.length > 0 && (
                                     <span className="bg-sada-red text-white text-[10px] font-black px-2 py-0.5 rounded-full">{subtasks.length}</span>
                                 )}

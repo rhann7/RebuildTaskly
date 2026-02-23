@@ -80,4 +80,27 @@ class SubTaskController extends Controller
 
         return back()->with('success', 'Subtask deleted successfully.');
     }
+
+    public function update(Request $request, Workspace $workspace, Project $project, Task $task, SubTask $subTask)
+    {
+        // Validasi Hirarki Lengkap
+        abort_if(
+            $project->workspace_id !== $workspace->id ||
+                $task->project_id !== $project->id ||
+                $subTask->task_id !== $task->id,
+            404
+        );
+
+        $this->authorizeProject($request->user(), $project);
+
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+        ]);
+
+        $subTask->update([
+            'title' => $validated['title'],
+        ]);
+
+        return back()->with('success', 'Subtask updated successfully.');
+    }
 }
