@@ -21,7 +21,7 @@ export default function MemberRoutineView({ timeEntries, projects, stats, curren
     const [pendingUpdate, setPendingUpdate] = useState<any>(null);
 
     const { data, setData, post, patch, processing, reset, errors } = useForm({
-        id: null as number | null, // Simpan ID kalau lagi edit
+        id: null as number | null, 
         project_id: '',
         task_id: '',
         sub_task_id: '',
@@ -29,6 +29,9 @@ export default function MemberRoutineView({ timeEntries, projects, stats, curren
         start_time: '',
         end_time: '',
         description: '',
+        // Kita juga bisa menyertakan info status dan alasan reject jika diperlukan di modal
+        status: 'draft',
+        reject_reason: ''
     });
 
     // --- NAVIGASI TANGGAL ---
@@ -50,10 +53,12 @@ export default function MemberRoutineView({ timeEntries, projects, stats, curren
 
         setData({
             ...data,
-            id: null, // Pastikan ID null karena ini data baru
+            id: null,
             date: date,
             start_time: startTime,
             end_time: endTime,
+            status: 'draft',
+            reject_reason: ''
         });
         setIsFullModalOpen(true);
     };
@@ -70,6 +75,8 @@ export default function MemberRoutineView({ timeEntries, projects, stats, curren
             start_time: entry.startTime,
             end_time: entry.endTime,
             description: entry.description || '',
+            status: entry.status || 'draft',
+            reject_reason: entry.reject_reason || ''
         });
         setIsFullModalOpen(true);
     };
@@ -77,13 +84,12 @@ export default function MemberRoutineView({ timeEntries, projects, stats, curren
     // --- 3. SELESAI DRAG & DROP (TAMPILKAN KONFIRMASI) ---
     const handleEntryUpdate = (updatedEntry: any) => {
         setPendingUpdate(updatedEntry);
-        setIsConfirmModalOpen(true); // Buka modal kecil, BUKAN modal full
+        setIsConfirmModalOpen(true); 
     };
 
     // --- EKSEKUSI FORM FULL (CREATE ATAU UPDATE DETAIL) ---
     const submitFullEntry = () => {
         if (data.id) {
-            // Jika ada ID, berarti mode UPDATE
             patch(`/timesheets/${data.id}`, {
                 onSuccess: () => {
                     setIsFullModalOpen(false);
@@ -92,7 +98,6 @@ export default function MemberRoutineView({ timeEntries, projects, stats, curren
                 preserveScroll: true
             });
         } else {
-            // Jika tidak ada ID, berarti mode CREATE
             post('/timesheets', {
                 onSuccess: () => {
                     setIsFullModalOpen(false);
@@ -118,13 +123,14 @@ export default function MemberRoutineView({ timeEntries, projects, stats, curren
             }
         });
     };
+    
     // --- HAPUS ENTRY ---
     const deleteEntry = (id: number) => {
         if (confirm("Are you sure you want to permanently delete this entry?")) {
             router.delete(`/timesheets/${id}`, {
                 preserveScroll: true,
                 onSuccess: () => {
-                    setIsFullModalOpen(false); // Tutup modal jika sedang terbuka
+                    setIsFullModalOpen(false);
                     reset();
                 }
             });
@@ -157,23 +163,6 @@ export default function MemberRoutineView({ timeEntries, projects, stats, curren
             </div>
 
             {/* --- MODAL 1: FULL ENTRY (CREATE / EDIT) --- */}
-            {/* Dipanggil HANYA SATU KALI di sini */}
-            <TimeEntryModal
-                isOpen={isFullModalOpen}
-                setIsOpen={(open: boolean) => {
-                    setIsFullModalOpen(open);
-                    if (!open) reset(); // Reset form saat ditutup
-                }}
-                data={data}
-                setData={setData}
-                submitEntry={submitFullEntry} // Bisa Create, bisa Update
-                projects={projects}
-                errors={errors}
-                processing={processing}
-                isEditing={!!data.id} // Lempar props biar modal tau ini lagi edit atau buat baru
-                onDeleteEntry={deleteEntry}
-            />
-
             <TimeEntryModal
                 isOpen={isFullModalOpen}
                 setIsOpen={(open: boolean) => {
@@ -187,7 +176,7 @@ export default function MemberRoutineView({ timeEntries, projects, stats, curren
                 errors={errors}
                 processing={processing}
                 isEditing={!!data.id}
-                onDelete={() => deleteEntry(data.id as number)} // <--- PASSING FUNGSI DELETE KE MODAL
+                onDelete={() => deleteEntry(data.id as number)} 
             />
 
             {/* --- MODAL 2: QUICK CONFIRMATION (DRAG & DROP) --- */}

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ProjectManagement\Project;
 use App\Models\TaskManagement\Task;
 use App\Models\Timesheet\Timesheet;
+use App\Models\Timesheet\TimesheetEntry;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
@@ -171,20 +172,37 @@ class TimesheetController extends Controller
             'sub_task_id' => 'nullable|exists:sub_tasks,id',
             'date'        => 'required|date',
             'start_time'  => 'required|date_format:H:i',
-            'end_time'    => 'required|date_format:H:i',
+            'end_time'    => 'required|date_format:H:i|after:start_time', // Pastikan end_time setelah start_time
             'description' => 'required|string',
         ]);
 
         $user = $request->user();
 
-        $project = \App\Models\ProjectManagement\Project::findOrFail($validated['project_id']);
+
+        $hasOverlap = TimesheetEntry::where('user_id', $user->id)
+            ->where('date', $validated['date'])
+            ->where(function ($query) use ($validated) {
+                // Logika Overlap: StartA < EndB DAN EndA > StartB
+                $query->where('start_at', '<', $validated['end_time'])
+                    ->where('end_at', '>', $validated['start_time']);
+            })
+            ->exists();
+        if ($hasOverlap) {
+            // Lemparkan error ke frontend Inertia (akan otomatis masuk ke props.errors.start_time)
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'start_time' => 'Waktu bertabrakan dengan tugas lain di hari ini.',
+                'end_time'   => 'Cek kembali jam operasional Anda.'
+            ]);
+        }
+
+        $project = Project::findOrFail($validated['project_id']);
 
         $date = \Carbon\Carbon::parse($validated['date']);
         $startOfWeek = $date->copy()->startOfWeek(\Carbon\Carbon::MONDAY);
         $endOfWeek = $date->copy()->endOfWeek(\Carbon\Carbon::SUNDAY);
 
         // 1. Create or Find the Parent Timesheet
-        $timesheet = \App\Models\Timesheet\Timesheet::firstOrCreate(
+        $timesheet = Timesheet::firstOrCreate(
             [
                 'user_id'    => $user->id,
                 'start_at'   => $startOfWeek->format('Y-m-d'),
@@ -236,7 +254,7 @@ class TimesheetController extends Controller
         ]);
 
         // 2. Find the entry by ID
-        $entry = \App\Models\Timesheet\TimesheetEntry::findOrFail($id);
+        $entry = TimesheetEntry::findOrFail($id);
 
         // 3. Calculate total hours for this specific entry
         $start = \Carbon\Carbon::parse($validated['start_time']);
@@ -273,7 +291,7 @@ class TimesheetController extends Controller
             'end_time'   => 'required|date_format:H:i',
         ]);
 
-        $entry = \App\Models\Timesheet\TimesheetEntry::findOrFail($id);
+        $entry = TimesheetEntry::findOrFail($id);
 
         $start = \Carbon\Carbon::parse($validated['start_time']);
         $end = \Carbon\Carbon::parse($validated['end_time']);
@@ -295,7 +313,7 @@ class TimesheetController extends Controller
     }
     public function destroy($id)
     {
-        $entry = \App\Models\Timesheet\TimesheetEntry::findOrFail($id);
+        $entry = TimesheetEntry::findOrFail($id);
         $timesheet = $entry->timesheet;
 
         $entry->delete();
@@ -314,7 +332,7 @@ class TimesheetController extends Controller
         abort_if($timesheet->user_id !== $request->user()->id, 403, 'Akses ditolak.');
 
         // Gunakan DB query langsung untuk menghindari Model Events yang mungkin tersembunyi
-        \Illuminate\Support\Facades\DB::table('timesheets')
+        DB::table('timesheets')
             ->where('id', $timesheet->id)
             ->update([
                 'status' => 'submitted',
@@ -364,5 +382,28 @@ class TimesheetController extends Controller
         });
 
         return back()->with('success', 'Timesheet sent back for revision.');
+    }
+
+    public function rejectEntry(Request $request, $id)
+    {
+        $request->validate(['reason' => 'required|string']);
+
+        $entry = TimesheetEntry::findOrFail($id);
+
+        \DB::transaction(function () use ($request, $entry) {
+            // 1. Ubah status entry menjadi revision & simpan alasannya
+            $entry->update([
+                'status'        => 'revision',
+                'reject_reason' => $request->reason,
+            ]);
+
+            // 2. Otomatis ubah status induk Timesheet-nya jadi 'revision' juga 
+            //    biar karyawan tau ada yang harus diperbaiki
+            if ($entry->timesheet && $entry->timesheet->status !== 'revision') {
+                $entry->timesheet->update(['status' => 'revision']);
+            }
+        });
+
+        return back()->with('success', 'Entry flagged for revision.');
     }
 }

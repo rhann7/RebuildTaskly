@@ -22,7 +22,7 @@ class DatabaseSeeder extends Seeder
         $superAdminRole = Role::firstOrCreate(['name' => 'super-admin']);
         $companyRole = Role::firstOrCreate(['name' => 'company']);
         $managerRole = Role::firstOrCreate(['name' => 'manager']); // Added manager role
-        $employeeRole = Role::firstOrCreate(['name' => 'employee']);
+        $employeeRole = Role::firstOrCreate(['name' => 'member']); // Added member role
 
         // 3. Define Permissions (Based on your images, ensuring sequential IDs if starting fresh)
         // I will use Spatie's Permission model to create these so it handles the guard_name automatically,

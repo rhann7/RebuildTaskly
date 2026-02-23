@@ -1,6 +1,7 @@
 import {
     FileText, CheckSquare, Paperclip, Clock, Plus, X,
-    Trash2
+    Trash2,
+    AlertTriangle
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
@@ -284,6 +285,19 @@ export function TimeEntryModal({
                 project={selectedProj}
                 workspace={selectedProj?.workspace}
             />
+            {/* JIKA DIREJECT OLEH MANAGER, TAMPILKAN ALASANNYA DI SINI */}
+            {data.status === 'revision' && data.reject_reason && (
+                <div className="mb-4 p-4 bg-red-500/10 border border-red-500/30 rounded-xl flex gap-3">
+                    <AlertTriangle size={18} className="text-red-500 shrink-0" />
+                    <div className="flex flex-col">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-red-600">Manager Revision Note</span>
+                        <p className="text-sm font-medium text-red-600 dark:text-red-400">
+                            "{data.reject_reason}"
+                        </p>
+                    </div>
+                </div>
+            )}
         </>
+
     );
 }

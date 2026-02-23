@@ -23,13 +23,13 @@ class CheckCompanyPermission
         
         // Kalau masih null, kita paksa cari pake ID
         if (!$company && $user->company_id) {
-            $company = \App\Models\Company::find($user->company_id);
+            $company = Company::find($user->company_id);
         }
 
         abort_if(!$company, 403, 'Akun anda tidak terhubung dengan perusahaan.');
 
         // Cek Permission via si Owner (jewcompoy)
-        $owner = \App\Models\User::role('company')
+        $owner = User::role('company')
             ->where('company_id', $user->company_id)
             ->first();
 

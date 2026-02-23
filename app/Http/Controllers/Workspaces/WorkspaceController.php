@@ -162,7 +162,7 @@ class WorkspaceController extends Controller
             $members->prepend($managerData);
         }
 
-        $allEmployees = \App\Models\User::where('company_id', $workspace->company_id)
+        $allEmployees = User::where('company_id', $workspace->company_id)
             ->where('id', '!=', $workspace->manager_id) // Jangan invite manager sendiri
             ->whereDoesntHave('workspaces', function($q) use ($workspace) {
                 $q->where('workspace_id', $workspace->id);
