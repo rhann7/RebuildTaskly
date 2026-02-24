@@ -58,19 +58,20 @@ class CreateNewUser implements CreatesNewUsers
                 'is_active'           => true,
             ]);
 
-            $freePlan = Plan::where('is_free', true)->where('is_active', true)->first();
+            $freePlan = Plan::where('price', 0)->where('is_active', true)->first();
 
             if ($freePlan) {
                 Subscription::create([
                     'company_id' => $company->id,
                     'plan_id'    => $freePlan->id,
-                    'status'     => 'active',
-                    'is_free'    => true,
+                    'invoice_id' => null,
+                    'plan_name'  => $freePlan->name,
                     'starts_at'  => now(),
-                    'ends_at'    => now()->addDays(30),
+                    'ends_at'    => now()->addDays($freePlan->duration),
+                    'status'     => 'active',
                 ]);
             }
-            
+
             return $user;
         });
     }

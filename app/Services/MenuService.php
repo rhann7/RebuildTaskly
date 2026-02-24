@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\Models\Permission;
 use Illuminate\Http\Request;
+use App\Models\Permission;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 
@@ -14,77 +14,91 @@ class MenuService
         $user = $request->user();
         if (!$user) return [];
 
-        $menu = [
-            [
-                'title'    => 'Dashboard',
-                'href'     => '/dashboard',
-                'icon'     => 'LayoutGrid',
-                'isActive' => $request->routeIs('dashboard'),
-            ]
-        ];
+        $menu = [[
+            'title'    => 'Dashboard',
+            'href'     => route('dashboard'),
+            'icon'     => 'LayoutGrid',
+            'isActive' => $request->routeIs('dashboard'),
+        ]];
 
         if ($user->isSuperAdmin()) return array_merge($menu, $this->getSuperAdminMenus($request));
-
         return array_merge($menu, $this->getDynamicCompanyMenus($request, $user));
     }
 
-    public function getSuperAdminMenus(Request $request)
+    private function getSuperAdminMenus(Request $request)
     {
         return [
             [
                 'title'    => 'Company Management',
-                'href'     => '#',
                 'icon'     => 'Building2',
-                'isActive' => $request->routeIs('company-management.*'),
+                'isActive' => $request->is('company-management*'),
                 'items'    => [
-                    ['title' => 'Categories', 'href' => url('/company-management/categories'), 'isActive' => $request->routeIs('company-management.categories.*')],
-                    ['title' => 'Companies', 'href' => url('/company-management/companies'), 'isActive' => $request->routeIs('company-management.companies.*')],
-                    ['title' => 'Appeals', 'href' => url('/company-management/appeals'), 'isActive' => $request->routeIs('company-management.appeals.*')],
+                    ['title' => 'Categories', 'href' => route('company-management.categories.index'), 'isActive' => $request->routeIs('company-management.categories.*')],
+                    ['title' => 'Companies', 'href' => route('company-management.companies.index'), 'isActive' => $request->routeIs('company-management.companies.*')],
+                    ['title' => 'Appeals', 'href' => route('company-management.appeals.index'), 'isActive' => $request->routeIs('company-management.appeals.*')],
                 ]
             ],
             [
                 'title'    => 'Access Control',
-                'href'     => '#',
                 'icon'     => 'ShieldCheck',
-                'isActive' => $request->routeIs('access-control.*'),
+                'isActive' => $request->is('access-control*'),
                 'items'    => [
-                    ['title' => 'Permissions', 'href' => url('/access-control/permissions'), 'isActive' => $request->routeIs('access-control.permissions.*')],
+                    ['title' => 'Permissions', 'href' => route('access-control.permissions.index'), 'isActive' => $request->routeIs('access-control.permissions.*')],
                 ]
             ],
             [
                 'title'    => 'Product Management',
-                'href'     => '#',
                 'icon'     => 'Gem',
-                'isActive' => $request->routeIs('product-management.*'),
+                'isActive' => $request->is('product-management*'),
                 'items'    => [
-                    ['title' => 'Modules', 'href' => url('/product-management/modules'), 'isActive' => $request->routeIs('product-management.modules.*')],
-                    ['title' => 'Plans', 'href' => url('/product-management/plans'), 'isActive' => $request->routeIs('product-management.plans.*')],
+                    ['title' => 'Modules', 'href' => route('product-management.modules.index'), 'isActive' => $request->routeIs('product-management.modules.*')],
+                    ['title' => 'Plans', 'href' => route('product-management.plans.index'), 'isActive' => $request->routeIs('product-management.plans.*')],
+                    ['title' => 'Invoices', 'href' => route('invoices.index'), 'isActive' => $request->routeIs('invoices.*')],
+                    ['title' => 'Subscriptions', 'href' => route('product-management.subscriptions.index'), 'isActive' => $request->routeIs('product-management.subscriptions.*')],
                 ]
             ],
             [
                 'title'    => 'Workspaces Management', 
-                'href'     => '/workspaces', 
+                'href'     => route('workspaces.index'), 
                 'icon'     => 'Briefcase', 
                 'isActive' => $request->routeIs('workspaces.index'),
             ]
         ];
     }
 
-    public function getDynamicCompanyMenus(Request $request, $user)
+    private function getDynamicCompanyMenus(Request $request, $user)
     {
         $company = $user->company;
         if (!$company) return [];
 
-        $allMenuPermissions = cache()->remember('all_menu_permissions', 86400, function() {
-            return Permission::where('isMenu', true)->get();
-        });
+        $staticMenu = [
+            [
+                'title'    => 'Billing',
+                'href'     => route('billings'),
+                'icon'     => 'CreditCard',
+                'isActive' => $request->routeIs('billings'),
+            ],
+        ];
 
+        $subscription = $company->activeSubscription;
+        if (!$subscription) return $staticMenu;
+
+        $allowedPermissions = Permission::query()
+            ->where('isMenu', true)
+            ->whereHas('module.plans', function ($query) use ($subscription) {
+                $query->where('plans.id', $subscription->plan_id);
+            })
+            ->with('module')
+            ->get();
+
+        $groupedPermissions = $allowedPermissions->groupBy(fn($p) => $p->module->name ?? 'Lainnya');
         $dynamicMenu = [];
-        
-        foreach ($allMenuPermissions as $p) {
-            if ($company->hasAccess($p->name)) {
-                if ($p->route_name && Route::has($p->route_name)) {
-                    $dynamicMenu[] = [
+
+        foreach ($groupedPermissions as $moduleName => $permissions) {
+            $items = [];
+            foreach ($permissions as $p) {
+                if (Route::has($p->route_name)) {
+                    $items[] = [
                         'title'    => Str::headline($p->name),
                         'href'     => route($p->route_name),
                         'icon'     => $p->icon ?? 'Circle',
@@ -92,8 +106,24 @@ class MenuService
                     ];
                 }
             }
+
+            if (count($items) === 1) {
+                $dynamicMenu[] = [
+                    'title'    => $items[0]['title'],
+                    'href'     => $items[0]['href'],
+                    'icon'     => $permissions->first()->module->icon ?? $items[0]['icon'],
+                    'isActive' => $items[0]['isActive'],
+                ];
+            } elseif (count($items) > 1) {
+                $dynamicMenu[] = [
+                    'title'    => $moduleName,
+                    'icon'     => $permissions->first()->module->icon ?? 'Folder',
+                    'items'    => $items,
+                    'isActive' => collect($items)->contains('isActive', true),
+                ];
+            }
         }
 
-        return $dynamicMenu;
+        return array_merge($staticMenu, $dynamicMenu);
     }
 }

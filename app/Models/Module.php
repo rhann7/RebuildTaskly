@@ -10,6 +10,7 @@ class Module extends Model
         'name',
         'slug',
         'type',
+        'scope',
         'price',
         'description',
         'is_active',
@@ -29,6 +30,8 @@ class Module extends Model
 
     public const TYPE_STANDARD = 'standard';
     public const TYPE_ADDON = 'addon';
+    public const SCOPE_COMPANY = 'company';
+    public const SCOPE_WORKSPACE = 'workspace';
 
     public function isAddon(): bool
     {
@@ -38,6 +41,16 @@ class Module extends Model
     public function isStandard(): bool
     {
         return $this->type === self::TYPE_STANDARD;
+    }
+
+    public function isCompanyScope(): bool
+    {
+        return $this->scope === self::SCOPE_COMPANY;
+    }
+
+    public function isWorkspaceScope(): bool
+    {
+        return $this->scope === self::SCOPE_WORKSPACE;
     }
 
     public function permissions()

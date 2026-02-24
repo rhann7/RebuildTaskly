@@ -2,7 +2,7 @@ import ResourceListLayout from '@/layouts/resource/resource-list-layout';
 import { useState, FormEventHandler } from 'react';
 import { useForm, router, Link } from '@inertiajs/react';
 import { PageConfig, type BreadcrumbItem, PaginatedData, SelectOption } from '@/types';
-import { Plus, Trash2, Pencil, Search, Box, Zap, Settings2 } from 'lucide-react';
+import { Plus, Trash2, Pencil, Search, Box, Zap, Settings2, Globe, Building2 } from 'lucide-react';
 
 import InputError from '@/components/input-error';
 import { Input } from '@/components/ui/input';
@@ -19,6 +19,7 @@ type Module = {
     name: string;
     slug: string;
     type: 'standard' | 'addon';
+    scope: 'company' | 'workspace';
     price: number;
     price_fmt: string;
     is_active: boolean;
@@ -26,6 +27,7 @@ type Module = {
     form_default: {
         name: string;
         type: string;
+        scope: string;
         price: number;
         description: string;
         is_active: boolean;
@@ -34,7 +36,7 @@ type Module = {
 
 type PageProps = {
     modules: PaginatedData<Module>;
-    filters: { search?: string; type?: string; };
+    filters: { search?: string; type?: string; scope?: string; };
     pageConfig: PageConfig; 
 };
 
@@ -52,18 +54,21 @@ export default function ModuleIndex({ modules, filters, pageConfig }: PageProps)
     const { data, setData, post, put, processing, errors, reset, clearErrors } = useForm({
         name: '',
         type: 'standard',
+        scope: 'company',
         price: 0,
         description: '',
         is_active: true,
     });
 
-    const handleFilterChange = (newSearch?: string, newType?: string) => {
+    const handleFilterChange = (newSearch?: string, newType?: string, newScope?: string) => {
         const params: any = {
             search: newSearch ?? searchQuery,
             type: newType ?? filters.type,
+            scope: newScope ?? filters.scope,
         };
 
         if (params.type === 'all') delete params.type;
+        if (params.scope === 'all') delete params.scope;
         if (!params.search) delete params.search;
 
         router.get(route('product-management.modules.index'), params, { 
@@ -124,12 +129,24 @@ export default function ModuleIndex({ modules, filters, pageConfig }: PageProps)
             </div>
 
             <Select value={filters.type || 'all'} onValueChange={(val) => handleFilterChange(undefined, val)}>
-                <SelectTrigger className="w-[180px] h-9 bg-background">
-                    <SelectValue placeholder="Module Type" />
+                <SelectTrigger className="w-[140px] h-9 bg-background text-xs">
+                    <SelectValue placeholder="Type" />
                 </SelectTrigger>
                 <SelectContent>
                     <SelectItem value="all">All Types</SelectItem>
                     {pageConfig.options?.types?.map((opt: SelectOption) => (
+                        <SelectItem key={String(opt.value)} value={String(opt.value)}>{opt.label}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+
+            <Select value={filters.scope || 'all'} onValueChange={(val) => handleFilterChange(undefined, undefined, val)}>
+                <SelectTrigger className="w-[140px] h-9 bg-background text-xs">
+                    <SelectValue placeholder="Scope" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">All Scopes</SelectItem>
+                    {pageConfig.options?.scopes?.map((opt: SelectOption) => (
                         <SelectItem key={String(opt.value)} value={String(opt.value)}>{opt.label}</SelectItem>
                     ))}
                 </SelectContent>
@@ -162,7 +179,7 @@ export default function ModuleIndex({ modules, filters, pageConfig }: PageProps)
                         <TableRow className="hover:bg-transparent bg-zinc-50/50 dark:bg-zinc-900/50">
                             <TableHead className="w-[50px] text-center">#</TableHead>
                             <TableHead>Module Name</TableHead>
-                            <TableHead>Type</TableHead>
+                            <TableHead>Type / Scope</TableHead>
                             <TableHead>Price</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead className="text-right px-6">Actions</TableHead>
@@ -182,17 +199,20 @@ export default function ModuleIndex({ modules, filters, pageConfig }: PageProps)
                                     </div>
                                 </TableCell>
                                 <TableCell>
-                                    {module.type === 'standard' ? (
-                                        <span className="inline-flex items-center gap-1.5 rounded-md bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 px-2.5 py-1 text-xs font-medium text-blue-700 dark:text-blue-300">
-                                            <Box className="h-3 w-3" />
-                                            Standard
+                                    <div className="flex gap-1.5 flex-wrap">
+                                        <span className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-medium border ${
+                                            module.type === 'standard' 
+                                            ? 'bg-blue-50 border-blue-200 text-blue-700' 
+                                            : 'bg-purple-50 border-purple-200 text-purple-700'
+                                        }`}>
+                                            {module.type === 'standard' ? <Box className="h-2.5 w-2.5" /> : <Zap className="h-2.5 w-2.5" />}
+                                            {module.type.toUpperCase()}
                                         </span>
-                                    ) : (
-                                        <span className="inline-flex items-center gap-1.5 rounded-md bg-purple-50 dark:bg-purple-950/50 border border-purple-200 dark:border-purple-800 px-2.5 py-1 text-xs font-medium text-purple-700 dark:text-purple-300">
-                                            <Zap className="h-3 w-3" />
-                                            Add-on
+                                        <span className="inline-flex items-center gap-1 rounded-md bg-zinc-100 border border-zinc-200 px-2 py-0.5 text-[10px] font-medium text-zinc-700">
+                                            {module.scope === 'company' ? <Building2 className="h-2.5 w-2.5" /> : <Globe className="h-2.5 w-2.5" />}
+                                            {module.scope.toUpperCase()}
                                         </span>
-                                    )}
+                                    </div>
                                 </TableCell>
                                 <TableCell>
                                     <span className="font-mono text-sm text-foreground">{module.price_fmt}</span>
@@ -235,19 +255,13 @@ export default function ModuleIndex({ modules, filters, pageConfig }: PageProps)
                     </DialogHeader>
 
                     <form onSubmit={handleSubmit} className="space-y-6 pt-4">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="name" className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Module Name</Label>
-                                <Input 
-                                    id="name" 
-                                    value={data.name} 
-                                    onChange={(e) => setData('name', e.target.value)} 
-                                    placeholder="Inventory Management" 
-                                    className="h-9 border-zinc-200 shadow-none focus-visible:ring-zinc-200"
-                                />
-                                <InputError message={errors.name} />
-                            </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="name" className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Module Name</Label>
+                            <Input id="name" value={data.name} onChange={(e) => setData('name', e.target.value)} placeholder="Inventory Management" className="h-9 border-zinc-200 shadow-none focus-visible:ring-zinc-200" />
+                            <InputError message={errors.name} />
+                        </div>
 
+                        <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="type" className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Module Type</Label>
                                 <Select value={data.type} onValueChange={(val: any) => setData('type', val)}>
@@ -256,48 +270,46 @@ export default function ModuleIndex({ modules, filters, pageConfig }: PageProps)
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="standard">
-                                            <div className="flex items-center gap-2">
-                                                <Box className="h-3 w-3" />
-                                                Standard
-                                            </div>
+                                            <div className="flex items-center gap-2"><Box className="h-3 w-3" /> Standard</div>
                                         </SelectItem>
                                         <SelectItem value="addon">
-                                            <div className="flex items-center gap-2">
-                                                <Zap className="h-3 w-3" />
-                                                Add-on
-                                            </div>
+                                            <div className="flex items-center gap-2"><Zap className="h-3 w-3" /> Add-on</div>
                                         </SelectItem>
                                     </SelectContent>
                                 </Select>
                                 <InputError message={errors.type} />
                             </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="scope" className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Module Scope</Label>
+                                <Select value={data.scope} onValueChange={(val: any) => setData('scope', val)}>
+                                    <SelectTrigger className="h-9 border-zinc-200 shadow-none focus:ring-0 focus:ring-offset-0 bg-transparent">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="company">
+                                            <div className="flex items-center gap-2"><Building2 className="h-3 w-3" /> Company</div>
+                                        </SelectItem>
+                                        <SelectItem value="workspace">
+                                            <div className="flex items-center gap-2"><Globe className="h-3 w-3" /> Workspace</div>
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <InputError message={errors.scope} />
+                            </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="price" className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Module Price (IDR)</Label>
-                            <Input 
-                                id="price" 
-                                type="number" 
-                                value={data.price === 0 ? '' : data.price} 
-                                onChange={(e) => {
-                                    const val = e.target.value;
-                                    setData('price', val === '' ? 0 : Number(val));
-                                }}
-                                placeholder="Enter price..."
-                                className="h-9 border-zinc-200 shadow-none focus-visible:ring-zinc-200"
-                            />
-                            <InputError message={errors.price} />
-                        </div>
+                        {data.type === 'addon' && (
+                            <div className="space-y-2">
+                                <Label htmlFor="price" className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Module Price (IDR)</Label>
+                                <Input id="price" type="number" value={data.price === 0 ? '' : data.price} onChange={(e) => { const val = e.target.value; setData('price', val === '' ? 0 : Number(val)); }} placeholder="Enter price..." className="h-9 border-zinc-200 shadow-none focus-visible:ring-zinc-200" />
+                                <InputError message={errors.price} />
+                            </div>
+                        )}
 
                         <div className="space-y-2">
                             <Label htmlFor="description" className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Description</Label>
-                            <Textarea 
-                                id="description" 
-                                value={data.description} 
-                                onChange={(e) => setData('description', e.target.value)} 
-                                className="min-h-[80px] border-zinc-200 shadow-none focus-visible:ring-zinc-200" 
-                                placeholder="Brief explanation of the module features..."
-                            />
+                            <Textarea id="description" value={data.description} onChange={(e) => setData('description', e.target.value)} className="min-h-[80px] border-zinc-200 shadow-none focus-visible:ring-zinc-200"  placeholder="Brief explanation of the module features..." />
                             <InputError message={errors.description} />
                         </div>
 
@@ -307,11 +319,7 @@ export default function ModuleIndex({ modules, filters, pageConfig }: PageProps)
                                     <Label htmlFor="is-active" className="text-sm font-medium">Active Status</Label>
                                     <p className="text-[11px] text-zinc-400">Enable this module to be available in subscription plans.</p>
                                 </div>
-                                <Switch 
-                                    id="is-active"
-                                    checked={data.is_active} 
-                                    onCheckedChange={(val) => setData('is_active', val)} 
-                                />
+                                <Switch id="is-active" checked={data.is_active} onCheckedChange={(val) => setData('is_active', val)} />
                             </div>
                         )}
 

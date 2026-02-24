@@ -23,33 +23,69 @@ class DatabaseSeeder extends Seeder
         Role::firstOrCreate(['name' => 'super-admin']);
         Role::firstOrCreate(['name' => 'company']);
 
-        $module = Module::create([
+        $workspaceModule = Module::create([
             'name'        => 'Workspace Management',
             'type'        => 'standard',
-            'price'       => 250000,
+            'scope'       => 'company',
             'description' => 'Workspace Management Features',
             'is_active'   => true,
         ]);
 
+        $invoiceModule = Module::create([
+            'name'        => 'Invoice Management',
+            'type'        => 'standard',
+            'scope'       => 'company',
+            'description' => 'Invoice Management Features',
+            'is_active'   => true,
+        ]);
+
+        $workspacePermissions = [
+            'view-workspaces'  => ['route' => 'workspaces.index',   'isMenu' => true],
+            'create-workspace' => ['route' => 'workspaces.store',   'isMenu' => false],
+            'show-workspace'   => ['route' => 'workspaces.show',    'isMenu' => false],
+            'edit-workspace'   => ['route' => 'workspaces.update',  'isMenu' => false],
+            'delete-workspace' => ['route' => 'workspaces.destroy', 'isMenu' => false],
+        ];
+
+        foreach ($workspacePermissions as $name => $config) {
+            Permission::create([
+                'module_id'  => $workspaceModule->id,
+                'name'       => $name,
+                'route_name' => $config['route'],
+                'icon'       => 'Briefcase',
+                'isMenu'     => $config['isMenu'],
+            ]);
+        }
+
         Permission::create([
-            'module_id'  => $module->id,
-            'name'       => 'view-workspaces',
-            'route_name' => 'workspaces.index',
-            'icon'       => 'Briefcase',
+            'module_id'  => $invoiceModule->id,
+            'name'       => 'view-invoices',
+            'route_name' => 'invoices.index',
+            'icon'       => 'Receipt',
             'isMenu'     => true,
         ]);
 
-        $plan = Plan::create([
-            'name'                     => 'Free Plan',
-            'price_monthly'            => 0,
-            'discount_monthly_percent' => 0,
-            'price_yearly'             => null,
-            'discount_yearly_percent'  => 0,
-            'is_free'                  => true,
-            'is_active'                => true,
-            'is_yearly'                => false,
+        $freePlan = Plan::create([
+            'name'           => 'Free Plan',
+            'slug'           => 'free-plan',
+            'description'    => 'Get started with basic features.',
+            'price'          => 0,
+            'original_price' => null,
+            'duration'       => 30,
+            'is_active'      => true,
         ]);
-        $plan->modules()->sync($module->id);
+        $freePlan->modules()->sync($invoiceModule->id);
+
+        $monthlyPlan = Plan::create([
+            'name'           => 'Enterprise Plan',
+            'slug'           => 'enterprise-plan',
+            'description'    => 'Best for large organizations with advanced needs.',
+            'price'          => 150000,
+            'original_price' => null,
+            'duration'       => 30,
+            'is_active'      => true,
+        ]);
+        $monthlyPlan->modules()->sync([$workspaceModule->id, $invoiceModule->id]);
 
         $categories = [
             'Finance',
@@ -76,7 +112,7 @@ class DatabaseSeeder extends Seeder
                 'remember_token'    => null,
             ]
         )->syncRoles('super-admin');
-        
+
         $company = User::firstOrCreate(
             ['email' => 'starbhaktech@gmail.com'],
             [
@@ -87,7 +123,7 @@ class DatabaseSeeder extends Seeder
             ]
         )->syncRoles('company');
 
-        $starbhak = Company::firstOrCreate(
+        Company::firstOrCreate(
             ['email' => 'starbhaktech@gmail.com'],
             [
                 'company_category_id' => CompanyCategory::where('name', 'Technology')->first()->id,
@@ -101,14 +137,17 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        Subscription::updateOrCreate(
-            ['company_id' => $starbhak->id],
+        $companyAccount = Company::where('email', 'starbhaktech@gmail.com')->first();
+
+        Subscription::firstOrCreate(
+            ['company_id' => $companyAccount->id],
             [
-                'plan_id'   => $plan->id,
-                'status'    => 'active',
-                'is_free'   => true,
-                'starts_at' => now(),
-                'ends_at'   => now()->addDays(30),
+                'plan_id'    => $freePlan->id,
+                'invoice_id' => null,
+                'plan_name'  => $freePlan->name,
+                'starts_at'  => now(),
+                'ends_at'    => now()->addDays($freePlan->duration),
+                'status'     => 'active',
             ]
         );
     }

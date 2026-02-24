@@ -13,12 +13,9 @@ return new class extends Migration
             $table->string('name');
             $table->string('slug')->unique();
             $table->text('description')->nullable();
-            $table->decimal('price_monthly', 15, 2)->nullable();
-            $table->decimal('price_yearly', 15, 2)->nullable();
-            $table->integer('discount_monthly_percent')->default(0)->nullable();
-            $table->integer('discount_yearly_percent')->default(0)->nullable();
-            $table->boolean('is_free')->default(false);
-            $table->boolean('is_yearly')->default(false);
+            $table->decimal('price', 15, 2);
+            $table->decimal('original_price', 15, 2)->nullable();
+            $table->integer('duration');
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
