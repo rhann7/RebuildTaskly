@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 
 class InvoiceAddOn extends Model
@@ -24,8 +25,30 @@ class InvoiceAddOn extends Model
     protected $casts = [
         'due_date' => 'datetime',
         'paid_at'  => 'datetime',
-        'amount'   => 'decimal:2',
+        'amount'   => 'float', // sama seperti Invoice, bukan decimal:2
     ];
+
+    // -------------------------------------------------------------------------
+    // Attributes
+    // -------------------------------------------------------------------------
+
+    protected function formattedAmount(): Attribute
+    {
+        return Attribute::make(
+            get: fn() => 'Rp ' . number_format($this->amount, 0, ',', '.')
+        );
+    }
+
+    protected function isPayable(): Attribute
+    {
+        return Attribute::make(
+            get: fn() => $this->status === 'unpaid' && $this->due_date->isFuture()
+        );
+    }
+
+    // -------------------------------------------------------------------------
+    // Relationships
+    // -------------------------------------------------------------------------
 
     public function company()
     {
