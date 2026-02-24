@@ -13,14 +13,14 @@ class Company extends Model
     protected $guard_name = 'web';
 
     protected $fillable = [
-        'user_id', 
-        'company_category_id', 
-        'name', 
-        'slug', 
-        'email', 
-        'phone', 
-        'logo', 
-        'address', 
+        'user_id',
+        'company_category_id',
+        'name',
+        'slug',
+        'email',
+        'phone',
+        'logo',
+        'address',
         'is_active',
         'reason'
     ];
@@ -70,5 +70,15 @@ class Company extends Model
             ->where('status', 'active')
             ->where('ends_at', '>', now())
             ->latest();
+    }
+
+    public function invoiceAddOns()
+    {
+        return $this->hasMany(InvoiceAddOn::class);
+    }
+
+    public function companyAddOns()
+    {
+        return $this->hasMany(CompanyAddOn::class);
     }
 }

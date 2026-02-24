@@ -20,7 +20,7 @@ class Module extends Model
         'price'     => 'decimal:2',
         'is_active' => 'boolean',
     ];
-    
+
     protected static function booted()
     {
         static::saving(function ($module) {
@@ -61,5 +61,15 @@ class Module extends Model
     public function plans()
     {
         return $this->belongsToMany(Plan::class, 'plan_module');
+    }
+
+    public function invoiceAddOns()
+    {
+        return $this->hasMany(InvoiceAddOn::class);
+    }
+
+    public function companyAddOns()
+    {
+        return $this->hasMany(CompanyAddOn::class);
     }
 }
