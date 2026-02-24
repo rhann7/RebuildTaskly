@@ -4,9 +4,11 @@ use App\Http\Controllers\Companies\CategoryController;
 use App\Http\Controllers\Companies\CompanyAppealController;
 use App\Http\Controllers\Companies\CompanyController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Invoices\InvoiceController;
 use App\Http\Controllers\Modules\ModuleController;
 use App\Http\Controllers\Plans\PlanController;
 use App\Http\Controllers\Rules\PermissionController;
+use App\Http\Controllers\Subscriptions\SubscriptionController;
 use App\Http\Controllers\Workspaces\WorkspaceController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -15,7 +17,6 @@ use Laravel\Fortify\Features;
 Route::get('/', function () {
     return Inertia::render('welcome', ['canRegister' => Features::enabled(Features::registration())]);
 })->name('home');
-
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])
@@ -28,6 +29,25 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('plans/pricing', [PlanController::class, 'pricing'])
         ->name('plans.pricing');
+
+    Route::get('billings', [SubscriptionController::class, 'billing'])
+        ->name('billings');
+
+    Route::post('invoices/callback', [InvoiceController::class, 'callback'])
+        ->name('invoices.callback')
+        ->withoutMiddleware(['auth', 'verified']);
+
+    Route::resource('invoices', InvoiceController::class)
+        ->only(['store', 'show']);
+    
+    Route::get('invoices/{invoice}/create', [InvoiceController::class, 'create'])
+        ->name('invoices.create');
+
+    Route::patch('invoices/{invoice}/cancel', [InvoiceController::class, 'cancel'])
+        ->name('invoices.cancel');
+
+    Route::post('invoices/{invoice}/payment', [InvoiceController::class, 'createPayment'])
+        ->name('invoices.payment');
         
     Route::middleware('role:super-admin')->group(function () {
         Route::prefix('access-control')->name('access-control.')->group(function () {
@@ -50,6 +70,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 ->name('plans.modules.assign')  ;
             Route::delete('plans/{plan}/modules/{module}', [PlanController::class, 'removeModule'])
                 ->name('plans.modules.remove');
+            
+            Route::resource('subscriptions', SubscriptionController::class)
+                ->only(['index', 'show']);
         });
 
         Route::prefix('company-management')->name('company-management.')->group(function () {
@@ -67,6 +90,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     Route::middleware(['company_status', 'company_can'])->group(function () {
+        Route::resource('invoices', InvoiceController::class)
+            ->only(['index']);
+
         Route::resource('workspaces', WorkspaceController::class)
             ->parameters(['workspaces' => 'workspace:slug'])
             ->except(['create', 'edit']);
