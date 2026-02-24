@@ -53,6 +53,8 @@ class MenuService
                 'items'    => [
                     ['title' => 'Modules', 'href' => route('product-management.modules.index'), 'isActive' => $request->routeIs('product-management.modules.*')],
                     ['title' => 'Plans', 'href' => route('product-management.plans.index'), 'isActive' => $request->routeIs('product-management.plans.*')],
+                    ['title' => 'Invoices', 'href' => route('invoices.index'), 'isActive' => $request->routeIs('invoices.*')],
+                    ['title' => 'Subscriptions', 'href' => route('product-management.subscriptions.index'), 'isActive' => $request->routeIs('product-management.subscriptions.*')],
                 ]
             ],
             [
@@ -69,8 +71,17 @@ class MenuService
         $company = $user->company;
         if (!$company) return [];
 
-        $subscription = $company->subscription;
-        if (!$subscription) return [];
+        $staticMenu = [
+            [
+                'title'    => 'Billing',
+                'href'     => route('billings'),
+                'icon'     => 'CreditCard',
+                'isActive' => $request->routeIs('billings'),
+            ],
+        ];
+
+        $subscription = $company->activeSubscription;
+        if (!$subscription) return $staticMenu;
 
         $allowedPermissions = Permission::query()
             ->where('isMenu', true)
@@ -113,6 +124,6 @@ class MenuService
             }
         }
 
-        return $dynamicMenu;
+        return array_merge($staticMenu, $dynamicMenu);
     }
 }
