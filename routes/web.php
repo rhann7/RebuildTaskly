@@ -7,9 +7,11 @@ use App\Http\Controllers\Companies\CompanyController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Invoices\InvoiceController;
 use App\Http\Controllers\Modules\ModuleController;
+use App\Http\Controllers\Payments\InvoiceAddOnPaymentController;
 use App\Http\Controllers\Plans\PlanController;
 use App\Http\Controllers\Rules\PermissionController;
 use App\Http\Controllers\Subscriptions\SubscriptionController;
+use App\Http\Controllers\Tickets\TicketController;
 use App\Http\Controllers\Workspaces\WorkspaceController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -60,6 +62,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::resource('permissions', PermissionController::class);
         });
 
+        Route::post('tickets/{ticket}/assign', [TicketController::class, 'assign'])
+            ->name('tickets.assign');
+
+        Route::patch('tickets/{ticket}/status', [TicketController::class, 'updateStatus'])
+            ->name('tickets.status');
+
+        Route::post('tickets/{ticket}/proposal', [TicketController::class, 'storeProposal'])
+            ->name('tickets.proposal.store');
+
         Route::prefix('product-management')->name('product-management.')->group(function () {
             Route::resource('modules', ModuleController::class)
                 ->parameters(['modules' => 'module:slug']);
@@ -73,7 +84,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 ->parameters(['plans' => 'plan:slug']);
 
             Route::post('plans/{plan}/modules', [PlanController::class, 'assignModules'])
-                ->name('plans.modules.assign')  ;
+                ->name('plans.modules.assign');
             Route::delete('plans/{plan}/modules/{module}', [PlanController::class, 'removeModule'])
                 ->name('plans.modules.remove');
 
@@ -103,10 +114,33 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->parameters(['workspaces' => 'workspace:slug'])
             ->except(['create', 'edit']);
 
-        Route::get('test', function() {
+        Route::get('test', function () {
             return Inertia::render('example/index');
         })->name('test');
+
+        Route::resource('tickets', TicketController::class)
+            ->only(['index', 'show', 'create', 'store']);
+
+        Route::post('tickets/{ticket}/message', [TicketController::class, 'sendMessage'])
+            ->name('tickets.message');
+
+        Route::post('tickets/{ticket}/proposal/approve', [TicketController::class, 'approveProposal'])
+            ->name('tickets.proposal.approve');
+
+        // Add-on payment routes — ikuti pola invoices (show → create → pay)
+        Route::get('invoice-addons/{invoiceAddOn}', [InvoiceAddOnPaymentController::class, 'show'])
+            ->name('payments.addon.show');
+
+        Route::get('invoice-addons/{invoiceAddOn}/create', [InvoiceAddOnPaymentController::class, 'create'])
+            ->name('payments.addon.create');
+
+        Route::post('invoice-addons/{invoiceAddOn}/pay', [InvoiceAddOnPaymentController::class, 'createPayment'])
+            ->name('payments.addon.pay');
+
+        Route::post('invoice-addons/callback', [TicketController::class, 'addOnCallback'])
+            ->name('payments.addon.callback')
+            ->withoutMiddleware(['auth', 'verified']);
     });
 });
 
-require __DIR__.'/settings.php';
+require __DIR__ . '/settings.php';

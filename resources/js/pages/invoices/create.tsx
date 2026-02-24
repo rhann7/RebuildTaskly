@@ -1,11 +1,20 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowLeft, CreditCard, Calendar, Clock, Building2, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, CreditCard, Calendar, Clock, Building2, CheckCircle2, Package } from 'lucide-react';
+
+// ← TAMBAHAN: type Proposal
+type Proposal = {
+    id: number;
+    module_name: string;
+    ticket_title: string | null;
+    estimated_price: number;
+};
 
 type Invoice = {
     id: number;
     number: string;
     plan_name: string;
     amount: number;
+    plan_amount: number;    // ← TAMBAHAN
     formatted_amount: string;
     original_price: number | null;
     plan_duration: number;
@@ -13,6 +22,7 @@ type Invoice = {
     snap_token: string | null;
     due_date: string;
     is_payable: boolean;
+    proposals: Proposal[]; // ← TAMBAHAN
     company: { id: number; name: string } | null;
     plan: { id: number; name: string } | null;
 };
@@ -42,27 +52,29 @@ export default function InvoiceCreate({ invoice, pageConfig }: PageProps) {
                 'Accept': 'application/json',
             },
         })
-        .then(res => {
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            return res.json();
-        })
-        .then(data => {
-            const token = data.invoice?.snap_token;
-            if (token) {
-                (window as any).snap.pay(token, {
-                    onSuccess: () => router.visit(route('invoices.show', { invoice: invoice.id })),
-                    onPending: () => router.visit(route('invoices.show', { invoice: invoice.id })),
-                    onError:   () => router.visit(route('invoices.show', { invoice: invoice.id })),
-                    onClose:   () => console.log('Payment popup closed'),
-                });
-            }
-        })
-        .catch(err => console.error('Payment error:', err));
+            .then(res => {
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                return res.json();
+            })
+            .then(data => {
+                const token = data.invoice?.snap_token;
+                if (token) {
+                    (window as any).snap.pay(token, {
+                        onSuccess: () => router.visit(route('invoices.show', { invoice: invoice.id })),
+                        onPending: () => router.visit(route('invoices.show', { invoice: invoice.id })),
+                        onError: () => router.visit(route('invoices.show', { invoice: invoice.id })),
+                        onClose: () => console.log('Payment popup closed'),
+                    });
+                }
+            })
+            .catch(err => console.error('Payment error:', err));
     };
 
     const today = new Date();
-    const hasDiscount = invoice.original_price !== null && invoice.original_price > invoice.amount;
-    const discountAmount = hasDiscount ? invoice.original_price! - invoice.amount : 0;
+    const hasDiscount = invoice.original_price !== null && invoice.original_price > invoice.plan_amount;
+    const discountAmount = hasDiscount ? invoice.original_price! - invoice.plan_amount : 0;
+    const hasAddons = invoice.proposals.length > 0; // ← TAMBAHAN
+    const addonTotal = invoice.proposals.reduce((s, p) => s + p.estimated_price, 0); // ← TAMBAHAN
 
     return (
         <div className="min-h-screen bg-background text-foreground flex flex-col">
@@ -134,6 +146,7 @@ export default function InvoiceCreate({ invoice, pageConfig }: PageProps) {
                                 <span className="col-span-3 text-right">Amount</span>
                             </div>
 
+                            {/* Baris subscription plan — sama persis seperti sebelumnya */}
                             <div className="grid grid-cols-12 items-center py-2">
                                 <div className="col-span-7">
                                     <p className="font-medium text-sm text-foreground">{invoice.plan_name}</p>
@@ -148,13 +161,35 @@ export default function InvoiceCreate({ invoice, pageConfig }: PageProps) {
                                     <p className="font-mono font-semibold text-sm">{formatCurrency(invoice.original_price!)}</p>
                                 </div>
                             </div>
+
+                            {/* ← TAMBAHAN: baris add-on per proposal */}
+                            {hasAddons && invoice.proposals.map((proposal) => (
+                                <div key={proposal.id} className="grid grid-cols-12 items-center py-2 border-t border-dashed border-border/50">
+                                    <div className="col-span-7">
+                                        <div className="flex items-center gap-1.5">
+                                            <Package className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                                            <p className="font-medium text-sm text-foreground">{proposal.module_name}</p>
+                                        </div>
+                                        {proposal.ticket_title && (
+                                            <p className="text-xs text-muted-foreground mt-0.5 ml-5">Ref: {proposal.ticket_title}</p>
+                                        )}
+                                        <p className="text-xs text-muted-foreground mt-0.5 ml-5">Add-on module</p>
+                                    </div>
+                                    <div className="col-span-2 text-center">
+                                        <p className="text-sm text-muted-foreground">—</p>
+                                    </div>
+                                    <div className="col-span-3 text-right">
+                                        <p className="font-mono font-semibold text-sm">{formatCurrency(proposal.estimated_price)}</p>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
 
                         <div className="border-t bg-muted/30 p-6 space-y-2">
                             <div className="flex items-center justify-between text-sm">
                                 <span className="text-muted-foreground">Subtotal</span>
                                 <span className="font-mono">
-                                    {hasDiscount ? formatCurrency(invoice.original_price!) : invoice.formatted_amount}
+                                    {hasDiscount ? formatCurrency(invoice.original_price!) : formatCurrency(invoice.plan_amount)}
                                 </span>
                             </div>
                             <div className="flex items-center justify-between text-sm">
@@ -165,6 +200,13 @@ export default function InvoiceCreate({ invoice, pageConfig }: PageProps) {
                                     <span className="font-mono">Rp0</span>
                                 )}
                             </div>
+                            {/* ← TAMBAHAN: baris add-on total jika ada */}
+                            {hasAddons && (
+                                <div className="flex items-center justify-between text-sm">
+                                    <span className="text-muted-foreground">Add-on Modules ({invoice.proposals.length})</span>
+                                    <span className="font-mono">+{formatCurrency(addonTotal)}</span>
+                                </div>
+                            )}
                             <div className="flex items-center justify-between font-bold text-base border-t pt-2 mt-2">
                                 <span>Total Due</span>
                                 <span className="font-mono text-lg">{invoice.formatted_amount}</span>
@@ -178,6 +220,13 @@ export default function InvoiceCreate({ invoice, pageConfig }: PageProps) {
                             <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
                             <span>Access to <strong className="text-foreground">{invoice.plan_name}</strong> for <strong className="text-foreground">{invoice.plan_duration} days</strong></span>
                         </div>
+                        {/* ← TAMBAHAN: list add-on */}
+                        {hasAddons && invoice.proposals.map((proposal) => (
+                            <div key={proposal.id} className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
+                                <span><strong className="text-foreground">{proposal.module_name}</strong> add-on — already active, billed this cycle</span>
+                            </div>
+                        ))}
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
                             <span>Subscription starts immediately after payment is confirmed</span>

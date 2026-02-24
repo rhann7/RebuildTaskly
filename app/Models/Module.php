@@ -72,4 +72,9 @@ class Module extends Model
     {
         return $this->hasMany(CompanyAddOn::class);
     }
+
+    public function proposals()
+    {
+        return $this->hasMany(TicketProposal::class);
+    }
 }
