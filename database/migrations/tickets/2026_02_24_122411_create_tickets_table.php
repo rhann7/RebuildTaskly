@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignId('company_id')->constrained()->cascadeOnDelete();
 
             $table->string('code')->unique(); // TCK-20260224-0001
-            $table->enum('type', ['bug', 'feature']);
+            $table->string('type');
             $table->string('title');
             $table->text('description');
 
