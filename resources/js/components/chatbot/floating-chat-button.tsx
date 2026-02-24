@@ -221,7 +221,7 @@ export default function FloatingChatButton({ onToggle }: FloatingChatButtonProps
                         title="Buka chat"
                     >
                         <div className='flex gap-3 items-center'>
-                            <Bot /> <p className='font-bold'>SADA AI</p>
+                            <Bot /> <p className='font-bold'>Assistant</p>
                         </div>
                     </button>
                 </DrawerTrigger>
@@ -229,7 +229,7 @@ export default function FloatingChatButton({ onToggle }: FloatingChatButtonProps
                     <div className="flex flex-col h-full w-full max-w-4xl mx-auto">
                         {/* Header */}
                         <DrawerHeader className="flex-shrink-0 border-b">
-                            <DrawerTitle>Chat Dengan SADA AI</DrawerTitle>
+                            <DrawerTitle>Chat Dengan SADA Assistant</DrawerTitle>
                             <DrawerDescription>Kami siap membantu Anda 24 x 7</DrawerDescription>
                         </DrawerHeader>
 
@@ -240,7 +240,7 @@ export default function FloatingChatButton({ onToggle }: FloatingChatButtonProps
                                 (
                                     <>
                                         <div className=''>
-                                            <p className='text-foreground font-bold text-center'>Halo {user?.name} 👋, ada yang bisa SADA AI bantu?</p>
+                                            <p className='text-foreground font-bold text-center'>Halo {user?.name} 👋, ada yang bisa SADA Assistant bantu?</p>
 
                                             {open && showTransition && (
                                                 <div className='flex flex-wrap gap-2 mt-4 justify-center'>
@@ -275,7 +275,7 @@ export default function FloatingChatButton({ onToggle }: FloatingChatButtonProps
                                                 </div>
                                             )}
 
-                                            {user.role == 'company' && 'company-owner' ?
+                                            {/* {user.role == 'company' && 'company-owner' ?
 
                                                 <div className='mt-6 flex flex-col w-full'>
                                                     {ActionChatbot.map((action, index) => (
@@ -315,7 +315,7 @@ export default function FloatingChatButton({ onToggle }: FloatingChatButtonProps
                                                     ))}
                                                 </div>
 
-                                            }
+                                            } */}
                                         </div>
 
                                     </>
