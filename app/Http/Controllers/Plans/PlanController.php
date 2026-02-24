@@ -64,6 +64,11 @@ class PlanController extends Controller
 
     public function pricing()
     {
+        $user = request()->user();
+        $currentPlanId = null;
+
+        if ($user && !$user->isSuperAdmin()) $currentPlanId = $user->company?->activeSubscription?->plan_id;
+
         $plans = Plan::where('is_active', true)
             ->with(['modules' => function($q) {
                 $q->where('is_active', true)->orderBy('name', 'asc');
@@ -73,11 +78,10 @@ class PlanController extends Controller
             ->get();
 
         return Inertia::render('plans/pricing', [
-            'plans' => $plans->map(function (Plan $plan) {
-                return $this->transformSinglePlan($plan);
-            }),
-            'pageConfig' => [
-                'title' => 'Choose Your Plan',
+            'plans'           => $plans->map(fn(Plan $plan) => $this->transformSinglePlan($plan)),
+            'current_plan_id' => $currentPlanId,
+            'pageConfig'      => [
+                'title'       => 'Choose Your Plan',
                 'description' => 'Select a plan that fits your business needs.',
             ]
         ]);
