@@ -14,12 +14,20 @@ class MenuService
         $user = $request->user();
         if (!$user) return [];
 
-        $menu = [[
-            'title'    => 'Dashboard',
-            'href'     => route('dashboard'),
-            'icon'     => 'LayoutGrid',
-            'isActive' => $request->routeIs('dashboard'),
-        ]];
+        $menu = [
+            [
+                'title'    => 'Dashboard',
+                'href'     => route('dashboard'),
+                'icon'     => 'LayoutGrid',
+                'isActive' => $request->routeIs('dashboard'),
+            ],
+            [
+                'title'    => 'Ticketing',
+                'href'     => route('tickets.index'),
+                'icon'     => 'Ticket',
+                'isActive' => $request->routeIs('tickets.index'),
+            ],
+        ];
 
         if ($user->isSuperAdmin()) return array_merge($menu, $this->getSuperAdminMenus($request));
         return array_merge($menu, $this->getDynamicCompanyMenus($request, $user));
@@ -58,9 +66,9 @@ class MenuService
                 ]
             ],
             [
-                'title'    => 'Workspaces Management', 
-                'href'     => route('workspaces.index'), 
-                'icon'     => 'Briefcase', 
+                'title'    => 'Workspaces Management',
+                'href'     => route('workspaces.index'),
+                'icon'     => 'Briefcase',
                 'isActive' => $request->routeIs('workspaces.index'),
             ]
         ];

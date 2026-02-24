@@ -21,6 +21,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->trustProxies(at: '*');
+        // $middleware->validateCsrfTokens(except:[
+        //     'invoices/callback',
+        //     'invoice-addons/callback',
+        // ]);
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
 
         $middleware->validateCsrfTokens(except: ['invoices/callback']);
