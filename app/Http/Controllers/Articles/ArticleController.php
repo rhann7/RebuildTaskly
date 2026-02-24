@@ -95,8 +95,6 @@ class ArticleController
             'created_by' => Auth::user()->name,
         ]);
 
-        ArticleJob::dispatch($articleDetail)->delay(Carbon::now()->addSeconds(0.5));
-
         return redirect()->back()->with('success', 'Article created successfully.');
     }
 

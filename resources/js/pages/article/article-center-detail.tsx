@@ -87,7 +87,7 @@ export default function ArticleCenterDetail({ article, relatedArticles }: PagePr
     };
 
     const getFirstImage = (article: Article) => {
-        return article.detail?.images?.[0]?.url_image || '/images/placeholder-article.png';
+        return article.detail?.images?.[0]?.url_image || '/assets/bg-card-article.jpg';
     };
 
     const headerActions = (

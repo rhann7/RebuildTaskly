@@ -143,7 +143,6 @@ class Article extends Model
     public static function destroyArticle(int $id): self {
         $article = self::findOrFail($id);
         $article->detail()->delete();
-        $article->comments()->delete();
         $article->delete();
 
         return $article;

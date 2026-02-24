@@ -87,20 +87,20 @@ class ArticleSearchTool implements ToolInterface
             // Filter by search query
             if ($query) {
                 $articlesQuery->where(function ($q) use ($query) {
-                    $q->where('articles.name', 'like', '%' . $query . '%')
-                        ->orWhere('articles.tag_code', 'like', '%' . $query . '%')
-                        ->orWhere('article_details.description', 'like', '%' . $query . '%');
+                    $q->where('articles.name', 'ilike', '%' . $query . '%')
+                        ->orWhere('articles.tag_code', 'ilike', '%' . $query . '%')
+                        ->orWhere('article_details.description', 'ilike', '%' . $query . '%');
                 });
             }
 
             // Filter by category
             if ($category) {
-                $articlesQuery->where('article_categories.name', 'like', '%' . $category . '%');
+                $articlesQuery->where('article_categories.name', 'ilike', '%' . $category . '%');
             }
 
             // Filter by tag
             if ($tag) {
-                $articlesQuery->where('articles.tag_code', 'like', '%' . $tag . '%');
+                $articlesQuery->where('articles.tag_code', 'ilike', '%' . $tag . '%');
             }
 
             // Get results
