@@ -109,6 +109,7 @@ class TimesheetController extends Controller
                     'sub_task_id' => $entry->sub_task_id,
                     'description' => $entry->description,
                     'reject_reason' => $entry->reject_reason, // Tambahkan ini agar pesan reject masuk ke modal
+                    'attachment'  => $entry->attachment,
                 ];
             });
         }
@@ -175,13 +176,16 @@ class TimesheetController extends Controller
             'start_time'  => 'required|date_format:H:i',
             'end_time'    => 'required|date_format:H:i',
             'description' => 'required|string',
-            'attachment' => 'nullable|file|mimes:jpg,jpeg,png,pdf,zip|max:2048',
+            'attachments'   => 'nullable|array',
+            'attachments.*' => 'file|mimes:jpg,jpeg,png,pdf,zip|max:2048',
         ]);
 
-        $attachmentPath = null;
-        if ($request->hasFile('attachment')) {
-            // Simpan ke storage/app/public/attachments
-            $attachmentPath = $request->file('attachment')->store('attachments', 'public');
+        // LOGIC MULTIPLE UPLOAD
+        $attachmentPaths = [];
+        if ($request->hasFile('attachments')) {
+            foreach ($request->file('attachments') as $file) {
+                $attachmentPaths[] = $file->store('attachments', 'public');
+            }
         }
 
         $user = $request->user();
@@ -222,7 +226,7 @@ class TimesheetController extends Controller
             'hours'       => round($hours, 2),
             'description' => $validated['description'],
             'status'      => 'draft',
-            'attachment' => $attachmentPath,
+            'attachment'  => !empty($attachmentPaths) ? json_encode($attachmentPaths) : null,
         ]);
 
         // 4. Update the total hours
@@ -234,42 +238,62 @@ class TimesheetController extends Controller
     public function update(Request $request, $id)
     {
         $validated = $request->validate([
-            'project_id'  => 'required|exists:projects,id',
-            'task_id'     => 'nullable|exists:tasks,id',
-            'sub_task_id' => 'nullable|exists:sub_tasks,id',
-            'date'        => 'required|date',
-            'start_time'  => 'required|date_format:H:i',
-            'end_time'    => 'required|date_format:H:i',
-            'description' => 'required|string',
-            'attachment'  => 'nullable|file|mimes:jpg,jpeg,png,pdf,zip|max:2048', //
+            'project_id'           => 'required|exists:projects,id',
+            'task_id'              => 'nullable|exists:tasks,id',
+            'sub_task_id'          => 'nullable|exists:sub_tasks,id',
+            'date'                 => 'required|date',
+            'start_time'           => 'required|date_format:H:i',
+            'end_time'             => 'required|date_format:H:i',
+            'description'          => 'required|string',
+            'existing_attachments' => 'nullable|array',
+            'attachments'          => 'nullable|array',
+            'attachments.*'        => 'file|mimes:jpg,jpeg,png,pdf,zip|max:2048',
         ]);
 
         $entry = TimesheetEntry::findOrFail($id);
 
-        // Handle File Update
-        if ($request->hasFile('attachment')) {
-            // Hapus file lama jika ada (opsional)
-            if ($entry->attachment) {
-                \Storage::disk('public')->delete($entry->attachment);
-            }
-            $validated['attachment'] = $request->file('attachment')->store('attachments', 'public'); //
+        $keptAttachments = $request->input('existing_attachments', []);
+
+        $oldAttachments = $entry->attachment ? json_decode($entry->attachment, true) : [];
+        if (!is_array($oldAttachments)) {
+            $oldAttachments = [$entry->attachment]; // Berjaga-jaga kalau datanya masih string lawas
         }
 
+        // Hapus file dari storage jika user membuangnya di frontend
+        $deletedAttachments = array_diff($oldAttachments, $keptAttachments);
+        foreach ($deletedAttachments as $deletedFile) {
+            if ($deletedFile) {
+                \Storage::disk('public')->delete($deletedFile);
+            }
+        }
+
+        // Mulai kumpulkan path akhir dari file yang dipertahankan
+        $finalAttachmentPaths = $keptAttachments;
+
+        // 2. TANGANI FILE BARU YANG DI-UPLOAD
+        if ($request->hasFile('attachments')) {
+            foreach ($request->file('attachments') as $file) {
+                $finalAttachmentPaths[] = $file->store('attachments', 'public');
+            }
+        }
+
+        // 3. KALKULASI WAKTU
         $start = Carbon::parse($validated['start_time']);
         $end = Carbon::parse($validated['end_time']);
         $hours = $start->diffInMinutes($end) / 60;
 
         $entry->update([
-            'project_id'  => $validated['project_id'],
-            'task_id'     => $validated['task_id'],
-            'sub_task_id' => $validated['sub_task_id'],
-            'date'        => $validated['date'],
-            'start_at'    => $validated['start_time'],
-            'end_at'      => $validated['end_time'],
-            'hours'       => round($hours, 2),
-            'description' => $validated['description'],
-            'attachment'  => $validated['attachment'] ?? $entry->attachment,
-            'status'      => 'draft',
+            'project_id'    => $validated['project_id'],
+            'task_id'       => $validated['task_id'],
+            'sub_task_id'   => $validated['sub_task_id'],
+            'date'          => $validated['date'],
+            'start_at'      => $validated['start_time'],
+            'end_at'        => $validated['end_time'],
+            'hours'         => round($hours, 2),
+            'description'   => $validated['description'],
+            // Encode menjadi JSON untuk disimpan
+            'attachment'    => !empty($finalAttachmentPaths) ? json_encode(array_values($finalAttachmentPaths)) : null,
+            'status'        => 'draft',
             'reject_reason' => null,
         ]);
 
@@ -418,7 +442,7 @@ class TimesheetController extends Controller
                 'status'        => 'approved',
                 'reject_reason' => null,
             ]);
-            
+
             $timesheet = $entry->timesheet;
             if ($timesheet && $timesheet->entries()->where('status', '!=', 'approved')->count() === 0) {
                 $timesheet->update(['status' => 'approved']);

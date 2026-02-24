@@ -29,9 +29,10 @@ export default function MemberRoutineView({ timeEntries, projects, stats, curren
         start_time: '',
         end_time: '',
         description: '',
-        // Kita juga bisa menyertakan info status dan alasan reject jika diperlukan di modal
         status: 'draft',
-        reject_reason: ''
+        reject_reason: '',
+        attachments: [] as File[],
+        existing_attachments: [] as string[],
     });
 
     // --- NAVIGASI TANGGAL ---
@@ -58,7 +59,9 @@ export default function MemberRoutineView({ timeEntries, projects, stats, curren
             start_time: startTime,
             end_time: endTime,
             status: 'draft',
-            reject_reason: ''
+            reject_reason: '',
+            attachments: [],           // Reset file baru
+            existing_attachments: []   // Reset file lama
         });
         setIsFullModalOpen(true);
     };
@@ -76,8 +79,12 @@ export default function MemberRoutineView({ timeEntries, projects, stats, curren
             end_time: entry.endTime,
             description: entry.description || '',
             status: entry.status || 'draft',
-            reject_reason: entry.reject_reason || ''
-        });
+            reject_reason: entry.reject_reason || '',
+            
+            attachments: [],
+            existing_attachments: [],
+            attachment: entry.attachment // Kita butuh ini mentah-mentah dulu untuk di-decode oleh modal
+        } as any);
         setIsFullModalOpen(true);
     };
 

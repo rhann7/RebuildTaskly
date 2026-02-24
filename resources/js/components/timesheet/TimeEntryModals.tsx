@@ -1,26 +1,35 @@
 import {
     FileText, CheckSquare, Paperclip, Clock, Plus, X,
-    Trash2,
-    AlertTriangle
+    Trash2, AlertTriangle, UploadCloud, ExternalLink
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react"; // <-- TAMBAHKAN useEffect DI SINI
 import { router } from "@inertiajs/react";
 
-import CreateTaskModal from "@/components/tabs-project/CreateTaskModal"; // Import modal task kamu
+import CreateTaskModal from "@/components/tabs-project/CreateTaskModal";
 import { SubTaskItem } from "@/layouts/tasks/subtask/SubTaskItem";
 
 export function TimeEntryModal({
-    isOpen, setIsOpen, data, setData, projects, processing, errors, workspace, isEditing, onDelete
+    isOpen, setIsOpen, data, setData, projects, processing, errors, workspace, isEditing, onDelete,
+    submitEntry // <--- TERIMA DARI PROPS
 }: any) {
     const [activeTab, setActiveTab] = useState<'details' | 'checklist' | 'files'>('details');
-
-    // State untuk memunculkan Modal Create Task
     const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
 
-    // Memoization pencarian data
+    // --- LOGIC AJAIB UNTUK FILE LAMA (Saat Edit) ---
+    useEffect(() => {
+        if (isEditing && data.attachment && typeof data.attachment === 'string' && data.existing_attachments?.length === 0) {
+            try {
+                const parsed = JSON.parse(data.attachment);
+                setData('existing_attachments', Array.isArray(parsed) ? parsed : [data.attachment]);
+            } catch (e) {
+                setData('existing_attachments', [data.attachment]);
+            }
+        }
+    }, [isEditing, data.attachment, data.existing_attachments, setData]);
+
     const selectedProj = useMemo(() =>
         projects?.find((p: any) => String(p.id) === String(data.project_id)),
         [data.project_id, projects]
@@ -35,29 +44,8 @@ export function TimeEntryModal({
     const completedCount = subtasks.filter((s: any) => s.is_completed).length;
     const progressPercent = subtasks.length === 0 ? 0 : Math.round((completedCount / subtasks.length) * 100);
 
-    const submitEntry = () => {
-        if (!data.project_id || !data.description) {
-            alert("Project and Work Description are required.");
-            return;
-        }
-
-        // Tembak ke endpoint create atau update tergantung props isEditing
-        if (isEditing) {
-            router.patch(`/timesheets/${data.id}`, data, {
-                onSuccess: () => setIsOpen(false),
-                preserveScroll: true,
-            });
-        } else {
-            router.post('/timesheets', data, {
-                onSuccess: () => setIsOpen(false),
-                preserveScroll: true,
-            });
-        }
-    };
-
     return (
         <>
-            {/* --- MODAL UTAMA (TIME ENTRY) --- */}
             <Dialog open={isOpen} onOpenChange={(open) => {
                 setIsOpen(open);
                 if (!open) setActiveTab('details');
@@ -71,7 +59,6 @@ export function TimeEntryModal({
                         </h2>
 
                         <div className="flex items-center gap-1">
-                            {/* Tampilkan tombol delete HANYA jika sedang edit data yang sudah ada */}
                             {isEditing && (
                                 <button
                                     type="button"
@@ -92,7 +79,7 @@ export function TimeEntryModal({
                         </div>
                     </div>
 
-                    {/* PESAN REVISI (Pindah ke dalam modal agar terlihat jelas) */}
+                    {/* PESAN REVISI */}
                     {data.status === 'revision' && data.reject_reason && (
                         <div className="mx-6 mt-6 p-4 bg-sada-red/10 border border-sada-red/30 rounded-xl flex gap-3">
                             <AlertTriangle size={18} className="text-sada-red shrink-0" />
@@ -130,7 +117,12 @@ export function TimeEntryModal({
                             >
                                 <Paperclip size={16} />
                                 Files
-                                <span className="bg-sada-red text-white text-[10px] font-black px-2 py-0.5 rounded-full">1</span>
+                                {/* INDIKATOR JUMLAH FILE DARI GABUNGAN LAMA + BARU */}
+                                {((data.existing_attachments?.length || 0) + (data.attachments?.length || 0)) > 0 && (
+                                    <span className="bg-sada-red text-white text-[10px] font-black px-2 py-0.5 rounded-full">
+                                        {(data.existing_attachments?.length || 0) + (data.attachments?.length || 0)}
+                                    </span>
+                                )}
                             </button>
                         </div>
                     </div>
@@ -177,7 +169,6 @@ export function TimeEntryModal({
                                             </Select>
                                         </div>
 
-                                        {/* TOMBOL ADD TASK (+) */}
                                         <div className="flex flex-col items-center gap-2">
                                             <label className="text-[13px] font-bold text-foreground">Add</label>
                                             <button
@@ -278,46 +269,124 @@ export function TimeEntryModal({
                         )}
 
                         {activeTab === 'files' && (
-                            <div className="flex flex-col gap-2 mt-4">
-                                <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest ml-1">
-                                    Evidence / Attachment
-                                </label>
+                            <div className="flex flex-col gap-6 mt-2 animate-in fade-in duration-300">
+                                <div className="flex flex-col gap-1">
+                                    <h3 className="text-[13px] font-bold text-foreground flex items-center gap-2">
+                                        <Paperclip size={16} className="text-sada-red" /> Evidence / Attachments
+                                    </h3>
+                                    <p className="text-[11px] font-medium text-muted-foreground">
+                                        Upload multiple proofs of work for this entry.
+                                    </p>
+                                </div>
 
-                                <div className="relative">
-                                    {!data.attachment ? (
-                                        <div className="group relative border-2 border-dashed border-border rounded-2xl p-4 hover:border-sada-red/50 transition-all flex flex-col items-center justify-center cursor-pointer bg-muted/20">
-                                            <input
-                                                type="file"
-                                                onChange={(e) => setData('attachment', e.target.files?.[0])}
-                                                className="absolute inset-0 opacity-0 cursor-pointer z-10"
-                                            />
-                                            <Paperclip size={20} className="text-muted-foreground group-hover:text-sada-red mb-2 transition-colors" />
-                                            <p className="text-[9px] font-black uppercase text-muted-foreground tracking-tight">
-                                                Click to upload proof (Max 2MB)
-                                            </p>
+                                <div className="relative flex flex-col gap-6">
+                                    {/* KOTAK UPLOAD UTAMA */}
+                                    <div className="group relative border-2 border-dashed border-border rounded-[24px] p-6 hover:border-sada-red/50 transition-all flex flex-col items-center justify-center cursor-pointer bg-muted/10 hover:bg-sada-red/5">
+                                        <input
+                                            type="file"
+                                            multiple
+                                            accept=".jpg,.jpeg,.png,.pdf,.zip"
+                                            onChange={(e) => {
+                                                if (e.target.files) {
+                                                    const newFiles = Array.from(e.target.files);
+                                                    const existing = data.attachments || [];
+                                                    setData('attachments', [...existing, ...newFiles]);
+                                                }
+                                            }}
+                                            className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                                        />
+                                        <div className="size-12 rounded-full bg-background border border-border flex items-center justify-center mb-3 group-hover:scale-110 group-hover:border-sada-red/30 transition-all shadow-sm">
+                                            <UploadCloud size={20} className="text-muted-foreground group-hover:text-sada-red transition-colors" />
                                         </div>
-                                    ) : (
-                                        <div className="p-3 border border-sada-red/30 bg-sada-red/5 rounded-2xl flex items-center justify-between animate-in zoom-in-95 duration-200">
-                                            <div className="flex items-center gap-3">
-                                                <div className="size-9 rounded-xl bg-sada-red/10 flex items-center justify-center text-sada-red">
-                                                    <FileText size={16} />
-                                                </div>
-                                                <div className="flex flex-col">
-                                                    <span className="text-[11px] font-bold text-foreground truncate max-w-[150px]">
-                                                        {data.attachment instanceof File ? data.attachment.name : 'Existing Evidence'}
-                                                    </span>
-                                                    <span className="text-[8px] font-black text-sada-red uppercase">File Attached</span>
-                                                </div>
+                                        <p className="text-[10px] font-black uppercase text-foreground tracking-widest mb-1">
+                                            Click to add files
+                                        </p>
+                                        <p className="text-[8px] font-bold uppercase text-muted-foreground tracking-widest">
+                                            JPG, PNG, PDF, ZIP (MAX 2MB)
+                                        </p>
+                                    </div>
+
+                                    <div className="flex flex-col gap-4">
+                                        {/* FILE LAMA (SUDAH DI DATABASE) */}
+                                        {data.existing_attachments && data.existing_attachments.length > 0 && (
+                                            <div className="flex flex-col gap-2">
+                                                <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Saved in Vault</span>
+                                                {data.existing_attachments.map((path: string, idx: number) => (
+                                                    <div key={`old-${idx}`} className="p-3 border border-border bg-muted/30 rounded-xl flex items-center justify-between shadow-sm">
+                                                        <div className="flex items-center gap-3 overflow-hidden">
+                                                            <div className="size-8 rounded-lg bg-zinc-900 text-white flex items-center justify-center shrink-0">
+                                                                <FileText size={14} />
+                                                            </div>
+                                                            <div className="flex flex-col overflow-hidden">
+                                                                <span className="text-[10px] font-black text-foreground uppercase tracking-widest truncate">
+                                                                    {path.split('/').pop()}
+                                                                </span>
+                                                                <span className="text-[8px] font-bold text-emerald-500 uppercase tracking-widest">Verified</span>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* TOMBOL ACTION (VIEW & DELETE) */}
+                                                        <div className="flex items-center gap-1.5">
+                                                            <a
+                                                                href={`/storage/${path}`}
+                                                                target="_blank"
+                                                                rel="noreferrer"
+                                                                title="View Document"
+                                                                className="p-1.5 flex items-center justify-center bg-background border border-border hover:bg-zinc-200 dark:hover:bg-zinc-800 text-muted-foreground hover:text-foreground rounded-lg transition-all"
+                                                            >
+                                                                <ExternalLink size={14} />
+                                                            </a>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    const newExisting = [...data.existing_attachments];
+                                                                    newExisting.splice(idx, 1);
+                                                                    setData('existing_attachments', newExisting);
+                                                                }}
+                                                                title="Delete Document"
+                                                                className="p-1.5 flex items-center justify-center bg-background border border-border hover:bg-red-500 hover:text-white text-muted-foreground rounded-lg transition-all"
+                                                            >
+                                                                <Trash2 size={14} />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ))}
                                             </div>
-                                            <button
-                                                type="button"
-                                                onClick={() => setData('attachment', null)}
-                                                className="p-1.5 hover:bg-red-500/10 text-red-500 rounded-lg transition-colors"
-                                            >
-                                                <X size={14} />
-                                            </button>
-                                        </div>
-                                    )}
+                                        )}
+
+                                        {/* FILE BARU (BELUM DISAVE) */}
+                                        {data.attachments && data.attachments.length > 0 && (
+                                            <div className="flex flex-col gap-2">
+                                                <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Ready to Upload</span>
+                                                {data.attachments.map((file: any, idx: number) => (
+                                                    <div key={`new-${idx}`} className="p-3 border border-sada-red/30 bg-sada-red/5 rounded-xl flex items-center justify-between shadow-sm animate-in zoom-in-95 duration-200">
+                                                        <div className="flex items-center gap-3 overflow-hidden">
+                                                            <div className="size-8 rounded-lg bg-sada-red/10 flex items-center justify-center text-sada-red border border-sada-red/20 shrink-0">
+                                                                <FileText size={14} />
+                                                            </div>
+                                                            <div className="flex flex-col overflow-hidden">
+                                                                <span className="text-[10px] font-black text-foreground uppercase tracking-widest truncate">
+                                                                    {file instanceof File ? file.name : `Document ${idx + 1}`}
+                                                                </span>
+                                                                <span className="text-[8px] font-bold text-amber-500 uppercase tracking-widest">Pending</span>
+                                                            </div>
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                const newArr = [...data.attachments];
+                                                                newArr.splice(idx, 1);
+                                                                setData('attachments', newArr);
+                                                            }}
+                                                            className="p-1.5 flex items-center justify-center bg-background border border-border hover:bg-red-500 hover:text-white text-muted-foreground rounded-lg transition-all"
+                                                        >
+                                                            <Trash2 size={14} />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         )}
@@ -336,7 +405,6 @@ export function TimeEntryModal({
                 </DialogContent>
             </Dialog>
 
-            {/* --- MODAL TAMBAH TASK (DARI SCREENSHOT 3) --- */}
             <CreateTaskModal
                 isOpen={isCreateTaskOpen}
                 setIsOpen={setIsCreateTaskOpen}
