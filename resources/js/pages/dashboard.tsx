@@ -119,7 +119,7 @@ export default function Dashboard({ stats, activities }: PageProps) {
                                     }
                                 </p>
                                 
-                                {!isSuperAdmin && can('create-workspace') && (
+                                {(
                                     <Button variant="outline" className="gap-2">
                                         <Plus className="h-4 w-4" />
                                         Create New Workspace

@@ -2,9 +2,12 @@
 
 namespace App\Services;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class MenuService
 {
@@ -13,9 +16,9 @@ class MenuService
         $user = $request->user();
         if (!$user) return [];
 
-        $company = $user->company;
         $menu = [];
 
+        // 1. Dashboard (Default untuk semua)
         $menu[] = [
             'title'    => 'Dashboard',
             'href'     => '/dashboard',
@@ -23,7 +26,8 @@ class MenuService
             'isActive' => $request->routeIs('dashboard'),
         ];
 
-        if ($user->isSuperAdmin()) {
+        // 2. Logic Khusus Super Admin
+        if ($user->hasRole('super-admin')) {
             $menu[] = [
                 'title'    => 'Company Management',
                 'href'     => '#',
@@ -56,49 +60,59 @@ class MenuService
             return $menu;
         }
 
-        $up = $user->getAllPermissions();
-        $cp = $company 
-            ? cache()->remember("company-{$company->id}-permissions", 60, fn() => $company->getAllPermissions()) 
-            : collect();
+        // 3. LOGIC INHERITANCE (MANAGER/MEMBER NYONTEK PERMISSION BOSS)
         
-        $permissions = $up->merge($cp)
-            ->where('isMenu', true)
-            ->unique('id')
-            ->sortBy('id');
+        // Cari ID Owner (Role Company) di perusahaan yang sama
+        $owner = User::role('company')
+            ->where('company_id', $user->company_id)
+            ->first();
 
-        foreach ($permissions as $p) {
+        $allPermissions = collect();
+
+        if ($owner) {
+            // Ambil ID Permission dari Direct Permissions milik Owner
+            $directPermissionIds = DB::table('model_has_permissions')
+                ->where('model_id', $owner->id)
+                ->pluck('permission_id');
+
+            // Ambil ID Permission dari Role milik Owner
+            $rolePermissionIds = DB::table('role_has_permissions')
+                ->join('model_has_roles', 'role_has_permissions.role_id', '=', 'model_has_roles.role_id')
+                ->where('model_has_roles.model_id', $owner->id)
+                ->pluck('permission_id');
+
+            // Gabungkan semua ID unik
+            $mergedIds = $directPermissionIds->merge($rolePermissionIds)->unique();
+
+            // Tarik data lengkap dari tabel permissions yang isMenu-nya aktif (1)
+            $allPermissions = DB::table('permissions')
+                ->whereIn('id', $mergedIds)
+                ->where('isMenu', 1)
+                ->orderBy('id')
+                ->get();
+        }
+
+        // DEBUG KE LOG (Cek storage/logs/laravel.log)
+        Log::info("Sidebar Build for: " . $user->name);
+        Log::info("Owner Found: " . ($owner ? $owner->name : 'NONE'));
+        Log::info("Permissions Count: " . $allPermissions->count());
+
+        // 4. Generate Menu Array
+        foreach ($allPermissions as $p) {
             $href = '#';
-            $isActive = false;
             
-            $groupRoutes = is_array($p->group_routes) 
-                ? $p->group_routes 
-                : json_decode($p->group_routes ?? '[]', true);
-
-            if ($p->route_name && Route::has($p->route_name . '.index')) {
-                $href = route($p->route_name . '.index');
-            } elseif (!empty($groupRoutes)) {
-                $firstPattern = str_replace('.*', '.index', $groupRoutes[0]);
-                $href = Route::has($firstPattern) ? route($firstPattern) : '#';
+            // Handle URL/HREF (Prioritas: Route Name -> Route Path)
+            if ($p->route_name && Route::has($p->route_name)) {
+                $href = route($p->route_name);
             } elseif ($p->route_path) {
                 $href = url($p->route_path);
-            }
-
-            if (!empty($groupRoutes)) {
-                foreach ($groupRoutes as $pattern) {
-                    if ($request->routeIs($pattern)) {
-                        $isActive = true;
-                        break;
-                    }
-                }
-            } else {
-                $isActive = $p->route_name ? $request->routeIs($p->route_name . '.*') : false;
             }
 
             $menu[] = [
                 'title'    => Str::headline($p->name),
                 'href'     => $href,
                 'icon'     => $p->icon ?? 'Circle',
-                'isActive' => $isActive,
+                'isActive' => $p->route_name ? $request->routeIs($p->route_name . '*') : false,
             ];
         }
 

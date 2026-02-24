@@ -1,19 +1,17 @@
 import ResourceListLayout from '@/layouts/resource/resource-list-layout';
-import { useState, FormEventHandler } from 'react';
-import { useForm, router, Link } from '@inertiajs/react';
+import { useState, FormEventHandler, useEffect } from 'react';
+import { useForm, router, usePage } from '@inertiajs/react';
 import { PageConfig, type BreadcrumbItem } from '@/types';
-import { Plus, Trash2, Search, LayoutGrid, ExternalLink, Settings2 } from 'lucide-react';
+import { Plus, LayoutGrid, Search } from 'lucide-react';
 
 import InputError from '@/components/input-error';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { WorkspaceTable } from '@/layouts/workspaces/parts/workspace-table';
 
 interface Workspace {
     id: number;
@@ -40,15 +38,37 @@ interface PageProps {
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Workspaces', href: '/workspaces' },
+    { title: 'DASHBOARD', href: '/dashboard' },
+    { title: 'WORKSPACES', href: '/workspaces' },
 ];
 
 export default function WorkspaceIndex({ workspaces, companies, filters, pageConfig, isSuperAdmin }: PageProps) {
+    const { auth } = usePage<any>().props;
+
+    // Logic Akses
+    const canManageWorkspace = isSuperAdmin || auth.user.roles?.some((role: any) =>
+        ['company', 'owner', 'super-admin'].includes(typeof role === 'string' ? role : role.name)
+    );
+
     const [isOpen, setIsOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [currentSlug, setCurrentSlug] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState(filters.search || '');
+
+    // REAL-TIME SEARCH LOGIC (DEBOUNCE)
+    useEffect(() => {
+        const delayDebounceFn = setTimeout(() => {
+            if (searchQuery !== (filters.search || '')) {
+                router.get(
+                    '/workspaces',
+                    { search: searchQuery },
+                    { preserveState: true, replace: true, preserveScroll: true }
+                );
+            }
+        }, 400);
+
+        return () => clearTimeout(delayDebounceFn);
+    }, [searchQuery]);
 
     const { data, setData, post, put, processing, errors, reset, clearErrors } = useForm({
         name: '',
@@ -57,11 +77,8 @@ export default function WorkspaceIndex({ workspaces, companies, filters, pageCon
         status: 'active' as 'active' | 'inactive',
     });
 
-    const handleFilterChange = () => {
-        router.get('/workspaces', { search: searchQuery }, { preserveState: true, replace: true });
-    };
-
     const openCreateModal = () => {
+        if (!canManageWorkspace) return;
         setIsEditing(false);
         setCurrentSlug(null);
         reset();
@@ -70,6 +87,7 @@ export default function WorkspaceIndex({ workspaces, companies, filters, pageCon
     };
 
     const openEditModal = (w: Workspace) => {
+        if (!canManageWorkspace) return;
         setIsEditing(true);
         setCurrentSlug(w.slug);
         setData({
@@ -98,14 +116,13 @@ export default function WorkspaceIndex({ workspaces, companies, filters, pageCon
     };
 
     const FilterWidget = (
-        <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+        <div className="relative group">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground group-focus-within:text-sada-red transition-colors" />
             <Input
-                placeholder="Search workspaces..."
-                className="pl-9 h-9 bg-background"
+                placeholder="search"
+                className="pl-10 h-11 bg-muted/20 border-border/50 rounded-xl text-[10px] font-black tracking-widest focus:ring-2 focus:ring-sada-red/20 focus:border-sada-red w-64 transition-all shadow-inner"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleFilterChange()}
             />
         </div>
     );
@@ -113,128 +130,66 @@ export default function WorkspaceIndex({ workspaces, companies, filters, pageCon
     return (
         <>
             <ResourceListLayout
-                title={pageConfig.title}
+                title={pageConfig.title.toUpperCase()}
                 description={pageConfig.description}
                 breadcrumbs={breadcrumbs}
                 filterWidget={FilterWidget}
-                headerActions={pageConfig.can_manage && <Button onClick={openCreateModal} size="sm"><Plus className="h-4 w-4 mr-2" />Add Workspace</Button>}
+                headerActions={
+                    (pageConfig.can_manage && canManageWorkspace) && (
+                        <Button
+                            onClick={openCreateModal}
+                            className="h-11 px-6 bg-foreground text-background border border-border/50 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-sada-red hover:text-white transition-all shadow-lg active:scale-95"
+                        >
+                            <Plus className="h-4 w-4 mr-2 stroke-[3]" />
+                            Create Workspace
+                        </Button>
+                    )
+                }
                 pagination={workspaces}
                 isEmpty={workspaces.data.length === 0}
-                config={{ showFilter: true, showPagination: true, showHeaderActions: true, emptyStateIcon: <LayoutGrid className="h-6 w-6 text-muted-foreground/60" /> }}
+                config={{
+                    showFilter: true,
+                    showPagination: true,
+                    showHeaderActions: canManageWorkspace,
+                    emptyStateIcon: <LayoutGrid className="h-12 w-12 text-muted-foreground/20" />
+                }}
             >
-                <Table>
-                    <TableHeader>
-                        <TableRow className="bg-zinc-50/50 dark:bg-zinc-900/50">
-                            <TableHead className="w-[50px] text-center">#</TableHead>
-                            {isSuperAdmin && <TableHead>Company</TableHead>}
-                            <TableHead>Workspace Name</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead className="text-right px-6">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {workspaces.data.map((workspace, i) => (
-                            <TableRow key={workspace.id} className="group hover:bg-muted/30">
-                                <TableCell className="text-center text-muted-foreground tabular-nums">{workspaces.from + i}</TableCell>
-                                
-                                {isSuperAdmin && (
-                                    <TableCell>
-                                        <div className="flex items-center gap-2 font-medium">
-                                            {workspace.company?.name}
-                                        </div>
-                                    </TableCell>
-                                )}
-
-                                <TableCell>
-                                    <div className="flex flex-col">
-                                        <span className="font-semibold text-foreground">{workspace.name}</span>
-                                        <span className="text-xs text-muted-foreground line-clamp-1">{workspace.description || 'No description'}</span>
-                                    </div>
-                                </TableCell>
-
-                                <TableCell>
-                                    <Badge variant={workspace.status === 'active' ? 'outline' : 'destructive'} className="capitalize text-[10px] h-5">
-                                        {workspace.status}
-                                    </Badge>
-                                </TableCell>
-
-                                <TableCell className="text-right px-6">
-                                    <div className="flex justify-end gap-1">
-                                        <TooltipProvider>
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600" asChild>
-                                                        <Link href={`/workspaces/${workspace.slug}`}>
-                                                            <ExternalLink className="h-4 w-4" />
-                                                        </Link>
-                                                    </Button>
-                                                </TooltipTrigger>
-                                                <TooltipContent>Manage Workspace</TooltipContent>
-                                            </Tooltip>
-
-                                            {pageConfig.can_manage && (
-                                                <>
-                                                    <Tooltip>
-                                                        <TooltipTrigger asChild>
-                                                            <Button 
-                                                                variant="ghost" 
-                                                                size="icon" 
-                                                                className="h-8 w-8" 
-                                                                onClick={() => openEditModal(workspace)}
-                                                            >
-                                                                <Settings2 className="h-4 w-4" />
-                                                            </Button>
-                                                        </TooltipTrigger>
-                                                        <TooltipContent>Edit Workspace</TooltipContent>
-                                                    </Tooltip>
-
-                                                    <Tooltip>
-                                                        <TooltipTrigger asChild>
-                                                            <Button 
-                                                                variant="ghost" 
-                                                                size="icon" 
-                                                                className="h-8 w-8 hover:text-red-600" 
-                                                                onClick={() => handleDelete(workspace.slug)}
-                                                            >
-                                                                <Trash2 className="h-4 w-4" />
-                                                            </Button>
-                                                        </TooltipTrigger>
-                                                        <TooltipContent className="bg-red-600 text-white border-red-600">
-                                                            Delete Workspace
-                                                        </TooltipContent>
-                                                    </Tooltip>
-                                                </>
-                                            )}
-                                        </TooltipProvider>
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
+                <div className="bg-card/30 backdrop-blur-sm border border-border/50 rounded-[24px] overflow-hidden shadow-2xl transition-all">
+                    <WorkspaceTable
+                        workspaces={workspaces}
+                        isSuperAdmin={isSuperAdmin}
+                        canManage={pageConfig.can_manage && canManageWorkspace}
+                        onEdit={openEditModal}
+                        onDelete={handleDelete}
+                    />
+                </div>
             </ResourceListLayout>
 
+            {/* Tactical Dialog */}
             <Dialog open={isOpen} onOpenChange={setIsOpen}>
-                <DialogContent className="sm:max-w-[500px]">
-                    <DialogHeader>
-                        <DialogTitle>{isEditing ? 'Edit Workspace' : 'Create New Workspace'}</DialogTitle>
-                        <DialogDescription>
-                            {isEditing ? 'Perbarui informasi workspace dan pengaturan akses.' : 'Tambahkan workspace baru untuk departemen atau tim.'}
+                <DialogContent className="sm:max-w-[500px] bg-background border border-border/50 rounded-[32px] shadow-2xl p-0 overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-sada-red/5 blur-[80px] pointer-events-none" />
+                    <DialogHeader className="p-8 pb-4 text-left">
+                        <DialogTitle className="text-2xl font-black uppercase tracking-tighter text-foreground">
+                            {isEditing ? 'Edit Authorization' : 'New Authorization'}
+                        </DialogTitle>
+                        <DialogDescription className="text-[9px] font-bold uppercase text-muted-foreground tracking-[0.2em]">
+                            Configure workspace parameters and mission protocols.
                         </DialogDescription>
                     </DialogHeader>
 
-                    <form onSubmit={handleSubmit} className="space-y-5 pt-4">
-                        <div className="space-y-4">
+                    <form onSubmit={handleSubmit} className="p-8 pt-0 space-y-6">
+                        <div className="space-y-5">
                             {isSuperAdmin && (
                                 <div className="space-y-2">
-                                    <Label className="text-xs font-bold uppercase tracking-wider text-zinc-500">Assign to Company</Label>
+                                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Assign Authority</Label>
                                     <Select value={data.company_id} onValueChange={(val) => setData('company_id', val)}>
-                                        <SelectTrigger className="h-10">
-                                            <SelectValue placeholder="Select a company" />
+                                        <SelectTrigger className="h-12 bg-muted/20 border-border/50 rounded-2xl text-xs font-bold text-foreground focus:ring-2 focus:ring-sada-red/50 transition-colors">
+                                            <SelectValue placeholder="SELECT COMPANY" />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent className="bg-popover border-border/50">
                                             {companies.map(c => (
-                                                <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>
+                                                <SelectItem key={c.id} value={c.id.toString()} className="text-xs uppercase font-bold text-foreground">{c.name}</SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
@@ -243,35 +198,44 @@ export default function WorkspaceIndex({ workspaces, companies, filters, pageCon
                             )}
 
                             <div className="space-y-2">
-                                <Label htmlFor="name" className="text-xs font-bold uppercase tracking-wider text-zinc-500">Workspace Name</Label>
-                                <Input id="name" value={data.name} onChange={e => setData('name', e.target.value)} placeholder="e.g. Marketing Team" className="h-10" />
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Workspace Name</Label>
+                                <Input
+                                    value={data.name}
+                                    onChange={e => setData('name', e.target.value)}
+                                    placeholder="E.G. ALPHA COMMAND"
+                                    className="h-12 bg-muted/20 border-border/50 rounded-2xl text-xs font-bold uppercase tracking-widest focus:ring-2 focus:ring-sada-red/50 text-foreground placeholder:text-muted-foreground/40 transition-colors"
+                                />
                                 <InputError message={errors.name} />
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="description" className="text-xs font-bold uppercase tracking-wider text-zinc-500">Description</Label>
-                                <Textarea id="description" value={data.description} onChange={e => setData('description', e.target.value)} placeholder="What is this workspace for?" className="min-h-[100px] resize-none" />
-                                <InputError message={errors.description} />
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Description</Label>
+                                <Textarea
+                                    value={data.description}
+                                    onChange={e => setData('description', e.target.value)}
+                                    placeholder="Describe mission scope..."
+                                    className="min-h-[100px] bg-muted/20 border-border/50 rounded-2xl text-xs text-foreground focus:ring-2 focus:ring-sada-red/50 placeholder:text-muted-foreground/40 transition-colors"
+                                />
                             </div>
 
                             <div className="space-y-2">
-                                <Label className="text-xs font-bold uppercase tracking-wider text-zinc-500">Status</Label>
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Operational Status</Label>
                                 <Select value={data.status} onValueChange={(val: any) => setData('status', val)}>
-                                    <SelectTrigger className="h-10">
+                                    <SelectTrigger className="h-12 bg-muted/20 border-border/50 rounded-2xl text-xs font-bold text-foreground focus:ring-2 focus:ring-sada-red/50 transition-colors">
                                         <SelectValue />
                                     </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="active">Active</SelectItem>
-                                        <SelectItem value="inactive">Inactive</SelectItem>
+                                    <SelectContent className="bg-popover border-border/50">
+                                        <SelectItem value="active" className="text-xs font-bold text-foreground">ACTIVE</SelectItem>
+                                        <SelectItem value="inactive" className="text-xs font-bold text-foreground">INACTIVE</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                         </div>
 
-                        <DialogFooter className="gap-2">
-                            <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
-                            <Button type="submit" disabled={processing} className="px-8">
-                                {isEditing ? 'Save Changes' : 'Create Workspace'}
+                        <DialogFooter className="gap-3 pt-4 border-t border-border/50">
+                            <Button type="button" variant="ghost" onClick={() => setIsOpen(false)} className="h-12 text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground">Abort</Button>
+                            <Button type="submit" disabled={processing} className="h-12 px-10 bg-sada-red text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-red-600 transition-all shadow-lg shadow-sada-red/20">
+                                {isEditing ? 'Push Updates' : 'Confirm Protocol'}
                             </Button>
                         </DialogFooter>
                     </form>

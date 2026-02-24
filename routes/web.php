@@ -3,24 +3,47 @@
 use App\Http\Controllers\Companies\CategoryController;
 use App\Http\Controllers\Companies\CompanyController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ProjectManagement\Projects\ProjectController;
 use App\Http\Controllers\Rules\PermissionAccessController;
 use App\Http\Controllers\Rules\PermissionController;
+use App\Http\Controllers\TaskManagement\SubTasks\SubTaskController;
+use App\Http\Controllers\TaskManagement\Tasks\TaskController;
 use App\Http\Controllers\Workspaces\WorkspaceController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
 use Spatie\Permission\Models\Permission;
+use App\Http\Controllers\TeamController;
+use App\Http\Controllers\TaskManagement\TaskDocumentController;
+use App\Http\Controllers\Timesheets\TimesheetController;
+use Illuminate\Support\Facades\Auth;
 
 Route::get('/', function () {
-    return Inertia::render('welcome', ['canRegister' => Features::enabled(Features::registration())]);
+    // JIKA USER SUDAH LOGIN, LANGSUNG LEMPAR KE DASHBOARD
+    if (Auth::check()) {
+        return redirect()->route('dashboard');
+    }
+
+    // JIKA BELUM LOGIN, TAMPILKAN LANDING PAGE (WELCOME)
+    return Inertia::render('welcome', [
+        'canRegister' => Route::has('register'),
+    ]);
 })->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    
+    Route::get('/team', [TeamController::class, 'index'])->name('team.index');
+    Route::post('/team', [TeamController::class, 'store'])->name('team.store');
+    Route::middleware(['auth', 'verified', 'company_can'])->group(function () {
+        Route::get('/projects', [ProjectController::class, 'globalIndex'])
+            ->name('projects.global');
+        Route::get('/tasks', [TaskController::class, 'globalIndex'])
+            ->name('tasks.global');
+    Route::resource('timesheets', TimesheetController::class);
+    });
+
     Route::impersonate();
-    
     Route::middleware('role:super-admin')->group(function () {
         Route::prefix('access-control')->name('access-control.')->group(function () {
             Route::resource('permissions', PermissionController::class);
@@ -39,15 +62,74 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     Route::middleware('company_can')->group(function () {
+        Route::post('workspaces/{workspace:slug}/members', [WorkspaceController::class, 'addMember'])
+            ->name('workspaces.members.add');
         Route::resource('workspaces', WorkspaceController::class)
             ->parameters(['workspaces' => 'workspace:slug'])
             ->except(['create', 'edit']);
-    
+        Route::get('/tasks', [TaskController::class, 'globalIndex'])
+            ->name('tasks.global');
+        Route::post('/tasks/quick-store', [TaskController::class, 'quickStore'])
+            ->name('tasks.quick-store');
+        Route::resource('workspaces.projects', ProjectController::class)
+            ->parameters([
+                'workspaces' => 'workspace:slug',
+                'projects' => 'project:slug'
+            ])
+            ->except(['create', 'edit']);
+
+        Route::post('workspaces/{workspace:slug}/projects/{project}/members', [ProjectController::class, 'addMember'])
+            ->name('workspaces.projects.members.store');
+
+        Route::delete('workspaces/{workspace:slug}/projects/{project}/members/{user}', [ProjectController::class, 'removeMember'])
+            ->name('workspaces.projects.members.destroy');
+
+        Route::resource('workspaces.projects.tasks', TaskController::class)
+            ->parameters([
+                'workspaces' => 'workspace:slug',
+                'projects' => 'project:slug',
+                'tasks' => 'task:slug'
+            ])
+            ->except([]);
+        Route::patch('/workspaces/{workspace:slug}/projects/{project:slug}/tasks/{task:slug}/status', [TaskController::class, 'updateStatus'])
+            ->name('tasks.updateStatus');
+
+        Route::resource('workspaces.projects.tasks.subtasks', SubTaskController::class)
+            ->parameters([
+                'workspaces' => 'workspace:slug',
+                'projects' => 'project:slug',
+                'tasks' => 'task:slug',
+                'subtasks' => 'subTask'
+            ])
+            ->only(['store', 'destroy']);
+
+        Route::post('workspaces/{workspace:slug}/projects/{project:slug}/tasks/{task:slug}/documents', [TaskDocumentController::class, 'store'])
+            ->name('workspaces.projects.tasks.documents.store');
+
+        Route::delete('documents/{document}', [TaskDocumentController::class, 'destroy'])
+            ->name('workspaces.projects.tasks.documents.destroy');
+
+        Route::patch(
+            'workspaces/{workspace:slug}/projects/{project:slug}/tasks/{task:slug}/subtasks/{subTask}/toggle',
+            [SubTaskController::class, 'toggle']
+        )
+            ->name('workspaces.projects.tasks.subtasks.toggle');
+        Route::patch('/workspaces/{workspace:slug}/projects/{project:slug}/tasks/{task:slug}/subtasks/{subtask}', [SubTaskController::class, 'update'])->name('subtasks.update');
+
+
+        Route::patch('/timesheets/{id}/time', [TimesheetController::class, 'updateTime'])->name('timesheets.time.update');
+        Route::patch('/timesheet-entries/{id}/reject', [TimesheetController::class, 'rejectEntry'])->name('timesheet-entries.reject');
+        Route::patch('/timesheets/{timesheet}/submit', [TimesheetController::class, 'submit'])->name('timesheets.submit');
+        Route::patch('/timesheets/{timesheet}/approve', [TimesheetController::class, 'approve'])->name('timesheets.approve');
+        Route::patch('/timesheets/{timesheet}/reject', [TimesheetController::class, 'reject'])->name('timesheets.reject');
+        Route::patch('/timesheets/entries/{id}/approve', [TimesheetController::class, 'approveEntry'])->name('timesheets.entries.approve');
+        Route::patch('/timesheets/entries/{id}/reject', [TimesheetController::class, 'rejectEntry'])->name('timesheets.entries.reject');
+
+
         if (Schema::hasTable('permissions') && Schema::hasColumns('permissions', ['route_path', 'route_name'])) {
             $dynamicRoutes = cache()->remember('dynamic_routes', 3600, function () {
                 return Permission::whereNotNull('route_path')->whereNotNull('route_name')->get();
             });
-    
             foreach ($dynamicRoutes as $route) {
                 if (!Route::has($route->route_name)) {
                     Route::get($route->route_path, $route->controller_action)
@@ -58,4 +140,4 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 });
 
-require __DIR__.'/settings.php';
+require __DIR__ . '/settings.php';

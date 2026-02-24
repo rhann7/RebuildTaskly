@@ -1,130 +1,118 @@
-import AppLayout from '@/layouts/app-layout';
-import { Head, Link } from '@inertiajs/react';
-import { BreadcrumbItem } from '@/types';
-import { Building2, ArrowRight, Users, Briefcase, ShieldAlert, Info } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react'; // Tambah useEffect
+import { Head, usePage } from '@inertiajs/react'; // Tambah usePage
+import WorkspaceLayout from '@/layouts/workspaces/WorkspaceLayout';
+import DataTableBase from '@/components/DataTableBase';
+import { getProjectColumns } from '@/components/tabs-workspace/ProjectColumns';
+import CreateProjectModal from '@/components/tabs-workspace/CreateProjectModal';
+import WorkspaceSettings from '@/components/tabs-workspace/WorkspaceSettings';
+import ProjectGridCard from '@/components/tabs-workspace/ProjectGridCard';
+import { ProjectControls } from '@/components/tabs-workspace/ProjectControls';
+import WorkspaceMembers from '@/components/tabs-workspace/MemberWorkspaceTab';
+import { Zap } from 'lucide-react';
 
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+export default function WorkspaceShow({ workspace, projects, auth, companies, members, allEmployees }: any) {
+    const [activeTab, setActiveTab] = useState<'projects' | 'members' | 'settings'>('projects');
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+    
+    // State Filter
+    const [searchQuery, setSearchQuery] = useState('');
+    const [statusFilter, setStatusFilter] = useState<string[]>([]);
+    const [priorityFilter, setPriorityFilter] = useState<string[]>([]);
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
-interface Workspace {
-    id: number;
-    name: string;
-    slug: string;
-    description: string | null;
-    status: 'active' | 'inactive';
-    company?: {
-        id: number;
-        name: string;
-    };
-}
+    // --- LOGIC NOTIFIKASI DEFAULT BROWSER ---
+    const { flash }: any = usePage().props;
 
-interface PageProps {
-    workspace: Workspace;
-}
+    useEffect(() => {
+        if (flash.error) {
+            alert(`SADA SYSTEM ERROR: \n${flash.error}`);
+        }
+        if (flash.success) {
+            alert(`SUCCESS: \n${flash.success}`);
+        }
+    }, [flash]);
+    // ----------------------------------------
 
-export default function WorkspaceShow({ workspace }: PageProps) {
-    const breadcrumbs: BreadcrumbItem[] = [
-        { title: 'Dashboard', href: '/dashboard' },
-        { title: 'Workspaces', href: '/workspaces' },
-        { title: workspace.name, href: `/workspaces/${workspace.slug}` },
-    ];
+    const columns = useMemo(() => getProjectColumns(workspace.slug), [workspace.slug]);
+    
+    // Tactical Multi-Filter Logic
+    const filteredProjects = useMemo(() => {
+        const dataArray = Array.isArray(projects) ? projects : (projects.data || []);
+        
+        return dataArray.filter((p: any) => {
+            const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
+            const matchesStatus = statusFilter.length === 0 || statusFilter.includes(p.status?.toLowerCase());
+            const matchesPriority = priorityFilter.length === 0 || priorityFilter.includes(p.priority?.toLowerCase());
 
-    const modules = [
-        {
-            title: 'Projects',
-            description: 'Workspace-specific projects and milestones.',
-            icon: Briefcase,
-        },
-        {
-            title: 'Team Members',
-            description: 'Assign people and manage their presence.',
-            icon: Users,
-        },
-        {
-            title: 'Access Control',
-            description: 'Permissions specific to this environment.',
-            icon: ShieldAlert,
-        },
-    ];
+            return matchesSearch && matchesStatus && matchesPriority;
+        });
+    }, [projects, searchQuery, statusFilter, priorityFilter]);
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={`${workspace.name} · Workspace`} />
+        <WorkspaceLayout workspace={workspace} activeTab={activeTab} setActiveTab={setActiveTab} projects={projects}>
+            <Head title={workspace.name} />
 
-            <div className="max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-8">
-                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6 border-b pb-8">
-                    <div className="space-y-4">
-                        <div className="space-y-2">
-                            <h1 className="text-4xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">
-                                {workspace.name}
-                            </h1>
-                            <div className="flex flex-wrap items-center gap-3 text-sm">
-                                <span className="flex items-center gap-1.5 font-medium text-zinc-600 dark:text-zinc-400">
-                                    <Building2 className="h-4 w-4" />
-                                    {workspace.company?.name || 'No Company'}
-                                </span>
-                                <span className="text-zinc-300">|</span>
-                                <Badge variant={workspace.status === 'active' ? 'outline' : 'destructive'} className="capitalize font-bold">
-                                    {workspace.status}
-                                </Badge>
-                            </div>
-                        </div>
+            <div className="w-full flex flex-col gap-4 py-8 animate-in fade-in duration-700">
+                
+                {activeTab === 'projects' && (
+                    <div className="flex flex-col w-full">
+                        <ProjectControls 
+                            viewMode={viewMode}
+                            setViewMode={setViewMode}
+                            searchQuery={searchQuery}
+                            setSearchQuery={setSearchQuery}
+                            statusFilter={statusFilter}
+                            setStatusFilter={setStatusFilter}
+                            priorityFilter={priorityFilter}
+                            setPriorityFilter={setPriorityFilter}
+                        />
 
-                        {workspace.description && (
-                            <p className="text-base text-muted-foreground max-w-3xl leading-relaxed italic">
-                                "{workspace.description}"
-                            </p>
-                        )}
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                        <TooltipProvider>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Button variant="outline" size="icon" asChild>
-                                        <Link href="/workspaces">
-                                            <ArrowRight className="h-4 w-4 rotate-180" />
-                                        </Link>
-                                    </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>Back to List</TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {modules.map((module) => (
-                        <Card key={module.title} className="group transition-all duration-300 shadow-sm hover:shadow-md hover:border-primary/50">
-                            <CardHeader className="space-y-2 pb-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="h-9 w-9 rounded-lg bg-zinc-500/10 flex items-center justify-center shrink-0">
-                                        <module.icon className="h-5 w-5 text-zinc-600 dark:text-zinc-400" />
+                        {/* Content Area */}
+                        <div className="w-full">
+                            {filteredProjects.length > 0 ? (
+                                viewMode === 'list' ? (
+                                    <div className="bg-card rounded-[24px] border border-border shadow-sm overflow-hidden animate-in fade-in duration-500">
+                                        <DataTableBase data={filteredProjects} columns={columns} />
                                     </div>
-                                    <CardTitle className="text-xl">{module.title}</CardTitle>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in zoom-in-95 duration-500">
+                                        {filteredProjects.map((project: any) => (
+                                            <ProjectGridCard 
+                                                key={project.id} 
+                                                project={project} 
+                                                workspaceSlug={workspace.slug} 
+                                            />
+                                        ))}
+                                    </div>
+                                )
+                            ) : (
+                                <div className="py-32 text-center border border-dashed border-border rounded-[32px] bg-muted/5">
+                                    <Zap className="mx-auto mb-4 text-muted-foreground/20" size={48} />
+                                    <p className="uppercase tracking-[0.3em] text-muted-foreground text-[10px] font-black ">
+                                        No Projects Located with Current Parameters
+                                    </p>
                                 </div>
-                                <CardDescription>
-                                    {module.description}
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <Button variant="secondary" className="w-full opacity-60" disabled>
-                                    <span>Coming Soon</span>
-                                </Button>
-                            </CardContent>
-                        </Card>
-                    ))}
-                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
 
-                <div className="flex items-center justify-center gap-2 p-4 rounded-xl border border-dashed bg-muted/30 text-muted-foreground animate-pulse">
-                    <Info className="h-4 w-4" />
-                    <span className="text-sm font-medium">
-                        Workspace modules (projects, members, roles) will live inside this workspace context.
-                    </span>
-                </div>
+                {activeTab === 'members' && ( 
+                    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <WorkspaceMembers workspace={workspace} members={members} allEmployees={allEmployees}/>
+                    </div>
+                )}
+                
+                {activeTab === 'settings' && ( 
+                    <WorkspaceSettings 
+                        workspace={workspace} 
+                        isSuperAdmin={auth.user.roles?.includes('super-admin')} 
+                        companies={companies} 
+                    /> 
+                )}
             </div>
-        </AppLayout>
+
+            <CreateProjectModal isOpen={isModalOpen} setIsOpen={setIsModalOpen} workspace={workspace} />
+        </WorkspaceLayout>
     );
 }

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\ProjectManagement\Project;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -18,7 +19,8 @@ class User extends Authenticatable
         'email', 
         'password', 
         'email_verified_at', 
-        'remember_token'
+        'remember_token',
+        'company_id'
     ];
 
     protected $hidden = [
@@ -54,11 +56,31 @@ class User extends Authenticatable
 
     public function company()
     {
-        return $this->HasOneThrough(Company::class, CompanyOwner::class, 'user_id', 'company_owner_id', 'id', 'id');
+        return $this->belongsTo(Company::class, 'company_id');
     }
 
     public function companyOwner()
     {
         return $this->hasOne(CompanyOwner::class);
+    }
+
+    public function managedWorkspace()
+    {
+    // User bisa mengelola satu workspace
+    return $this->hasOne(Workspace::class, 'manager_id');
+    }
+
+    public function workspaces()
+    {
+        return $this->belongsToMany(Workspace::class, 'workspace_user')
+                    ->withPivot('workspace_role')
+                    ->withTimestamps();
+    }
+
+    public function projects()
+    {
+        return $this->belongsToMany(Project::class, 'project_user')
+                    ->withPivot('project_role')
+                    ->withTimestamps();
     }
 }

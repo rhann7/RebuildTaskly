@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Rules;
 
 use App\Http\Controllers\Controller;
 use App\Models\Company;
+use App\Models\User; // Tambahkan ini
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -14,6 +15,7 @@ class PermissionAccessController extends Controller
 {
     public function index(Request $request)
     {
+        // Tetap gunakan relasi company ke permissions untuk tampilan UI
         $query = Company::query()->with('permissions');
 
         $query->when($request->search, function ($q, $search) {
@@ -44,16 +46,37 @@ class PermissionAccessController extends Controller
         return DB::transaction(function () use ($validated, $company) {
             $permission = Permission::where('name', $validated['permission_name'])->firstOrFail();
 
+            // 1. Cari Owner Perusahaan (User dengan role 'company' di perusahaan ini)
+            $owner = User::role('company')
+                ->where('company_id', $company->id)
+                ->first();
+
             if ($validated['enabled']) {
+                // Berikan ke Company (biar tampilan UI index tetap sinkron)
                 $company->givePermissionTo($permission);
+                
+                // 2. Berikan ke Owner (Supaya Middleware CheckCompanyPermission tembus)
+                if ($owner) {
+                    $owner->givePermissionTo($permission);
+                }
+                
                 $message = "Access '{$permission->name}' granted to {$company->name}.";
             } else {
+                // Cabut dari Company
                 $company->revokePermissionTo($permission);
+                
+                // 3. Cabut dari Owner
+                if ($owner) {
+                    $owner->revokePermissionTo($permission);
+                }
+                
                 $message = "Access '{$permission->name}' revoked from {$company->name}.";
             }
 
+            // Bersihkan Cache Spatie & Cache Custom Middleware lo
             app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
             Cache::forget("company-{$company->id}-permissions");
+            Cache::forget("company_perms_{$company->id}"); // Sesuai nama cache di middleware lo
 
             return redirect()->back()->with('success', $message);
         });

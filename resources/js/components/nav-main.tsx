@@ -7,14 +7,14 @@ import { NavItem } from '@/types';
 
 export function NavMain({ items }: { items: NavItem[] }) {
     const page = usePage();
-    
+
     return (
         <SidebarGroup>
             <SidebarGroupLabel>Platform</SidebarGroupLabel>
             <SidebarMenu>
-                {items.map((item) => {
-                    const Icon = typeof item.icon === 'string' 
-                        ? (Icons as any)[item.icon] 
+                {(items || []).map((item) => {
+                    const Icon = typeof item.icon === 'string'
+                        ? (Icons as any)[item.icon]
                         : item.icon;
 
                     return (
