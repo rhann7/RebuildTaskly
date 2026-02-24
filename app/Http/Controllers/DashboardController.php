@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Company;
+use App\Models\ProjectManagement\Project; 
+use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Spatie\Permission\Models\Permission;
@@ -13,15 +15,16 @@ class DashboardController extends Controller
     {
         $user = $request->user();
         $stats = [];
-        $activities = [];
+        $activities = collect(); // Pakai collect biar aman pas di-map
 
         if ($user->hasRole('super-admin')) {
+            // --- STATS SUPER ADMIN ---
             $stats = [
                 [
                     'title' => 'Total Companies',
                     'value' => Company::count(),
                     'icon'  => 'Building2',
-                    'desc'  => 'Registered companies'
+                    'desc'  => 'Registered entities'
                 ],
                 [
                     'title' => 'Total Permissions',
@@ -30,53 +33,69 @@ class DashboardController extends Controller
                     'desc'  => 'Available features'
                 ],
                 [
-                    'title' => 'Dummy Card',
-                    'value' => 0, 
-                    'icon'  => 'ShieldAlert',
-                    'desc'  => 'Dummy description'
+                    'title' => 'Global Users',
+                    'value' => User::count(), 
+                    'icon'  => 'Users',
+                    'desc'  => 'Total personnel'
                 ]
             ];
 
+            // --- LOG SUPER ADMIN (Company Baru) ---
             $activities = Company::latest()->take(5)->get()->map(function($company) {
                 return [
                     'title' => 'New Company Registration',
-                    'desc'  => "{$company->name} joined the platform.",
+                    'desc'  => "Unit [{$company->name}] has been onboarded to the system.",
                     'time'  => $company->created_at->diffForHumans(),
                 ];
             });
 
         } else {
-            $company = $user->companyOwner?->company;
+            // --- LOGIC FOR COMPANY / MANAGER ---
+            $companyId = $user->company_id;
 
-            if ($company) {
-                $company->load('permissions');
-                
+            if ($companyId) {
+                // Stats Real Time
                 $stats = [
                     [
-                        'title' => 'Active Features',
-                        'value' => $company->permissions->count(), 
-                        'icon'  => 'Zap',
-                        'desc'  => 'Features enabled for you'
-                    ],
-                    [
-                        'title' => 'Dummy Card',
-                        'value' => 0, 
-                        'icon'  => 'Users',
-                        'desc'  => 'Dummy description'
-                    ],
-                    [
-                        'title' => 'Dummy Card',
-                        'value' => 0,
+                        'title' => 'Active Projects',
+                        'value' => Project::whereHas('workspace', fn($q) => $q->where('company_id', $companyId))->count(), 
                         'icon'  => 'Briefcase',
-                        'desc'  => 'Dummy description'
+                        'desc'  => 'Operations in progress'
+                    ],
+                    [
+                        'title' => 'Team Strength',
+                        'value' => User::where('company_id', $companyId)->count(), 
+                        'icon'  => 'Users',
+                        'desc'  => 'Deployed personnel'
+                    ],
+                    [
+                        'title' => 'System Features',
+                        'value' => Permission::count(), // Atau sesuaikan dengan fitur paket mereka
+                        'icon'  => 'Zap',
+                        'desc'  => 'Authorized capabilities'
                     ]
                 ];
+
+                // --- OPERATION LOGS (Project Terbaru di Perusahaan Terkait) ---
+                $activities = Project::with('workspace')
+                    ->whereHas('workspace', fn($q) => $q->where('company_id', $companyId))
+                    ->latest()
+                    ->take(5)
+                    ->get()
+                    ->map(function($project) {
+                        return [
+                            'title' => 'Project Deployment',
+                            'desc'  => "Operation [{$project->name}] is now live in {$project->workspace->name}.",
+                            'time'  => $project->created_at->diffForHumans(),
+                        ];
+                    });
             }
         }
 
         return Inertia::render('dashboard', [
             'stats' => $stats,
-            'activities' => $activities
+            // Pastikan kirim data yang udah di-map, kalo kosong kirim array kosong
+            'activities' => $activities->toArray() 
         ]);
     }
 }

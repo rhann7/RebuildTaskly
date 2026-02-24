@@ -120,10 +120,11 @@ class ProjectController extends Controller
 
         // GATE KEEPER: Hanya Admin, Manager Workspace, atau Member Project yang bisa masuk
         if (!$user->isSuperAdmin()) {
+            $isCompany = $user->hasRole('company');
             $isWorkspaceManager = $workspace->manager_id === $user->id;
             $isProjectMember = $project->members()->where('users.id', $user->id)->exists();
 
-            if (!$isWorkspaceManager && !$isProjectMember) {
+            if (!$isCompany && !$isWorkspaceManager && !$isProjectMember) {
                 // Kita arahkan kembali ke halaman detail Workspace
                 return redirect()->route('workspaces.show', $workspace->slug)
                     ->with('error', 'AUTHORIZATION ERROR: Unit not deployed to this project sector.');
