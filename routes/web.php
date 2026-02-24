@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\Companies\CategoryController;
 use App\Http\Controllers\Companies\CompanyAppealController;
 use App\Http\Controllers\Companies\CompanyController;
@@ -17,6 +18,11 @@ use Laravel\Fortify\Features;
 Route::get('/', function () {
     return Inertia::render('welcome', ['canRegister' => Features::enabled(Features::registration())]);
 })->name('home');
+
+// Route to redirect to Google's OAuth page
+Route::get('auth/google/redirect', [GoogleAuthController::class, 'redirect'])->name('auth.google.redirect');
+
+Route::get('auth/google/callback', [GoogleAuthController::class, 'callback'])->name('auth.google.callback');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])
@@ -39,7 +45,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::resource('invoices', InvoiceController::class)
         ->only(['store', 'show']);
-    
+
     Route::get('invoices/{invoice}/create', [InvoiceController::class, 'create'])
         ->name('invoices.create');
 
@@ -48,7 +54,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::post('invoices/{invoice}/payment', [InvoiceController::class, 'createPayment'])
         ->name('invoices.payment');
-        
+
     Route::middleware('role:super-admin')->group(function () {
         Route::prefix('access-control')->name('access-control.')->group(function () {
             Route::resource('permissions', PermissionController::class);
@@ -62,7 +68,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 ->name('modules.permissions.assign');
             Route::delete('permissions/{permission}', [ModuleController::class, 'removePermission'])
                 ->name('modules.permissions.remove');
-                
+
             Route::resource('plans', PlanController::class)
                 ->parameters(['plans' => 'plan:slug']);
 
@@ -70,7 +76,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 ->name('plans.modules.assign')  ;
             Route::delete('plans/{plan}/modules/{module}', [PlanController::class, 'removeModule'])
                 ->name('plans.modules.remove');
-            
+
             Route::resource('subscriptions', SubscriptionController::class)
                 ->only(['index', 'show']);
         });
@@ -83,7 +89,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::resource('companies', CompanyController::class)
                 ->parameters(['companies' => 'company:slug'])
                 ->except(['create', 'edit']);
-            
+
             Route::resource('appeals', CompanyAppealController::class)
                 ->only(['index', 'update']);
         });
@@ -96,6 +102,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('workspaces', WorkspaceController::class)
             ->parameters(['workspaces' => 'workspace:slug'])
             ->except(['create', 'edit']);
+
+        Route::get('test', function() {
+            return Inertia::render('example/index');
+        })->name('test');
     });
 });
 

@@ -97,6 +97,13 @@ export default function Login({
                                 Log in
                             </Button>
                         </div>
+                        <a
+                                href="/auth/google/redirect"
+                                className="mt-4 w-full"
+                            >
+                                {processing && <Spinner />}
+                                Log in with Google
+                        </a>
 
                         {canRegister && (
                             <div className="text-center text-sm text-muted-foreground">
