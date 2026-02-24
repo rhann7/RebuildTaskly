@@ -20,14 +20,14 @@ export const MemberTasks = ({ tasks }: { tasks: any[] }) => (
             {tasks && tasks.length > 0 ? (
                 tasks.map((task, index) => {
                     // Penentuan Warna Badge Prioritas
-                    const priorityColor = 
+                    const priorityColor =
                         task.priority === 'high' ? 'text-red-500 bg-red-500/10 border-red-500/20' :
-                        task.priority === 'medium' ? 'text-amber-500 bg-amber-500/10 border-amber-500/20' :
-                        'text-emerald-500 bg-emerald-500/10 border-emerald-500/20';
+                            task.priority === 'medium' ? 'text-amber-500 bg-amber-500/10 border-amber-500/20' :
+                                'text-emerald-500 bg-emerald-500/10 border-emerald-500/20';
 
                     return (
-                        <div 
-                            key={index} 
+                        <div
+                            key={index}
                             className="group flex items-center justify-between p-5 rounded-[24px] bg-muted/20 hover:bg-muted/40 border border-transparent hover:border-border/60 transition-all duration-300"
                         >
                             <div className="flex items-center gap-5">
@@ -38,14 +38,14 @@ export const MemberTasks = ({ tasks }: { tasks: any[] }) => (
                                     <span className="text-sm font-black text-foreground uppercase tracking-tight group-hover:text-indigo-500 transition-colors line-clamp-1">
                                         {task.title}
                                     </span>
-                                    
+
                                     <div className="flex items-center gap-2 mt-2 flex-wrap">
                                         <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest border ${priorityColor}`}>
                                             {task.priority}
                                         </span>
                                         {task.due_date && (
                                             <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1 bg-background px-2 py-0.5 rounded-md border border-border">
-                                                <Timer size={10} /> 
+                                                <Timer size={10} />
                                                 {new Date(task.due_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                                             </span>
                                         )}
@@ -54,7 +54,9 @@ export const MemberTasks = ({ tasks }: { tasks: any[] }) => (
                             </div>
 
                             {/* Tombol Panah ke Halaman Task */}
-                            <Link href="/workspaces/${workspace.slug}/projects/${project.slug}/tasks/${task.slug}">
+                            <Link
+                                href={`/workspaces/${task.project.workspace.slug}/projects/${task.project.slug}/tasks/${task.slug}`}
+                            >
                                 <button className="size-10 flex items-center justify-center bg-background rounded-xl text-muted-foreground hover:text-indigo-500 hover:border-indigo-500/30 border border-border shadow-sm group-hover:scale-110 group-hover:bg-indigo-500/5 transition-all shrink-0">
                                     <ArrowRight size={16} />
                                 </button>

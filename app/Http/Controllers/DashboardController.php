@@ -19,7 +19,7 @@ class DashboardController extends Controller
         $role = $user->roles->first()?->name ?? 'member';
 
         $stats = [];
-        $activities = collect(); 
+        $activities = collect();
         $workspacesData = [];
         $projectsData = [];
         $tasksData = [];
@@ -41,7 +41,11 @@ class DashboardController extends Controller
             ];
 
             $activities = Company::latest()->take(5)->get()->map(fn($c) => [
-                'title' => 'New Client', 'desc' => "{$c->name} joined.", 'time' => $c->created_at->diffForHumans(), 'type' => 'system', 'timestamp' => $c->created_at
+                'title' => 'New Client',
+                'desc' => "{$c->name} joined.",
+                'time' => $c->created_at->diffForHumans(),
+                'type' => 'system',
+                'timestamp' => $c->created_at
             ]);
 
             // Grafik Global: Total jam kerja seluruh platform
@@ -49,9 +53,9 @@ class DashboardController extends Controller
                 ->selectRaw('DATE(date) as log_date, SUM(hours) as total_hours')
                 ->groupBy('log_date')->pluck('total_hours', 'log_date');
 
-        // ==========================================
-        // 2. OWNER / COMPANY LEVEL (Strategic View)
-        // ==========================================
+            // ==========================================
+            // 2. OWNER / COMPANY LEVEL (Strategic View)
+            // ==========================================
         } elseif ($role === 'company' || $role === 'owner') {
             $company = $user->company ?? $user->companyOwner?->company;
             if ($company) {
@@ -68,18 +72,30 @@ class DashboardController extends Controller
                     $done = $allTasks->where('status', 'done')->count();
                     $progress = $total > 0 ? round(($done / $total) * 100) : 0;
                     return [
-                        'name' => $ws->name, 'slug' => $ws->slug, 'tasks' => $total, 'completed' => $done,
-                        'members' => $ws->members()->count(), 'progress' => $progress,
+                        'name' => $ws->name,
+                        'slug' => $ws->slug,
+                        'tasks' => $total,
+                        'completed' => $done,
+                        'members' => $ws->members()->count(),
+                        'progress' => $progress,
                         'color' => $progress > 80 ? 'bg-emerald-500' : ($progress > 40 ? 'bg-blue-500' : 'bg-sada-red'),
                         'manager' => $ws->manager?->name ?? 'Unassigned'
                     ];
                 });
 
                 $recentProjects = Project::whereHas('workspace', fn($q) => $q->where('company_id', $company->id))->latest()->take(3)->get()->map(fn($p) => [
-                    'title' => 'Project Initiated', 'desc' => "{$p->name} in {$p->workspace->name}", 'time' => $p->created_at->diffForHumans(), 'type' => 'project', 'timestamp' => $p->created_at
+                    'title' => 'Project Initiated',
+                    'desc' => "{$p->name} in {$p->workspace->name}",
+                    'time' => $p->created_at->diffForHumans(),
+                    'type' => 'project',
+                    'timestamp' => $p->created_at
                 ]);
                 $recentApprovals = TimesheetEntry::whereHas('project.workspace', fn($q) => $q->where('company_id', $company->id))->where('status', 'approved')->latest('updated_at')->take(3)->get()->map(fn($t) => [
-                    'title' => 'Log Authorized', 'desc' => "{$t->user->name} - {$t->hours}H approved", 'time' => $t->updated_at->diffForHumans(), 'type' => 'approval', 'timestamp' => $t->updated_at
+                    'title' => 'Log Authorized',
+                    'desc' => "{$t->user->name} - {$t->hours}H approved",
+                    'time' => $t->updated_at->diffForHumans(),
+                    'type' => 'approval',
+                    'timestamp' => $t->updated_at
                 ]);
                 $activities = $recentProjects->merge($recentApprovals);
 
@@ -89,9 +105,9 @@ class DashboardController extends Controller
                     ->groupBy('log_date')->pluck('total_hours', 'log_date');
             }
 
-        // ==========================================
-        // 3. MANAGER LEVEL (Tactical View)
-        // ==========================================
+            // ==========================================
+            // 3. MANAGER LEVEL (Tactical View)
+            // ==========================================
         } elseif ($role === 'manager') {
             $managedWorkspaces = Workspace::where('manager_id', $user->id)->pluck('id');
             if ($managedWorkspaces->isNotEmpty()) {
@@ -102,10 +118,16 @@ class DashboardController extends Controller
                     ['title' => 'Team Status', 'value' => 'Active', 'change' => 'Productive', 'icon' => 'Zap', 'color' => 'from-emerald-500 to-teal-600'],
                 ];
 
-                $projectsData = Project::whereIn('workspace_id', $managedWorkspaces)->with('workspace:id,name')->latest()->take(5)->get();
+                $projectsData = Project::whereIn('workspace_id', $managedWorkspaces)
+                    ->with('workspace:id,name,slug')
+                    ->latest()->take(5)->get();
                 $activities = TimesheetEntry::whereHas('project', fn($q) => $q->whereIn('workspace_id', $managedWorkspaces))
                     ->whereIn('status', ['submitted', 'revision'])->with('user')->latest('updated_at')->take(5)->get()->map(fn($t) => [
-                        'title' => $t->status === 'revision' ? 'Revision Sent' : 'Log Submitted', 'desc' => "{$t->user->name}: {$t->hours}H", 'time' => $t->updated_at->diffForHumans(), 'type' => $t->status === 'revision' ? 'revision' : 'timesheet', 'timestamp' => $t->updated_at
+                        'title' => $t->status === 'revision' ? 'Revision Sent' : 'Log Submitted',
+                        'desc' => "{$t->user->name}: {$t->hours}H",
+                        'time' => $t->updated_at->diffForHumans(),
+                        'type' => $t->status === 'revision' ? 'revision' : 'timesheet',
+                        'timestamp' => $t->updated_at
                     ]);
 
                 $dailyLogs = TimesheetEntry::whereHas('project', fn($q) => $q->whereIn('workspace_id', $managedWorkspaces))
@@ -114,9 +136,9 @@ class DashboardController extends Controller
                     ->groupBy('log_date')->pluck('total_hours', 'log_date');
             }
 
-        // ==========================================
-        // 4. MEMBER LEVEL (Operational View)
-        // ==========================================
+            // ==========================================
+            // 4. MEMBER LEVEL (Operational View)
+            // ==========================================
         } else {
             $stats = [
                 ['title' => 'My Tasks', 'value' => str_pad(Task::whereHas('project.members', fn($q) => $q->where('users.id', $user->id))->whereIn('status', ['todo', 'in_progress'])->count(), 2, '0', STR_PAD_LEFT), 'change' => 'Ongoing', 'icon' => 'CheckSquare', 'color' => 'from-indigo-500 to-blue-600'],
@@ -125,9 +147,21 @@ class DashboardController extends Controller
                 ['title' => 'Goal', 'value' => '40H', 'change' => 'Target', 'icon' => 'Timer', 'color' => 'from-zinc-500 to-zinc-700'],
             ];
 
-            $tasksData = Task::whereHas('project.members', fn($q) => $q->where('users.id', $user->id))->whereIn('status', ['todo', 'in_progress'])->orderBy('due_date', 'asc')->take(5)->get();
+            $tasksData = Task::whereHas('project.members', fn($q) =>
+            $q->where('users.id', $user->id))
+                ->with(['project.workspace'])
+                ->whereIn('status', ['todo', 'in_progress'])
+                ->orderBy('due_date', 'asc')->take(5)->get();
             $activities = TimesheetEntry::where('user_id', $user->id)->latest('updated_at')->take(5)->get()->map(fn($t) => [
-                'title' => strtoupper($t->status), 'desc' => "Logged {$t->hours}H", 'time' => $t->updated_at->diffForHumans(), 'type' => match($t->status){'approved'=>'approval','revision'=>'revision',default=>'timesheet'}, 'timestamp' => $t->updated_at
+                'title' => strtoupper($t->status),
+                'desc' => "Logged {$t->hours}H",
+                'time' => $t->updated_at->diffForHumans(),
+                'type' => match ($t->status) {
+                    'approved' => 'approval',
+                    'revision' => 'revision',
+                    default => 'timesheet'
+                },
+                'timestamp' => $t->updated_at
             ]);
 
             $dailyLogs = TimesheetEntry::where('user_id', $user->id)
