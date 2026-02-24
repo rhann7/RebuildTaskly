@@ -118,10 +118,10 @@ export default function Dashboard() {
                         {(!['super-admin', 'company', 'owner', 'manager'].includes(role)) && myTasks && (
                             <MemberTasks tasks={myTasks} />
                         )}
-
-                        {/* Chart Produktivitas (Dilihat oleh semua role) */}
-                        <ProductivityChart data={chartData} />
-
+                        {/* 4. GRAFIK (HANYA UNTUK ROLE SELAIN SUPER ADMIN) */}
+                        {role !== 'super-admin' && (
+                            <ProductivityChart data={chartData} />
+                        )}
                     </div>
 
                     {/* ========================================== */}
