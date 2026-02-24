@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\Companies\CategoryController;
 use App\Http\Controllers\Companies\CompanyAppealController;
 use App\Http\Controllers\Companies\CompanyController;
+use App\Http\Controllers\Companies\CompanyDashboardController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Invoices\InvoiceController;
 use App\Http\Controllers\Modules\ModuleController;
@@ -30,9 +31,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])
         ->name('dashboard');
 
-    Route::impersonate();
+        Route::impersonate();
 
-    Route::resource('appeals', CompanyAppealController::class)
+        Route::resource('appeals', CompanyAppealController::class)
         ->only(['create', 'store']);
 
     Route::get('plans/pricing', [PlanController::class, 'pricing'])
@@ -48,17 +49,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('invoices', InvoiceController::class)
         ->only(['store', 'show']);
 
-    Route::get('invoices/{invoice}/create', [InvoiceController::class, 'create'])
+        Route::get('invoices/{invoice}/create', [InvoiceController::class, 'create'])
         ->name('invoices.create');
 
-    Route::patch('invoices/{invoice}/cancel', [InvoiceController::class, 'cancel'])
+        Route::patch('invoices/{invoice}/cancel', [InvoiceController::class, 'cancel'])
         ->name('invoices.cancel');
 
-    Route::post('invoices/{invoice}/payment', [InvoiceController::class, 'createPayment'])
+        Route::post('invoices/{invoice}/payment', [InvoiceController::class, 'createPayment'])
         ->name('invoices.payment');
 
-    Route::middleware('role:super-admin')->group(function () {
-        Route::prefix('access-control')->name('access-control.')->group(function () {
+        Route::middleware('role:super-admin')->group(function () {
+            Route::get('dashboard/companies', [CompanyDashboardController::class, 'index'])
+                ->name('dashboard.companies');
+
+            Route::prefix('access-control')->name('access-control.')->group(function () {
             Route::resource('permissions', PermissionController::class);
         });
 
