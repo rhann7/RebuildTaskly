@@ -26,6 +26,23 @@ class HandleInertiaRequests extends Middleware
 
         $company = $user?->company;
 
+        $subscription = null;
+        if ($user && !$user->isSuperAdmin()) {
+            $company?->loadMissing('activeSubscription');
+            $activeSubscription = $company?->activeSubscription;
+            
+            if ($activeSubscription) {
+                $daysLeft = (int) ceil(now()->diffInDays($activeSubscription->ends_at, false));
+                $subscription = [
+                    'status'    => $activeSubscription->status,
+                    'ends_at'   => $activeSubscription->ends_at,
+                    'days_left' => $daysLeft,
+                    'plan_name' => $activeSubscription->plan_name,
+                    'is_free'   => $activeSubscription->plan?->price == 0,
+                ];
+            }
+        }
+
         return [
             ...parent::share($request),
             'name' => config('app.name'),
@@ -54,6 +71,7 @@ class HandleInertiaRequests extends Middleware
                 ] : null,
                 'is_impersonating' => app('impersonate')->isImpersonating()
             ],
+            'subscription' => $subscription,
             'categories' => fn () => $request->routeIs('register')
                 ? CompanyCategory::select(['id', 'name'])->get()
                 : [],
