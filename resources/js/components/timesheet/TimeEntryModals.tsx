@@ -276,11 +276,49 @@ export function TimeEntryModal({
                                 )}
                             </div>
                         )}
-                        
+
                         {activeTab === 'files' && (
-                             <div className="py-20 flex flex-col items-center justify-center text-center text-muted-foreground bg-muted/10 border border-dashed border-border/50 rounded-xl">
-                                <Paperclip size={32} className="opacity-30 mb-3" />
-                                <p className="text-[13px] font-medium">Attachment feature is currently under construction.</p>
+                            <div className="flex flex-col gap-2 mt-4">
+                                <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest ml-1">
+                                    Evidence / Attachment
+                                </label>
+
+                                <div className="relative">
+                                    {!data.attachment ? (
+                                        <div className="group relative border-2 border-dashed border-border rounded-2xl p-4 hover:border-sada-red/50 transition-all flex flex-col items-center justify-center cursor-pointer bg-muted/20">
+                                            <input
+                                                type="file"
+                                                onChange={(e) => setData('attachment', e.target.files?.[0])}
+                                                className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                                            />
+                                            <Paperclip size={20} className="text-muted-foreground group-hover:text-sada-red mb-2 transition-colors" />
+                                            <p className="text-[9px] font-black uppercase text-muted-foreground tracking-tight">
+                                                Click to upload proof (Max 2MB)
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <div className="p-3 border border-sada-red/30 bg-sada-red/5 rounded-2xl flex items-center justify-between animate-in zoom-in-95 duration-200">
+                                            <div className="flex items-center gap-3">
+                                                <div className="size-9 rounded-xl bg-sada-red/10 flex items-center justify-center text-sada-red">
+                                                    <FileText size={16} />
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-[11px] font-bold text-foreground truncate max-w-[150px]">
+                                                        {data.attachment instanceof File ? data.attachment.name : 'Existing Evidence'}
+                                                    </span>
+                                                    <span className="text-[8px] font-black text-sada-red uppercase">File Attached</span>
+                                                </div>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => setData('attachment', null)}
+                                                className="p-1.5 hover:bg-red-500/10 text-red-500 rounded-lg transition-colors"
+                                            >
+                                                <X size={14} />
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         )}
                     </div>

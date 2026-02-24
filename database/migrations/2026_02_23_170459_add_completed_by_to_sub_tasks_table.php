@@ -9,15 +9,14 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-   public function up()
+    public function up()
     {
-        Schema::table('sub_tasks', function (Blueprint $table) {
-            $table->foreignId('completed_by')
-                ->nullable()
-                ->after('is_completed')
-                ->constrained('users')
-                ->nullOnDelete();
-        });
+        // Cek dulu, kalau kolomnya BELUM ada, baru buat.
+        if (!Schema::hasColumn('sub_tasks', 'completed_by')) {
+            Schema::table('sub_tasks', function (Blueprint $table) {
+                $table->bigInteger('completed_by')->unsigned()->nullable()->after('is_completed');
+            });
+        }
     }
 
     public function down()

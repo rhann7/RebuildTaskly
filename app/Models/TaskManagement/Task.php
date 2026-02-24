@@ -8,10 +8,11 @@ use Illuminate\Database\Eloquent\Model;
 use App\Models\TaskManagement\TaskDocument;
 use App\Models\Timesheet;
 use App\Models\Timesheet\Timesheet as ModelsTimesheet;
+use App\Models\Timesheet\TimesheetEntry;
 
 class Task extends Model
 {
-    protected $fillable = ['project_id','user_id', 'title', 'slug', 'description', 'status', 'priority', 'due_date'];
+    protected $fillable = ['project_id', 'user_id', 'title', 'slug', 'description', 'status', 'priority', 'due_date'];
 
     public function project()
     {
@@ -33,7 +34,7 @@ class Task extends Model
     public function users()
     {
         // Ini kalau pake table pivot (task_user)
-        return $this->belongsToMany(User::class, 'task_user'); 
+        return $this->belongsToMany(User::class, 'task_user');
     }
     public function documents()
     {
@@ -47,7 +48,7 @@ class Task extends Model
         // Hitung langsung di model tiap kali data diakses
         $total = $this->subtasks()->count();
         if ($total === 0) return null;
-        
+
         $completed = $this->subtasks()->where('is_completed', true)->count();
         return round(($completed / $total) * 100);
     }
@@ -55,5 +56,10 @@ class Task extends Model
     public function getTotalObjectivesAttribute()
     {
         return $this->subtasks()->count();
+    }
+
+    public function entries()
+    {
+        return $this->hasMany(TimesheetEntry::class, 'task_id');
     }
 }

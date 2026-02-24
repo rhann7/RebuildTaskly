@@ -9,7 +9,7 @@ import {
 import { useState, useMemo } from 'react';
 import { SubTaskItem } from '../subtask/SubTaskItem';
 // PASTIKAN IMPORT MODAL INI BENAR (sesuaikan path-nya)
-import AddSubTaskModal from '@/components/tabs-project/CreateSubTasksModal'; 
+import AddSubTaskModal from '@/components/tabs-project/CreateSubTasksModal';
 
 interface Props {
     task: any;
@@ -32,6 +32,8 @@ export const TaskOverview = ({ task, isManager = false, workspace, project }: Pr
         const combined = [...projectUsers, ...completers];
         return Array.from(new Map(combined.map(user => [user.id, user])).values());
     }, [project.users, task.subtasks]);
+
+    task.subtasks.filter((s: any) => Boolean(s.is_completed)).length
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -59,13 +61,15 @@ export const TaskOverview = ({ task, isManager = false, workspace, project }: Pr
                 <div className="flex flex-col gap-6">
                     <div className="flex justify-between items-end px-4 border-b border-border pb-4">
                         <div className="flex flex-col gap-1">
-                            <h3 className="text-xl font-black uppercase flex items-center gap-3 tracking-tighter text-foreground">
+                            <h3 className="text-xl font-black uppercase flex items-center gap-3 text-foreground">
                                 <Target className="text-sada-red" size={20} />
-                                Operational Objectives
+                                Subtask List
                             </h3>
-                            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
-                                {task.subtasks?.length || 0} Objectives Identified
-                            </p>
+                            <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">
+                                {task.subtasks && task.subtasks.length > 0
+                                    ? `${task.subtasks.filter((s: any) => s.is_completed).length} of ${task.subtasks.length} Subtasks Completed`
+                                    : 'No Subtasks Added'}
+                            </span>
                         </div>
 
                         {/* TOMBOL ADD OBJECTIVE */}
@@ -74,7 +78,7 @@ export const TaskOverview = ({ task, isManager = false, workspace, project }: Pr
                             className="h-10 px-5 bg-foreground text-background rounded-xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest hover:scale-95 transition-all shadow-md group/btn"
                         >
                             <Plus size={14} strokeWidth={3} className="group-hover/btn:rotate-90 transition-transform duration-300" />
-                            Add Objective
+                            Add Sub Task
                         </button>
                     </div>
 
@@ -105,7 +109,7 @@ export const TaskOverview = ({ task, isManager = false, workspace, project }: Pr
                 {/* Field Operatives Card */}
                 <div className="bg-muted/30 border border-dashed border-border rounded-[32px] p-6 flex flex-col gap-5">
                     <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest italic flex items-center gap-2">
-                        <UserIcon size={12} className="text-sada-red" /> Operatives In-Field
+                        <UserIcon size={12} className="text-sada-red" /> Assignee
                     </span>
 
                     <div className="flex flex-wrap items-center gap-3">
@@ -148,12 +152,12 @@ export const TaskOverview = ({ task, isManager = false, workspace, project }: Pr
             </div>
 
             {/* MODAL TAMBAH SUBTASK */}
-            <AddSubTaskModal 
-                isOpen={isAddModalOpen} 
-                setIsOpen={setIsAddModalOpen} 
-                project={project} 
-                workspace={workspace} 
-                task={task} 
+            <AddSubTaskModal
+                isOpen={isAddModalOpen}
+                setIsOpen={setIsAddModalOpen}
+                project={project}
+                workspace={workspace}
+                task={task}
             />
 
         </div>

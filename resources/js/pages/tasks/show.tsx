@@ -5,11 +5,11 @@ import { BreadcrumbItem } from '@/types';
 import { TaskDetailHeader } from '@/layouts/tasks/partials/TasksDetailHeader';
 import { TaskDetailTabs } from '@/layouts/tasks/tabs/TabsDetailTasks';
 import { TaskOverview } from '@/layouts/tasks/tabs/TaskOverview';
-import { TaskTimesheets } from '@/layouts/tasks/tabs/TasksTimesheets';
 import { TaskDocuments } from '@/layouts/tasks/tabs/TaskDocument';
+import { TaskTimesheetTab } from '@/layouts/tasks/tabs/TaskTimesheetTab';
 
 export default function TaskShow({ workspace, project, task, isManager }: any) {
-    const [activeTab, setActiveTab] = useState<'brief' | 'timesheets' | 'docs' | 'activity'>('brief');
+    const [activeTab, setActiveTab] = useState<'brief' | 'logs' | 'docs' | 'activity'>('brief');
 
     // 1. HITUNG PROGRESS SECARA REALTIME
     // Setiap kali task di-update (misal checklist diklik), progress bakal kehitung ulang
@@ -51,13 +51,19 @@ export default function TaskShow({ workspace, project, task, isManager }: any) {
                             task={enrichedTask}
                             isManager={isManager}
                         />}
-                    {activeTab === 'timesheets' &&
-                        <TaskTimesheets
-                            task={enrichedTask} />}
+                    {activeTab === 'logs' && (
+                        <div className="bg-white dark:bg-zinc-900/40 border border-border rounded-[40px] overflow-hidden p-8 shadow-2xl mt-6">
+                            <TaskTimesheetTab task={task} isManager={isManager} />
+                        </div>
+                    )}
                     {activeTab === 'docs' &&
                         <TaskDocuments
                             task={enrichedTask} />}
+                    {activeTab === 'activity' &&
+                        <TaskTimesheetTab task={enrichedTask} isManager={isManager} />
+                    }
                 </div>
+
             </div>
         </AppLayout >
     );

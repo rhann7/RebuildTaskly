@@ -21,7 +21,7 @@ export default function MemberRoutineView({ timeEntries, projects, stats, curren
     const [pendingUpdate, setPendingUpdate] = useState<any>(null);
 
     const { data, setData, post, patch, processing, reset, errors } = useForm({
-        id: null as number | null, 
+        id: null as number | null,
         project_id: '',
         task_id: '',
         sub_task_id: '',
@@ -84,27 +84,30 @@ export default function MemberRoutineView({ timeEntries, projects, stats, curren
     // --- 3. SELESAI DRAG & DROP (TAMPILKAN KONFIRMASI) ---
     const handleEntryUpdate = (updatedEntry: any) => {
         setPendingUpdate(updatedEntry);
-        setIsConfirmModalOpen(true); 
+        setIsConfirmModalOpen(true);
     };
 
     // --- EKSEKUSI FORM FULL (CREATE ATAU UPDATE DETAIL) ---
     const submitFullEntry = () => {
+        // Pastikan kita mengirim data sebagai FormData karena ada file
+        const options = {
+            forceFormData: true,
+            preserveScroll: true,
+            onSuccess: () => {
+                setIsFullModalOpen(false);
+                reset();
+            },
+        };
+
         if (data.id) {
-            patch(`/timesheets/${data.id}`, {
-                onSuccess: () => {
-                    setIsFullModalOpen(false);
-                    reset();
-                },
-                preserveScroll: true
-            });
+            // UPDATE: Gunakan POST dengan _method: 'patch'
+            router.post(`/timesheets/${data.id}`, {
+                ...data,
+                _method: 'patch',
+            }, options);
         } else {
-            post('/timesheets', {
-                onSuccess: () => {
-                    setIsFullModalOpen(false);
-                    reset();
-                },
-                preserveScroll: true
-            });
+            // CREATE: Tetap gunakan POST
+            router.post('/timesheets', data, options);
         }
     };
 
@@ -123,7 +126,7 @@ export default function MemberRoutineView({ timeEntries, projects, stats, curren
             }
         });
     };
-    
+
     // --- HAPUS ENTRY ---
     const deleteEntry = (id: number) => {
         if (confirm("Are you sure you want to permanently delete this entry?")) {
@@ -176,7 +179,7 @@ export default function MemberRoutineView({ timeEntries, projects, stats, curren
                 errors={errors}
                 processing={processing}
                 isEditing={!!data.id}
-                onDelete={() => deleteEntry(data.id as number)} 
+                onDelete={() => deleteEntry(data.id as number)}
             />
 
             {/* --- MODAL 2: QUICK CONFIRMATION (DRAG & DROP) --- */}

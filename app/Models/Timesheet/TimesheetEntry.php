@@ -22,6 +22,9 @@ class TimesheetEntry extends Model
         'end_at',
         'hours',
         'description',
+        'attachment',    // Untuk upload file
+        'status',        // WAJIB: Untuk fitur revisi/flagging
+        'reject_reason', // WAJIB: Untuk menyimpan pesan manager
         'is_billable'
     ];
 

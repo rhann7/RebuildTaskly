@@ -40,13 +40,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('projects.global');
         Route::get('/tasks', [TaskController::class, 'globalIndex'])
             ->name('tasks.global');
-        Route::resource('timesheets', TimesheetController::class);
-        Route::patch('/timesheets/{id}/time', [TimesheetController::class, 'updateTime'])->name('timesheets.time.update');
-
-        Route::patch('/timesheet-entries/{id}/reject', [TimesheetController::class, 'rejectEntry'])->name('timesheet-entries.reject');
-        Route::patch('/timesheets/{timesheet}/submit', [TimesheetController::class, 'submit'])->name('timesheets.submit');
-        Route::patch('/timesheets/{timesheet}/approve', [TimesheetController::class, 'approve'])->name('timesheets.approve');
-        Route::patch('/timesheets/{timesheet}/reject', [TimesheetController::class, 'reject'])->name('timesheets.reject');
+    Route::resource('timesheets', TimesheetController::class);
     });
 
     Route::impersonate();
@@ -74,10 +68,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->parameters(['workspaces' => 'workspace:slug'])
             ->except(['create', 'edit']);
         Route::get('/tasks', [TaskController::class, 'globalIndex'])
-        ->name('tasks.global');
+            ->name('tasks.global');
         Route::post('/tasks/quick-store', [TaskController::class, 'quickStore'])
             ->name('tasks.quick-store');
-            Route::resource('workspaces.projects', ProjectController::class)
+        Route::resource('workspaces.projects', ProjectController::class)
             ->parameters([
                 'workspaces' => 'workspace:slug',
                 'projects' => 'project:slug'
@@ -121,6 +115,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
         )
             ->name('workspaces.projects.tasks.subtasks.toggle');
         Route::patch('/workspaces/{workspace:slug}/projects/{project:slug}/tasks/{task:slug}/subtasks/{subtask}', [SubTaskController::class, 'update'])->name('subtasks.update');
+
+
+        Route::patch('/timesheets/{id}/time', [TimesheetController::class, 'updateTime'])->name('timesheets.time.update');
+        Route::patch('/timesheet-entries/{id}/reject', [TimesheetController::class, 'rejectEntry'])->name('timesheet-entries.reject');
+        Route::patch('/timesheets/{timesheet}/submit', [TimesheetController::class, 'submit'])->name('timesheets.submit');
+        Route::patch('/timesheets/{timesheet}/approve', [TimesheetController::class, 'approve'])->name('timesheets.approve');
+        Route::patch('/timesheets/{timesheet}/reject', [TimesheetController::class, 'reject'])->name('timesheets.reject');
+        Route::patch('/timesheets/entries/{id}/approve', [TimesheetController::class, 'approveEntry'])->name('timesheets.entries.approve');
+        Route::patch('/timesheets/entries/{id}/reject', [TimesheetController::class, 'rejectEntry'])->name('timesheets.entries.reject');
+
 
         if (Schema::hasTable('permissions') && Schema::hasColumns('permissions', ['route_path', 'route_name'])) {
             $dynamicRoutes = cache()->remember('dynamic_routes', 3600, function () {

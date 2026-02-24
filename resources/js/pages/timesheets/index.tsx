@@ -92,12 +92,15 @@ export default function TimesheetIndex({ timesheets, projects, stats, currentDat
                             <ViewRenderer
                                 currentView={currentView}
                                 data={{
+                                    task: timesheets?.current || [],
                                     timeEntries: timesheets?.mapped || [],
                                     projects: projects,
                                     stats: stats,
                                     currentDate: currentDateProp,
 
                                     isManager: isManager,
+
+                                    taskData: timesheets?.current || [],
 
                                     history: timesheets?.history,
                                     pendingLogs: pendingLogs,

@@ -1,21 +1,22 @@
 import React from 'react';
 import {
     BarChart3, Loader2, ShieldCheck, Activity,
-    Calendar as CalendarIcon, Database, Terminal,
-    AlertCircle, Layers
+    Calendar as CalendarIcon, Terminal,
+    AlertCircle
 } from 'lucide-react';
 import MemberRoutineView from '../tabs/MemberRoutineView';
 import { ManagerReviewTab } from '../tabs/ManagerReviewTab';
+import { TaskTimesheetTab } from '@/layouts/tasks/tabs/TaskTimesheetTab';
 import { MemberLogsTab } from '../tabs/MemberLogsTab';
 
-// 1. Shared Layout: Container untuk setiap view agar tingginya seragam dan rapi
+// 1. Shared Layout
 const ViewContainer = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
     <div className={`animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both ${className}`}>
         {children}
     </div>
 );
 
-// 2. Shared Component: Section Header yang lebih bold
+// 2. Shared Component: Section Header
 const SectionHeader = ({ title, subtitle, badge }: { title: string; subtitle: string; badge?: string | number }) => (
     <div className="flex items-center justify-between mb-6">
         <div className="flex flex-col gap-1">
@@ -37,7 +38,7 @@ const SectionHeader = ({ title, subtitle, badge }: { title: string; subtitle: st
     </div>
 );
 
-// 3. Shared Component: Placeholder/Standby State
+// 3. Shared Component: Standby State
 const StandbyState = ({ icon: Icon, title, description }: any) => (
     <div className="min-h-[400px] flex flex-col items-center justify-center border-2 border-dashed border-border rounded-[40px] bg-muted/5 opacity-40 group hover:opacity-100 transition-opacity duration-500">
         <Icon size={48} className="text-muted-foreground mb-4 group-hover:scale-110 group-hover:text-sada-red transition-all duration-500" />
@@ -47,9 +48,15 @@ const StandbyState = ({ icon: Icon, title, description }: any) => (
 );
 
 export const ViewRenderer = ({ currentView, data }: any) => {
+    // --- PERBAIKAN DI SINI ---
+    // Ekstrak nilai isManager dan task (jika ada) dari dalam object data
+    const isManager = data?.isManager || false;
+    // Asumsi: Jika data task tidak ada di props data, berikan objek kosong atau atur sedemikian rupa
+    const taskData = data?.task || {};
+
     // PROTEKSI: Jika bukan manager tapi mencoba akses view rahasia
     const restrictedViews = ['review', 'analytics'];
-    if (!data.isManager && restrictedViews.includes(currentView)) {
+    if (!isManager && restrictedViews.includes(currentView)) {
         return (
             <ViewContainer className="min-h-[400px] flex flex-col items-center justify-center bg-red-500/5 border border-red-500/20 rounded-[40px]">
                 <ShieldCheck size={48} className="text-red-500 mb-4 opacity-50" />
@@ -58,6 +65,7 @@ export const ViewRenderer = ({ currentView, data }: any) => {
             </ViewContainer>
         );
     }
+
     switch (currentView) {
 
         case 'member':
@@ -73,6 +81,7 @@ export const ViewRenderer = ({ currentView, data }: any) => {
                     </div>
                 </ViewContainer>
             );
+
         case 'calendar':
             return (
                 <ViewContainer>
@@ -86,15 +95,14 @@ export const ViewRenderer = ({ currentView, data }: any) => {
                     </div>
                 </ViewContainer>
             );
+
         case 'audit':
             return (
                 <ViewContainer>
                     <SectionHeader title="Operational Logs" subtitle="Your Weekly Timesheet Submissions" />
-                    <div className="bg-white dark:bg-zinc-900/40 border border-border rounded-[40px] overflow-hidden shadow-2xl shadow-black/5 p-8">
-
-                        {/* UBAH BARIS INI: Cukup panggil data.history */}
+                    <div className="bg-white dark:bg-zinc-900/40 border border-border rounded-[40px] overflow-hidden p-8 shadow-2xl">
+                        {/* PERBAIKAN DI SINI: Langsung panggil data.history */}
                         <MemberLogsTab history={data.history} />
-
                     </div>
                 </ViewContainer>
             );
@@ -108,7 +116,6 @@ export const ViewRenderer = ({ currentView, data }: any) => {
                         badge={data.pendingLogs?.length || 0}
                     />
 
-                    {/* PASTIKAN BARIS INI SEPERTI INI */}
                     <ManagerReviewTab pendingLogs={data.pendingLogs || []} />
 
                 </ViewContainer>

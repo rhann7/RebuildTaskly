@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { router } from '@inertiajs/react';
-import { Send, Eye, Clock, CheckCircle2, AlertCircle, FileEdit, CalendarDays, Layers, Calendar as CalendarIcon, AlertTriangle } from 'lucide-react';
+import { 
+    Send, Eye, Clock, CheckCircle2, AlertCircle, FileEdit, 
+    CalendarDays, Layers, Calendar as CalendarIcon, AlertTriangle 
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
@@ -29,7 +32,7 @@ export function MemberLogsTab({ history }: { history: any }) {
         }
     };
 
-    // Fungsi Grouping per Hari
+    // Fungsi Grouping per Hari (Untuk Sheet Details)
     const groupedEntries = selectedTimesheet?.entries?.reduce((acc: any, entry: any) => {
         const date = entry.date;
         if (!acc[date]) acc[date] = [];
@@ -39,13 +42,11 @@ export function MemberLogsTab({ history }: { history: any }) {
 
     const sortedDates = groupedEntries ? Object.keys(groupedEntries).sort() : [];
 
-    // --- FUNGSI BARU: DETEKSI OVERLAP (MULTITASKING) ---
+    // Deteksi Overlap (Multitasking)
     const checkOverlap = (dayEntries: any[]) => {
         if (!dayEntries || dayEntries.length < 2) return false;
-        // Urutkan berdasarkan jam mulai
         const sorted = [...dayEntries].sort((a, b) => a.start_at.substring(0, 5).localeCompare(b.start_at.substring(0, 5)));
         for (let i = 0; i < sorted.length - 1; i++) {
-            // Jika jam selesai tugas ke-1 LEBIH BESAR dari jam mulai tugas ke-2, berarti tabrakan!
             if (sorted[i].end_at.substring(0, 5) > sorted[i + 1].start_at.substring(0, 5)) {
                 return true;
             }
@@ -56,6 +57,7 @@ export function MemberLogsTab({ history }: { history: any }) {
     return (
         <div className="space-y-4">
             <div className="grid grid-cols-1 gap-4">
+                {/* --- PERBAIKAN STRUKTUR RENDER DI SINI --- */}
                 {history?.data?.length > 0 ? (
                     history.data.map((timesheet: any, i: number) => {
                         const statusUI = getStatusUI(timesheet.status);
@@ -77,6 +79,7 @@ export function MemberLogsTab({ history }: { history: any }) {
                                         <div className="flex flex-wrap items-center gap-3 text-xs font-bold text-muted-foreground">
                                             <span>Total Logged: <span className="text-foreground">{timesheet.total_hours} hrs</span></span>
                                             <span className="hidden sm:block w-1 h-1 bg-border rounded-full" />
+                                            {/* Ini penempatan UI status yang benar */}
                                             <div className={`px-2.5 py-1 rounded-lg text-[9px] uppercase tracking-widest flex items-center gap-1 border ${statusUI.color}`}>
                                                 <StatusIcon size={10} /> {statusUI.label}
                                             </div>
@@ -89,6 +92,7 @@ export function MemberLogsTab({ history }: { history: any }) {
                                         <Eye size={14} className="mr-2" /> Details
                                     </Button>
 
+                                    {/* Tombol Submit hanya muncul jika draft atau revision */}
                                     {(timesheet.status === 'draft' || timesheet.status === 'revision') && (
                                         <Button
                                             onClick={() => handleSubmit(timesheet.id)}
@@ -109,7 +113,7 @@ export function MemberLogsTab({ history }: { history: any }) {
                 )}
             </div>
 
-            {/* SHEET DETAILS PER HARI */}
+            {/* --- SHEET DETAILS (TETAP SAMA SEPERTI KODE KAMU) --- */}
             <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
                 <SheetContent className="w-full sm:max-w-2xl overflow-y-auto border-l-border bg-card p-0 flex flex-col">
                     {selectedTimesheet && (
@@ -134,7 +138,6 @@ export function MemberLogsTab({ history }: { history: any }) {
                                         const dayName = dateObj.toLocaleDateString('en-GB', { weekday: 'long' });
                                         const formattedDate = dateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
-                                        // Panggil fungsi cek overlap
                                         const isOverlapping = checkOverlap(dayEntries);
 
                                         return (
@@ -149,7 +152,6 @@ export function MemberLogsTab({ history }: { history: any }) {
                                                             <h4 className="text-sm font-black text-foreground uppercase tracking-widest leading-none">{dayName}</h4>
                                                             <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{formattedDate}</span>
                                                         </div>
-                                                        {/* --- BADGE MULTITASKING --- */}
                                                         {isOverlapping && (
                                                             <div className="ml-2 px-2 py-0.5 bg-amber-500/10 text-amber-600 border border-amber-500/20 rounded text-[9px] font-black uppercase tracking-widest flex items-center gap-1 shadow-sm">
                                                                 <AlertTriangle size={10} /> Multitasking
@@ -184,7 +186,6 @@ export function MemberLogsTab({ history }: { history: any }) {
                                                                 "{entry.description || 'No operational notes provided.'}"
                                                             </p>
 
-                                                            {/* INFO JIKA DI-REJECT MANAGER */}
                                                             {entry.status === 'revision' && entry.reject_reason && (
                                                                 <div className="mt-3 p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex gap-2">
                                                                     <AlertCircle size={14} className="text-red-500 shrink-0 mt-0.5" />

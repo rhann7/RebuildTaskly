@@ -55,14 +55,14 @@ class TaskController extends Controller
             ->through(function ($task) {
                 $total = $task->subtasks->count();
                 $completed = $task->subtasks->filter(fn($s) => $s->is_completed == 1 || $s->is_completed == true)->count();
-                
+
                 // Masukin data ke object task-nya langsung
                 $task->manual_progress = $total > 0 ? round(($completed / $total) * 100) : null;
                 $task->total_objectives = $total;
-                
+
                 // PAKSA subtasks ikut ke-render di JSON
-                $task->setRelation('subtasks', $task->subtasks); 
-                
+                $task->setRelation('subtasks', $task->subtasks);
+
                 return $task;
             });
 
@@ -70,7 +70,7 @@ class TaskController extends Controller
         $project->tasks_count = Task::where('project_id', $project->id)->count();
         $completedTasks = Task::where('project_id', $project->id)->where('status', 'done')->count();
         $project->progress = $project->tasks_count > 0 ? round(($completedTasks / $project->tasks_count) * 100) : 0;
-        
+
         return Inertia::render('tasks/index', [
             'workspace' => $workspace,
             'project' => $project,
@@ -130,22 +130,29 @@ class TaskController extends Controller
 
         // 2. Load SEMUA relasi yang dibutuhin frontend dalam satu kali jalan
         $task->load([
-            'project.workspace', // <--- INI KUNCINYA biar task.project.workspace.slug gak undefined
-            'documents.user',    // Load documents sekalian biar muncul di list
+            'project.workspace',
+            'documents.user',
             'subtasks' => function ($query) {
                 $query->with('completer')->latest();
+            },
+            // --- TAMBAHAN BARU: Load Time Entries (Logs) untuk task ini ---
+            'entries' => function ($query) {
+                $query->with('user:id,name,email') // Ambil data user yang ngerjain
+                    ->orderBy('date', 'desc')
+                    ->orderBy('start_at', 'desc');
             }
         ]);
 
-        // 3. Ambil user yang terdaftar di PROJECT ini
+        // 3. Ambil user yang terdaftar di PROJECT ini (untuk assignees, dll)
         $project->load('users');
 
         return Inertia::render('tasks/show', [
             'workspace' => $workspace,
             'project'   => $project,
-            'task'      => $task,
+            'task'      => $task, // <--- Data task sekarang punya property $task->entries
+            // Manager logic (sesuaikan dengan role system kamu)
             'isManager' => $request->user()->id === $workspace->manager_id
-                || $request->user()->role === 'manager',
+                || $request->user()->hasAnyRole(['company', 'manager', 'super-admin']),
         ]);
     }
 
@@ -218,13 +225,13 @@ class TaskController extends Controller
             })
             // 2. Load Relations buat context di tabel
             ->with(['project:id,name,slug,workspace_id', 'project.workspace:id,name', 'assignee:id,name'])
-            
+
             // 3. Filters
             ->when($request->search, fn($q, $s) => $q->where('title', 'like', "%{$s}%"))
             ->when($request->status, fn($q, $st) => $q->whereIn('status', (array)$st))
             ->when($request->priority, fn($q, $p) => $q->whereIn('priority', (array)$p))
             ->when($request->projects, fn($q, $pr) => $q->whereIn('project_id', (array)$pr))
-            
+
             ->latest()
             ->paginate(15)
             ->withQueryString();

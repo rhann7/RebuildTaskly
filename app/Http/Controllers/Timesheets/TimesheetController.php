@@ -122,7 +122,7 @@ class TimesheetController extends Controller
                         $q->where('company_id', $company->id);
                     }
                 })
-                ->with(['user:id,name', 'entries.project', 'entries.task']) 
+                ->with(['user:id,name', 'entries.project', 'entries.task'])
                 ->get();
         }
 
@@ -175,7 +175,14 @@ class TimesheetController extends Controller
             'start_time'  => 'required|date_format:H:i',
             'end_time'    => 'required|date_format:H:i',
             'description' => 'required|string',
+            'attachment' => 'nullable|file|mimes:jpg,jpeg,png,pdf,zip|max:2048',
         ]);
+
+        $attachmentPath = null;
+        if ($request->hasFile('attachment')) {
+            // Simpan ke storage/app/public/attachments
+            $attachmentPath = $request->file('attachment')->store('attachments', 'public');
+        }
 
         $user = $request->user();
         $project = Project::findOrFail($validated['project_id']);
@@ -214,7 +221,8 @@ class TimesheetController extends Controller
             'end_at'      => $validated['end_time'],
             'hours'       => round($hours, 2),
             'description' => $validated['description'],
-            'status'      => 'draft', // Set default status for entry
+            'status'      => 'draft',
+            'attachment' => $attachmentPath,
         ]);
 
         // 4. Update the total hours
@@ -233,9 +241,19 @@ class TimesheetController extends Controller
             'start_time'  => 'required|date_format:H:i',
             'end_time'    => 'required|date_format:H:i',
             'description' => 'required|string',
+            'attachment'  => 'nullable|file|mimes:jpg,jpeg,png,pdf,zip|max:2048', //
         ]);
 
         $entry = TimesheetEntry::findOrFail($id);
+
+        // Handle File Update
+        if ($request->hasFile('attachment')) {
+            // Hapus file lama jika ada (opsional)
+            if ($entry->attachment) {
+                \Storage::disk('public')->delete($entry->attachment);
+            }
+            $validated['attachment'] = $request->file('attachment')->store('attachments', 'public'); //
+        }
 
         $start = Carbon::parse($validated['start_time']);
         $end = Carbon::parse($validated['end_time']);
@@ -250,8 +268,8 @@ class TimesheetController extends Controller
             'end_at'      => $validated['end_time'],
             'hours'       => round($hours, 2),
             'description' => $validated['description'],
-            // Jika direvisi dan diedit kembali, hapus reject reason dan ubah ke draft
-            'status'        => 'draft',
+            'attachment'  => $validated['attachment'] ?? $entry->attachment,
+            'status'      => 'draft',
             'reject_reason' => null,
         ]);
 
@@ -388,5 +406,25 @@ class TimesheetController extends Controller
         });
 
         return back()->with('success', 'Entry flagged for revision.');
+    }
+
+    //khusus di task buat perhari, jadi tidak perlu update timesheet
+    public function approveEntry(Request $request, $id)
+    {
+        $entry = TimesheetEntry::findOrFail($id);
+
+        DB::transaction(function () use ($entry) {
+            $entry->update([
+                'status'        => 'approved',
+                'reject_reason' => null,
+            ]);
+            
+            $timesheet = $entry->timesheet;
+            if ($timesheet && $timesheet->entries()->where('status', '!=', 'approved')->count() === 0) {
+                $timesheet->update(['status' => 'approved']);
+            }
+        });
+
+        return back()->with('success', 'Operational log authorized.');
     }
 }
