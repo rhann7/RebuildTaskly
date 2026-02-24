@@ -60,7 +60,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::middleware('role:super-admin')->group(function () {
             Route::get('dashboard/companies', [CompanyDashboardController::class, 'index'])
-                ->name('dashboard.companies');
+                ->name('company-management.dashboard');
 
             Route::prefix('access-control')->name('access-control.')->group(function () {
             Route::resource('permissions', PermissionController::class);

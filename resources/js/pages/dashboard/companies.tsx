@@ -9,7 +9,7 @@ import type { BreadcrumbItem } from '@/types';
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: route('dashboard') },
     { title: 'Company Management', href: '#' },
-    { title: 'Company Dashboard', href: route('dashboard.companies') },
+    { title: 'Company Dashboard', href: route('company-management.dashboard') },
 ];
 
 type NewestCompany = {
@@ -57,7 +57,7 @@ export default function CompanyDashboard(props: Props) {
 
             <GenericDashboard
                 {...props}
-                routeUrl={route('dashboard.companies')} // disesuaikan dengan route name
+                routeUrl={route('company-management.dashboard')} // disesuaikan dengan route name
             >
                 {/* Growth Rate Cards — hanya tampil di overview tab */}
                 {activeTab === 'overview' && growthRate && (
