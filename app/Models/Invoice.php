@@ -12,18 +12,18 @@ class Invoice extends Model
     use HasFactory;
 
     protected $fillable = [
-        'number', 
-        'company_id', 
-        'plan_id', 
-        'plan_name', 
-        'amount', 
-        'plan_duration', 
-        'status', 
+        'number',
+        'company_id',
+        'plan_id',
+        'plan_name',
+        'amount',
+        'plan_duration',
+        'status',
         'snap_token',
-        'payment_reference', 
+        'payment_reference',
         'payment_method',
-        'due_date', 
-        'paid_at', 
+        'due_date',
+        'paid_at',
     ];
 
     protected $casts = [
@@ -39,14 +39,14 @@ class Invoice extends Model
         });
     }
 
-    public function scopeUnpaid($query) 
-    { 
-        return $query->where('status', 'unpaid'); 
+    public function scopeUnpaid($query)
+    {
+        return $query->where('status', 'unpaid');
     }
-    
-    public function scopeOverdue($query) 
-    { 
-        return $query->where('status', 'unpaid')->where('due_date', '<', now()); 
+
+    public function scopeOverdue($query)
+    {
+        return $query->where('status', 'unpaid')->where('due_date', '<', now());
     }
 
     public function scopeByNumber($query, $number)
@@ -88,5 +88,10 @@ class Invoice extends Model
     public function subscription()
     {
         return $this->hasOne(Subscription::class);
+    }
+
+    public function proposals()
+    {
+        return $this->hasMany(TicketProposal::class);
     }
 }

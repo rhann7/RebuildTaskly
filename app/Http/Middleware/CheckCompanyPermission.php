@@ -19,12 +19,21 @@ class CheckCompanyPermission
         }
 
         if ($user->isSuperAdmin() && !$isImpersonating) return $next($request);
-        
+
         $company = $user->company;
         abort_if(!$company, 403, 'This account is not associated with any company.');
 
         $routeName = $request->route()->getName();
-        $whiteList = ['dashboard', 'billings', 'impersonate.take', 'impersonate.leave', 'appeals.create', 'appeals.store', 'plans.pricing', 'invoices.show', 'invoices.create', 'invoices.store', 'invoices.payment', 'invoices.callback'];
+        $whiteList = ['dashboard', 'billings', 'impersonate.take', 'impersonate.leave', 'appeals.create', 'appeals.store', 'plans.pricing', 'invoices.show', 'invoices.create', 'invoices.store', 'invoices.payment', 'invoices.callback', 'tickets.index',
+            'tickets.show',
+            'tickets.create',
+            'tickets.store',
+            'tickets.message',
+            'tickets.proposal.approve',
+            'payments.addon.show',
+            'payments.addon.create',
+            'payments.addon.pay',
+            ];
         if (in_array($routeName, $whiteList)) return $next($request);
 
         $subscription = $company->activeSubscription;
@@ -50,7 +59,7 @@ class CheckCompanyPermission
 
             return $next($request);
         }
-        
+
         abort(403, 'Access denied. This feature is not registered in the access control system.');
     }
 }
