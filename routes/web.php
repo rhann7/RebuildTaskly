@@ -3,7 +3,7 @@
 use App\Http\Controllers\Companies\CategoryController;
 use App\Http\Controllers\Companies\CompanyController;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\ProjectManagement\Projects\ProjectController;
+use App\Http\Controllers\ProjectManagement\ProjectController;
 use App\Http\Controllers\Rules\PermissionAccessController;
 use App\Http\Controllers\Rules\PermissionController;
 use App\Http\Controllers\TaskManagement\SubTasks\SubTaskController;
@@ -36,11 +36,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/team', [TeamController::class, 'index'])->name('team.index');
     Route::post('/team', [TeamController::class, 'store'])->name('team.store');
     Route::middleware(['auth', 'verified', 'company_can'])->group(function () {
-        Route::get('/projects', [ProjectController::class, 'globalIndex'])
-            ->name('projects.global');
+        Route::get('/projects', [ProjectController::class, 'globalIndex'])->name('projects.global');
         Route::get('/tasks', [TaskController::class, 'globalIndex'])
             ->name('tasks.global');
-    Route::resource('timesheets', TimesheetController::class);
+        Route::resource('timesheets', TimesheetController::class);
     });
 
     Route::impersonate();
