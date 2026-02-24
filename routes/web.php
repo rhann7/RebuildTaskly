@@ -118,7 +118,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 
         Route::patch('/timesheets/{id}/time', [TimesheetController::class, 'updateTime'])->name('timesheets.time.update');
-        Route::patch('/timesheet-entries/{id}/reject', [TimesheetController::class, 'rejectEntry'])->name('timesheet-entries.reject');
+        // Route::patch('/timesheet-entries/{id}/reject', [TimesheetController::class, 'rejectEntry'])->name('timesheet-entries.reject');
         Route::patch('/timesheets/{timesheet}/submit', [TimesheetController::class, 'submit'])->name('timesheets.submit');
         Route::patch('/timesheets/{timesheet}/approve', [TimesheetController::class, 'approve'])->name('timesheets.approve');
         Route::patch('/timesheets/{timesheet}/reject', [TimesheetController::class, 'reject'])->name('timesheets.reject');
