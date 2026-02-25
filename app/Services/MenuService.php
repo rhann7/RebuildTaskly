@@ -41,7 +41,8 @@ class MenuService
                 'icon'     => 'Building2',
                 'isActive' => $request->is('company-management*'),
                 'items'    => [
-                    ['title' => 'Dashboard Companies', 'href' => route('company-management.dashboard'), 'isActive' => $request->routeIs('company-management.dashboard')],
+                    ['title' => 'Dashboard', 'href' => route('company-management.dashboard'), 'isActive' => $request->routeIs('company-management.dashboard')],
+                    ['title' => 'Report', 'href' => route('company-management.reports.company'), 'isActive' => $request->routeIs('company-management.reports.company')],
                     ['title' => 'Categories', 'href' => route('company-management.categories.index'), 'isActive' => $request->routeIs('company-management.categories.*')],
                     ['title' => 'Companies', 'href' => route('company-management.companies.index'), 'isActive' => $request->routeIs('company-management.companies.*')],
                     ['title' => 'Appeals', 'href' => route('company-management.appeals.index'), 'isActive' => $request->routeIs('company-management.appeals.*')],
