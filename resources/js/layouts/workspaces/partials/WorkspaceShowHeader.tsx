@@ -4,10 +4,11 @@ import { usePage } from '@inertiajs/react'; // 1. Import usePage
 interface HeaderProps {
     workspace: any;
     projectCount: number;
+    memberCount: number;
     onAddProject: () => void;
 }
 
-export const WorkspaceHeader = ({ workspace, projectCount, onAddProject }: HeaderProps) => {
+export const WorkspaceHeader = ({ workspace, projectCount, memberCount, onAddProject }: HeaderProps) => {
     // 2. Ambil data auth dari global props
     const { auth } = usePage<any>().props;
 
@@ -46,7 +47,8 @@ export const WorkspaceHeader = ({ workspace, projectCount, onAddProject }: Heade
                         <div className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
                             <Users2 size={14} className="text-sada-red" />
                             <span className="text-[10px] font-bold uppercase tracking-wider">
-                                {workspace.members?.length || 0} Members
+                                {/* Panggil props memberCount, bukan workspace.members_count */}
+                                {memberCount || 0} Members
                             </span>
                         </div>
                         <div className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">

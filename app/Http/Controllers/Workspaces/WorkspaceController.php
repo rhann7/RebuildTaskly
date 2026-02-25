@@ -70,22 +70,23 @@ class WorkspaceController extends Controller
         $company = $this->resolveCompany($user);
 
         $workspaces = Workspace::query()
-            // 1. Filter: Cek satu company (kecuali Super Admin)
+            // 1. Filter: Company Check
             ->when(!$user->isSuperAdmin(), fn ($q) => $q->where('company_id', $company->id))
 
-            /** * 2. Logic Akses: 
-             * Jika bukan Super Admin atau role Company (Owner), 
-             * maka tampilkan workspace yang dia adalah managernya ATAU dia adalah member didalamnya.
-             */
+            // 2. Logic Akses (Manager atau Member)
             ->when(!$user->isSuperAdmin() && !$user->hasRole('company'), function ($q) use ($user) {
                 return $q->where(function ($query) use ($user) {
-                    $query->where('manager_id', $user->id) // Dia Manager-nya
-                        ->orWhereHas('members', function ($sub) use ($user) { // Atau dia Member-nya
+                    $query->where('manager_id', $user->id)
+                        ->orWhereHas('members', function ($sub) use ($user) {
                             $sub->where('user_id', $user->id);
                         });
                 });
             })
             
+            // --- TAMBAHKAN INI ---
+            ->withCount('members') // Ini bakal bikin field members_count otomatis
+            // ---------------------
+
             ->with('company:id,name')
             ->when($request->search, fn ($q, $s) => $q->where('name', 'like', "%{$s}%"))
             ->latest()
@@ -127,14 +128,22 @@ class WorkspaceController extends Controller
 
     public function show(Request $request, Workspace $workspace)
     {
+        // Pastikan user punya akses ke workspace ini
         $this->authorizeWorkspace($request->user(), $workspace);
 
+        // 1. Load Count untuk statistik (Members di pivot & Projects di relation)
+        $workspace->loadCount(['members', 'projects']);
+        
+        // 2. Load basic relation untuk info company
+        $workspace->load('company:id,name');
+
+        // 3. Ambil data Project
         $projects = $workspace->projects()->latest()->get();
 
-        // 1. Ambil data Manager dari relasi manager_id
-        $manager = $workspace->manager; // Pastikan relasi 'manager' ada di model Workspace
+        // 4. Ambil data Manager dari relasi manager_id
+        $manager = $workspace->manager; 
         
-        // 2. Ambil data Members (karyawan yang di-invite)
+        // 5. Ambil data Members dari table pivot (workspace_user)
         $members = $workspace->members()
             ->with('roles')
             ->get()
@@ -147,34 +156,45 @@ class WorkspaceController extends Controller
                 'is_manager' => false,
             ]);
 
-        // 3. Gabungkan Manager ke baris paling atas
+        // 6. Push Manager ke urutan paling atas di list Members
         if ($manager) {
             $managerData = [
                 'id' => $manager->id,
                 'name' => $manager->name,
                 'email' => $manager->email,
                 'roles' => $manager->roles,
-                'joined_at' => $workspace->created_at->format('d M Y'), // Pake tgl workspace dibuat
-                'is_manager' => true, // Flag khusus buat nandain dia Manager
+                'joined_at' => $workspace->created_at->format('d M Y'),
+                'is_manager' => true,
             ];
-            
-            // Masukkan manager ke urutan pertama
             $members->prepend($managerData);
         }
 
-        $allEmployees = User::where('company_id', $workspace->company_id)
-            ->where('id', '!=', $workspace->manager_id) // Jangan invite manager sendiri
+        /**
+         * LOGIC TOTAL MANPOWER:
+         * Karena Manager ada di kolom manager_id (tabel workspaces)
+         * Dan Members ada di tabel pivot (workspace_user)
+         * Maka Total = members_count + 1 (si manager)
+         */
+        $totalMemberCount = $workspace->members_count + ($manager ? 1 : 0);
+        $totalProjectCount = $workspace->projects_count;
+
+        // 7. Ambil daftar karyawan perusahaan yang BELUM join di workspace ini (untuk modal invite)
+        $allEmployees = \App\Models\User::where('company_id', $workspace->company_id)
+            ->where('id', '!=', $workspace->manager_id)
             ->whereDoesntHave('workspaces', function($q) use ($workspace) {
                 $q->where('workspace_id', $workspace->id);
             })
             ->get(['id', 'name', 'email']);
 
-        return Inertia::render('workspaces/show', [
-            'workspace'    => $workspace->load('company:id,name'),
+        return \Inertia\Inertia::render('workspaces/show', [
+            'workspace'    => $workspace,
             'projects'     => $projects,
             'members'      => $members,
             'allEmployees' => $allEmployees,
             'isSuperAdmin' => $request->user()->isSuperAdmin(),
+            // Data statistik yang dikirim ke Frontend Header
+            'memberCount'  => $totalMemberCount,
+            'projectCount' => $totalProjectCount,
         ]);
     }
 

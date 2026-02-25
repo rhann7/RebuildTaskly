@@ -1,5 +1,5 @@
-import { useState, useMemo, useEffect } from 'react'; // Tambah useEffect
-import { Head, usePage } from '@inertiajs/react'; // Tambah usePage
+import { useState, useMemo, useEffect } from 'react';
+import { Head, usePage } from '@inertiajs/react';
 import WorkspaceLayout from '@/layouts/workspaces/WorkspaceLayout';
 import DataTableBase from '@/components/DataTableBase';
 import { getProjectColumns } from '@/components/tabs-workspace/ProjectColumns';
@@ -10,7 +10,16 @@ import { ProjectControls } from '@/components/tabs-workspace/ProjectControls';
 import WorkspaceMembers from '@/components/tabs-workspace/MemberWorkspaceTab';
 import { Zap } from 'lucide-react';
 
-export default function WorkspaceShow({ workspace, projects, auth, companies, members, allEmployees }: any) {
+export default function WorkspaceShow({ 
+    workspace, 
+    projects, 
+    auth, 
+    companies, 
+    members, 
+    allEmployees,
+    memberCount, // Kita tangkap data dari controller di sini
+    projectCount  // Kita tangkap data dari controller di sini
+}: any) {
     const [activeTab, setActiveTab] = useState<'projects' | 'members' | 'settings'>('projects');
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     
@@ -49,7 +58,17 @@ export default function WorkspaceShow({ workspace, projects, auth, companies, me
     }, [projects, searchQuery, statusFilter, priorityFilter]);
 
     return (
-        <WorkspaceLayout workspace={workspace} activeTab={activeTab} setActiveTab={setActiveTab} projects={projects}>
+        /* PENTING: Kita lempar memberCount dan projectCount ke WorkspaceLayout 
+           supaya nanti Layout bisa ngoper lagi ke WorkspaceHeader 
+        */
+        <WorkspaceLayout 
+            workspace={workspace} 
+            activeTab={activeTab} 
+            setActiveTab={setActiveTab} 
+            projects={projects}
+            memberCount={memberCount} 
+            projectCount={projectCount}
+        >
             <Head title={workspace.name} />
 
             <div className="w-full flex flex-col gap-4 py-8 animate-in fade-in duration-700">
@@ -112,7 +131,11 @@ export default function WorkspaceShow({ workspace, projects, auth, companies, me
                 )}
             </div>
 
-            <CreateProjectModal isOpen={isModalOpen} setIsOpen={setIsModalOpen} workspace={workspace} />
+            <CreateProjectModal 
+                isOpen={isModalOpen} 
+                setIsOpen={setIsModalOpen} 
+                workspace={workspace} 
+            />
         </WorkspaceLayout>
     );
 }

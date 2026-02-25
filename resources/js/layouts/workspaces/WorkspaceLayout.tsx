@@ -1,12 +1,20 @@
 import AppLayout from '@/layouts/app-layout';
 import { LayoutGrid, Users2, Settings } from 'lucide-react';
-import { WorkspaceHeader } from './partials/WorkspaceShowHeader'; // Pastikan path file header lo bener
+import { WorkspaceHeader } from './partials/WorkspaceShowHeader'; 
 import { SimpleTabs } from '@/components/custom/SimpleTabs';
-import CreateProjectModal from '@/components/tabs-workspace/CreateProjectModal'; // Import modalnya di sini
+import CreateProjectModal from '@/components/tabs-workspace/CreateProjectModal'; 
 import { useState } from 'react';
 
-export default function WorkspaceShowLayout({ children, workspace, projects, activeTab, setActiveTab }: any) {
-    // State modal kita pindah ke layout atau pastikan sinkron dengan halaman
+// TAMBAHKAN memberCount dan projectCount di sini
+export default function WorkspaceShowLayout({ 
+    children, 
+    workspace, 
+    projects, 
+    activeTab, 
+    setActiveTab,
+    memberCount, // <--- TANGKAP INI
+    projectCount  // <--- TANGKAP INI
+}: any) {
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     const tabs = [
@@ -25,27 +33,25 @@ export default function WorkspaceShowLayout({ children, workspace, projects, act
         <AppLayout breadcrumbs={breadcrumbs}>
             <div className="mx-auto w-full max-w-[1600px] flex flex-col gap-6 p-6 md:p-10 min-h-screen">
 
-                {/* Header: Sekarang nerima prop onAddProject */}
+                {/* --- PERBAIKAN DI SINI --- */}
                 <WorkspaceHeader 
                     workspace={workspace} 
-                    projectCount={projects?.length || 0} 
+                    projectCount={projectCount || 0} // Pake data dari controller
+                    memberCount={memberCount || 0}   // KIRIM DATA INI KE HEADER
                     onAddProject={() => setIsModalOpen(true)} 
                 />
 
-                {/* Tab Navigation */}
                 <SimpleTabs
                     tabs={tabs}
                     activeTab={activeTab}
                     setActiveTab={setActiveTab}
                 />
 
-                {/* Main Content Area */}
                 <div className="w-full flex-1">
                     {children}
                 </div>
             </div>
 
-            {/* Modal ditaruh di level layout biar bisa dipicu dari header manapun */}
             <CreateProjectModal 
                 isOpen={isModalOpen} 
                 setIsOpen={setIsModalOpen} 
