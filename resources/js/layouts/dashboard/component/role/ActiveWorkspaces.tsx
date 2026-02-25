@@ -17,7 +17,7 @@ export const ActiveWorkspaces = ({ workspaces }: { workspaces: WorkspaceProps[] 
     <div className="bg-card rounded-[32px] p-8 border border-border shadow-sm flex flex-col h-full">
         <div className="flex items-center justify-between mb-8">
             <div>
-                <h2 className="text-xl font-black text-foreground tracking-tight uppercase italic">
+                <h2 className="text-xl font-black text-foreground tracking-tight uppercase ">
                     Active Workspaces
                 </h2>
                 <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest mt-1 opacity-70">
@@ -49,7 +49,7 @@ export const ActiveWorkspaces = ({ workspaces }: { workspaces: WorkspaceProps[] 
                                     <div className={`absolute inset-0 size-3 ${workspace.color} rounded-full animate-ping opacity-20`} />
                                 </div>
                                 <div>
-                                    <span className="text-sm font-black text-foreground uppercase tracking-tight group-hover:text-sada-red transition-colors">
+                                    <span className="text-sm font-black text-foreground uppercase group-hover:text-sada-red transition-colors">
                                         {workspace.name}
                                     </span>
                                     {workspace.manager && (
@@ -85,7 +85,7 @@ export const ActiveWorkspaces = ({ workspaces }: { workspaces: WorkspaceProps[] 
                         <div className="space-y-2">
                             <div className="flex justify-between items-end">
                                 <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Execution</span>
-                                <span className="text-sm font-black italic">{workspace.progress}%</span>
+                                <span className="text-sm font-black ">{workspace.progress}%</span>
                             </div>
                             <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                                 <div 

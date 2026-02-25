@@ -41,7 +41,7 @@ export function TimeGrid({
   const [dragType, setDragType] = useState<'move' | 'resize' | null>(null);
   const [startY, setStartY] = useState(0);
   const [initialEntrySnapshot, setInitialEntrySnapshot] = useState<TimeEntry | null>(null);
-  const [isMoved, setIsMoved] = useState(false); // <--- STATE BARU: Deteksi apakah mouse bergerak
+  const [isMoved, setIsMoved] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 60000);
@@ -67,11 +67,6 @@ export function TimeGrid({
   };
 
   const isToday = (date: Date) => date.toDateString() === new Date().toDateString();
-
-  const getCurrentTimeTop = () => {
-    const minutes = now.getHours() * 60 + now.getMinutes();
-    return `${(minutes / (24 * 60)) * 100}%`;
-  };
 
   const getStatusColor = (status: TimeEntry["status"]) => {
     switch (status) {
@@ -107,7 +102,7 @@ export function TimeGrid({
     setInitialEntrySnapshot({ ...entry });
     setDragType(type);
     setStartY(e.clientY);
-    setIsMoved(false); // Reset status gerak
+    setIsMoved(false);
     
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
   };
@@ -119,7 +114,7 @@ export function TimeGrid({
     const deltaMins = Math.round(deltaY * MINS_PER_PIXEL / 15) * 15; 
 
     if (deltaMins !== 0) {
-        setIsMoved(true); // Tandai bahwa kotak sudah digeser
+        setIsMoved(true);
     }
 
     if (deltaMins === 0) return; 
@@ -150,12 +145,9 @@ export function TimeGrid({
     e.stopPropagation(); 
     
     if (draggingEntry && initialEntrySnapshot) {
-        // Cek murni lewat state 'isMoved' agar tidak salah tembak
         if (isMoved) {
-            // BERGERAK -> Panggil Update Time (Modal Kecil)
             onEntryUpdate(draggingEntry);
         } else {
-            // TIDAK BERGERAK -> Panggil Edit Detail (Modal Besar)
             onEntryClick(initialEntrySnapshot);
         }
     }
@@ -192,7 +184,6 @@ export function TimeGrid({
           
           <div className="grid sticky top-0 bg-background/95 backdrop-blur-md border-b border-border z-40 shadow-sm"
             style={{ gridTemplateColumns: `80px repeat(${days.length}, 1fr)` }}>
-            {/* Header stays same */}
             <div className="p-4 border-r border-border flex items-center justify-center bg-background">
               <Layout size={16} className="text-muted-foreground opacity-30" />
             </div>
@@ -222,12 +213,74 @@ export function TimeGrid({
                   const dateStr = dayjs(day).format("YYYY-MM-DD");
                   const dayEntries = displayEntries.filter(e => e.date === dateStr);
 
+                  // --- ALGORITMA OVERLAP YANG BARU (CLUSTERING & COLUMNS) ---
+                  const layoutMap = new Map<number, { width: string, left: string }>();
+                  
+                  if (dayEntries.length > 0) {
+                      // 1. Urutkan berdasarkan waktu mulai, lalu waktu selesai (durasi terpanjang)
+                      const sorted = [...dayEntries].sort((a, b) => {
+                          const sA = timeToMinutes(a.startTime);
+                          const sB = timeToMinutes(b.startTime);
+                          return sA !== sB ? sA - sB : timeToMinutes(b.endTime) - timeToMinutes(a.endTime);
+                      });
+
+                      // 2. Kelompokkan jadwal yang bersinggungan ke dalam "cluster"
+                      const clusters: TimeEntry[][] = [];
+                      let currentCluster: TimeEntry[] = [];
+                      let clusterEnd = 0;
+
+                      sorted.forEach(entry => {
+                          const start = timeToMinutes(entry.startTime);
+                          const end = timeToMinutes(entry.endTime);
+                          
+                          if (currentCluster.length > 0 && start >= clusterEnd) {
+                              clusters.push(currentCluster);
+                              currentCluster = [];
+                              clusterEnd = 0;
+                          }
+                          currentCluster.push(entry);
+                          clusterEnd = Math.max(clusterEnd, end);
+                      });
+                      if (currentCluster.length > 0) clusters.push(currentCluster);
+
+                      // 3. Bagi ke dalam kolom-kolom agar tidak bertabrakan
+                      clusters.forEach(cluster => {
+                          const columns: TimeEntry[][] = [];
+                          
+                          cluster.forEach(entry => {
+                              const start = timeToMinutes(entry.startTime);
+                              let placed = false;
+                              
+                              for (let i = 0; i < columns.length; i++) {
+                                  const lastEvent = columns[i][columns[i].length - 1];
+                                  if (start >= timeToMinutes(lastEvent.endTime)) {
+                                      columns[i].push(entry);
+                                      placed = true;
+                                      break;
+                                  }
+                              }
+                              if (!placed) columns.push([entry]);
+                          });
+
+                          // 4. Hitung persentase ukuran (width) dan posisi (left)
+                          const numCols = columns.length;
+                          columns.forEach((col, colIndex) => {
+                              col.forEach(entry => {
+                                  layoutMap.set(entry.id, {
+                                      width: `calc(${100 / numCols}% - 4px)`,
+                                      left: `calc(${(100 / numCols) * colIndex}% + 2px)`
+                                  });
+                              });
+                          });
+                      });
+                  }
+
                   return (
                     <div
                       key={dayIndex}
                       className={`flex-1 relative border-r border-b border-border/40 transition-colors ${isToday(day) ? "bg-sada-red/[0.01]" : ""}`}
-                      onClick={(e) => {
-                         // CEGAH BUBBLING: Pastikan klik murni di slot kosong (background), bukan di atas kotak entry
+                      onPointerDown={(e) => {
+                         // CEGAH BUBBLING
                          if (e.target === e.currentTarget) {
                              onTimeSlotClick(dateStr, hour);
                          }
@@ -235,21 +288,14 @@ export function TimeGrid({
                     >
                       <div className="absolute top-1/2 w-full border-t border-border/20 border-dashed pointer-events-none" />
 
-                      {/* RENDER TASKS HANYA SEKALI DI JAM 00:00 */}
-                      {hour === 0 && dayEntries.map((entry, entryIndex) => {
+                      {/* RENDER TASKS */}
+                      {hour === 0 && dayEntries.map((entry) => {
                         const startMins = timeToMinutes(entry.startTime);
                         const endMins = timeToMinutes(entry.endTime);
                         const duration = endMins - startMins;
 
-                        const overlapCount = dayEntries.filter(e => {
-                            const eS = timeToMinutes(e.startTime);
-                            const eE = timeToMinutes(e.endTime);
-                            return Math.max(startMins, eS) < Math.min(endMins, eE);
-                        }).length;
-
-                        const width = `calc(${100 / Math.max(1, overlapCount)}% - 4px)`;
-                        const left = `calc(${(100 / Math.max(1, overlapCount)) * (entryIndex % overlapCount)}% + 2px)`;
-                        
+                        // Ambil layout yang sudah dihitung oleh algoritma overlap di atas
+                        const layout = layoutMap.get(entry.id) || { width: 'calc(100% - 4px)', left: '2px' };
                         const isDraggingThis = draggingEntry?.id === entry.id;
 
                         return (
@@ -263,12 +309,10 @@ export function TimeGrid({
                               top: `${(startMins / 60) * ROW_HEIGHT + 2}px`,
                               height: `${(duration / 60) * ROW_HEIGHT - 4}px`,
                               minHeight: '28px',
-                              width: width,
-                              left: left,
+                              width: layout.width,
+                              left: layout.left,
                             }}
                             onPointerDown={(e) => handlePointerDown(e, entry, 'move')}
-                            onPointerMove={handlePointerMove}
-                            onPointerUp={handlePointerUp}
                           >
                             <div className="absolute top-1 right-1 opacity-0 group-hover/card:opacity-30 pointer-events-none">
                                 <GripHorizontal size={12} />
@@ -286,8 +330,6 @@ export function TimeGrid({
                             <div 
                                 className="absolute bottom-0 left-0 w-full h-3 cursor-ns-resize flex items-end justify-center group-hover/card:bg-black/5"
                                 onPointerDown={(e) => handlePointerDown(e, entry, 'resize')}
-                                onPointerMove={handlePointerMove}
-                                onPointerUp={handlePointerUp}
                             >
                                 <div className="w-6 h-1 bg-black/20 rounded-full mb-1" />
                             </div>
