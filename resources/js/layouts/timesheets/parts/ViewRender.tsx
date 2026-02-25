@@ -82,19 +82,19 @@ export const ViewRenderer = ({ currentView, data }: any) => {
                 </ViewContainer>
             );
 
-        case 'calendar':
-            return (
-                <ViewContainer>
-                    <SectionHeader title="Fleet Schedule" subtitle="Time-Based Asset Tracking" />
-                    <div className="bg-card border border-border rounded-[40px] p-8 md:p-10 shadow-2xl shadow-black/5">
-                        <StandbyState
-                            icon={CalendarIcon}
-                            title="Calendar Grid Offline"
-                            description="Initializing temporal mapping interface..."
-                        />
-                    </div>
-                </ViewContainer>
-            );
+        // case 'calendar':
+        //     return (
+        //         <ViewContainer>
+        //             <SectionHeader title="Fleet Schedule" subtitle="Time-Based Asset Tracking" />
+        //             <div className="bg-card border border-border rounded-[40px] p-8 md:p-10 shadow-2xl shadow-black/5">
+        //                 <StandbyState
+        //                     icon={CalendarIcon}
+        //                     title="Calendar Grid Offline"
+        //                     description="Initializing temporal mapping interface..."
+        //                 />
+        //             </div>
+        //         </ViewContainer>
+        //     );
 
         case 'audit':
             return (
@@ -121,25 +121,25 @@ export const ViewRenderer = ({ currentView, data }: any) => {
                 </ViewContainer>
             );
 
-        case 'analytics':
-            return (
-                <ViewContainer>
-                    <SectionHeader title="Analytics Engine" subtitle="Data Warehouse Sector 07" />
-                    <div className="min-h-[450px] flex flex-col items-center justify-center bg-muted/10 rounded-[40px] border-2 border-dashed border-border/50 relative overflow-hidden">
-                        <div className="absolute inset-0 opacity-[0.03] pointer-events-none flex items-center justify-center">
-                            <Activity size={500} />
-                        </div>
-                        <div className="relative z-10 flex flex-col items-center">
-                            <div className="relative mb-6">
-                                <BarChart3 className="size-20 text-muted-foreground/20 animate-pulse" />
-                                <Loader2 className="size-8 text-sada-red animate-spin absolute -top-2 -right-2" />
-                            </div>
-                            <h3 className="text-[11px] font-black uppercase tracking-[0.5em] text-foreground text-center">Initializing Neural Analytics</h3>
-                            <p className="text-[9px] text-muted-foreground uppercase font-bold mt-3 animate-bounce">Awaiting Sync...</p>
-                        </div>
-                    </div>
-                </ViewContainer>
-            );
+        // case 'analytics':
+        //     return (
+        //         <ViewContainer>
+        //             <SectionHeader title="Analytics Engine" subtitle="Data Warehouse Sector 07" />
+        //             <div className="min-h-[450px] flex flex-col items-center justify-center bg-muted/10 rounded-[40px] border-2 border-dashed border-border/50 relative overflow-hidden">
+        //                 <div className="absolute inset-0 opacity-[0.03] pointer-events-none flex items-center justify-center">
+        //                     <Activity size={500} />
+        //                 </div>
+        //                 <div className="relative z-10 flex flex-col items-center">
+        //                     <div className="relative mb-6">
+        //                         <BarChart3 className="size-20 text-muted-foreground/20 animate-pulse" />
+        //                         <Loader2 className="size-8 text-sada-red animate-spin absolute -top-2 -right-2" />
+        //                     </div>
+        //                     <h3 className="text-[11px] font-black uppercase tracking-[0.5em] text-foreground text-center">Initializing Neural Analytics</h3>
+        //                     <p className="text-[9px] text-muted-foreground uppercase font-bold mt-3 animate-bounce">Awaiting Sync...</p>
+        //                 </div>
+        //             </div>
+        //         </ViewContainer>
+        //     );
 
         default:
             return (

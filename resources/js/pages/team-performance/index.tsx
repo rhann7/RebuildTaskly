@@ -30,7 +30,7 @@ function StatCard({ label, value, sub, accent }: { label: string; value: string 
     return (
         <div className="bg-white dark:bg-zinc-900 rounded-[24px] p-6 border border-zinc-100 dark:border-zinc-800 shadow-sm hover:shadow-md transition-shadow">
             <p className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400 mb-2">{label}</p>
-            <p className={`text-4xl font-black tracking-tighter ${accent ?? 'text-zinc-900 dark:text-white'}`}>{value}</p>
+            <p className={`text-4xl font-black ${accent ?? 'text-zinc-900 dark:text-white'}`}>{value}</p>
             {sub && <p className="text-[10px] font-bold text-zinc-400 mt-1 uppercase tracking-wider">{sub}</p>}
         </div>
     );
@@ -310,7 +310,7 @@ function TaskOverviewGrid({ data }: { data: TaskOverview }) {
             <div className="flex items-center justify-between mb-5">
                 <SectionHeader title="Task Overview" sub={`${data?.completionRate || 0}% completion rate`} />
                 <div className="text-right">
-                    <p className="text-3xl font-black text-zinc-900 dark:text-white tracking-tighter">{data?.total || 0}</p>
+                    <p className="text-3xl font-black text-zinc-900 dark:text-white">{data?.total || 0}</p>
                     <p className="text-[9px] font-black text-zinc-400 uppercase">total</p>
                 </div>
             </div>
@@ -475,7 +475,7 @@ export default function TeamPerformanceIndex({ workspace, dashboardData, project
                         <div className="flex items-center gap-2 text-sada-red font-black tracking-[0.3em] text-[10px] mb-2">
                             <Activity size={12} /> <span>OPERATIONAL INTELLIGENCE</span>
                         </div>
-                        <h1 className="text-5xl font-black tracking-tighter uppercase italic text-zinc-900 dark:text-white">Team Performance</h1>
+                        <h1 className="text-5xl font-black uppercase  text-zinc-900 dark:text-white">Team Performance</h1>
                         <p className="text-xs font-bold text-zinc-400 mt-1 uppercase tracking-wider">{workspace?.name} · {periodLabel}</p>
                     </div>
                 </div>

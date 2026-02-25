@@ -64,9 +64,9 @@ export default function TimesheetIndex({ timesheets, projects, stats, currentDat
                                 <User size={14} strokeWidth={3} /> My Routine
                             </button>
 
-                            <button onClick={() => setCurrentView('calendar')} className={tabStyle('calendar')}>
+                            {/* <button onClick={() => setCurrentView('calendar')} className={tabStyle('calendar')}>
                                 <CalendarIcon size={14} strokeWidth={3} /> Calendar
-                            </button>
+                            </button> */}
 
                             <button onClick={() => setCurrentView('audit')} className={tabStyle('audit')}>
                                 <ListChecks size={14} strokeWidth={3} /> Audit

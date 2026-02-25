@@ -10,12 +10,11 @@ import { Link } from '@inertiajs/react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 // --- IMPORT RECENT ACTIVITIES COMPONENT ---
-// Pastikan path import ini sesuai dengan struktur folder kamu!
 import { RecentActivities } from '@/layouts/dashboard/component/RecentActivities';
 
 // ─── Filters ───────────────────────────────────────────────────────────────
-function MemberFilters({ projects, filters, workspaceSlug, memberId }: any) {
-    const [local, setLocal] = useState(filters);
+function MemberFilters({ projects = [], filters = {}, workspaceSlug, memberId }: any) {
+    const [local, setLocal] = useState({ period: 'week', project_id: 'all', ...filters });
     const [showCustom, setShowCustom] = useState(filters.period === 'custom');
 
     const set = (k: string, v: string) => {
@@ -52,7 +51,7 @@ function MemberFilters({ projects, filters, workspaceSlug, memberId }: any) {
                     <p className="text-[9px] font-black uppercase tracking-widest text-zinc-400 mb-1.5">Project</p>
                     <select className={cls} value={local.project_id ?? 'all'} onChange={e => set('project_id', e.target.value)}>
                         <option value="all">All Projects</option>
-                        {projects.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                        {projects?.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
                     </select>
                 </div>
                 <div>
@@ -132,12 +131,20 @@ function PriorityBar({ label, value, total, color }: any) {
 }
 
 // ─── Main Page ─────────────────────────────────────────────────────────────
-export default function MemberPerformanceDetail({ workspace, member, recentTasks, performanceHistory, projects, filters, recentActivities }: any) {
+export default function MemberPerformanceDetail({ 
+    workspace, 
+    member = {}, // Default kosong agar tidak crash
+    recentTasks = [], 
+    performanceHistory = [], 
+    projects = [], 
+    filters = {}, 
+    recentActivities = [] 
+}: any) {
     const [activeTab, setActiveTab] = useState<'overview' | 'tasks' | 'time' | 'trends'>('overview');
 
     const periodLabel = useMemo(() => (
         { today: 'Today', week: 'This Week', month: 'This Month', custom: 'Selected Period' } as any
-    )[filters.period] ?? 'This Week', [filters.period]);
+    )[filters?.period || 'week'] ?? 'This Week', [filters?.period]);
 
     const trendData = performanceHistory ?? [];
 
@@ -150,14 +157,14 @@ export default function MemberPerformanceDetail({ workspace, member, recentTasks
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Dashboard', href: '/dashboard' },
-        { title: workspace.name, href: `/workspaces/${workspace.slug}` },
-        { title: 'Team Performance', href: `/workspaces/${workspace.slug}/team-performance` },
-        { title: member.name, href: '#' },
+        { title: workspace?.name || 'Workspace', href: `/workspaces/${workspace?.slug}` },
+        { title: 'Team Performance', href: `/workspaces/${workspace?.slug}/team-performance` },
+        { title: member?.name || 'Member', href: '#' },
     ];
 
     const tabs = [
         { id: 'overview', label: 'Overview' },
-        { id: 'tasks', label: `Tasks (${recentTasks.length})` },
+        { id: 'tasks', label: `Tasks (${recentTasks?.length || 0})` },
         { id: 'time', label: 'Time Tracking' },
         { id: 'trends', label: 'Trends' },
     ];
@@ -172,12 +179,12 @@ export default function MemberPerformanceDetail({ workspace, member, recentTasks
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={`${member.name} — Performance`} />
+            <Head title={`${member?.name || 'Loading'} — Performance`} />
 
             <div className="mx-auto w-full max-w-[1400px] flex flex-col gap-7 p-6 md:p-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
 
                 {/* ── Back ── */}
-                <Link href={`/workspaces/${workspace.slug}/team-performance`}
+                <Link href={`/workspaces/${workspace?.slug}/team-performance`}
                     className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-sada-red transition w-fit">
                     <ChevronLeft size={14} /> Back to Team Performance
                 </Link>
@@ -186,26 +193,26 @@ export default function MemberPerformanceDetail({ workspace, member, recentTasks
                 <div className="bg-white dark:bg-zinc-900 rounded-[28px] p-8 border border-zinc-100 dark:border-zinc-800 shadow-sm">
                     <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
                         <div className="flex items-center gap-5">
-                            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-zinc-700 to-zinc-900 flex items-center justify-center text-white text-3xl font-black shrink-0">
-                                {member.name[0]}
+                            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-zinc-700 to-zinc-900 flex items-center justify-center text-white text-3xl font-black shrink-0 uppercase">
+                                {member?.name?.[0] || '?'}
                             </div>
                             <div>
                                 <div className="flex items-center gap-2 text-sada-red font-black tracking-[0.3em] text-[10px] mb-1">
                                     <Activity size={11} /> MEMBER ANALYTICS
                                 </div>
-                                <h1 className="text-3xl font-black uppercase tracking-tighter text-zinc-900 dark:text-white">{member.name}</h1>
-                                <p className="text-xs font-bold text-zinc-400 mt-1">{member.email}</p>
+                                <h1 className="text-3xl font-black uppercase tracking-tighter text-zinc-900 dark:text-white">{member?.name || 'Unknown User'}</h1>
+                                <p className="text-xs font-bold text-zinc-400 mt-1">{member?.email || '-'}</p>
                                 <div className="flex items-center gap-2 mt-2">
-                                    <span className="text-[9px] font-black px-3 py-1 bg-zinc-100 dark:bg-zinc-800 rounded-full uppercase text-zinc-600 dark:text-zinc-300">{member.role}</span>
+                                    <span className="text-[9px] font-black px-3 py-1 bg-zinc-100 dark:bg-zinc-800 rounded-full uppercase text-zinc-600 dark:text-zinc-300">{member?.role || 'member'}</span>
                                     <span className="text-[9px] font-black px-3 py-1 bg-blue-100 dark:bg-blue-900/30 rounded-full uppercase text-blue-600">📅 {periodLabel}</span>
                                 </div>
                             </div>
                         </div>
                         <div className="grid grid-cols-3 gap-6">
                             {[
-                                { val: member.taskSummary.total, label: 'Active Tasks', color: 'text-blue-600' },
-                                { val: `${member.performance.completionRate}%`, label: 'Completion', color: 'text-emerald-600' },
-                                { val: member.performance.pointsEarned, label: 'Points', color: 'text-purple-600' },
+                                { val: member?.taskSummary?.total || 0, label: 'Active Tasks', color: 'text-blue-600' },
+                                { val: `${member?.performance?.completionRate || 0}%`, label: 'Completion', color: 'text-emerald-600' },
+                                { val: member?.performance?.pointsEarned || 0, label: 'Points', color: 'text-purple-600' },
                             ].map(({ val, label, color }) => (
                                 <div key={label} className="text-center">
                                     <p className={`text-3xl font-black ${color}`}>{val}</p>
@@ -217,10 +224,10 @@ export default function MemberPerformanceDetail({ workspace, member, recentTasks
                 </div>
 
                 {/* ── Filters ── */}
-                <MemberFilters projects={projects} filters={filters} workspaceSlug={workspace.slug} memberId={member.id} />
+                <MemberFilters projects={projects} filters={filters} workspaceSlug={workspace?.slug} memberId={member?.id} />
 
                 {/* ── Alerts ── */}
-                {member.alerts.length > 0 && (
+                {member?.alerts && member.alerts.length > 0 && (
                     <div className="bg-red-50 dark:bg-red-900/20 rounded-[24px] p-5 border border-red-200 dark:border-red-800">
                         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-red-700 dark:text-red-400 mb-3">Active Alerts</p>
                         {member.alerts.map((a: any, i: number) => (
@@ -234,17 +241,17 @@ export default function MemberPerformanceDetail({ workspace, member, recentTasks
 
                 {/* ── Metric Cards ── */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <MetricCard label="Tasks Completed" sub={periodLabel} value={member.performance.tasksCompleted} icon={CheckCircle2} color="text-blue-600" trend={taskTrend} />
-                    <MetricCard label="Points Earned" sub={periodLabel} value={member.performance.pointsEarned} icon={Award} color="text-purple-600" trend={ptsTrend} />
-                    <MetricCard label="Hours Logged" sub={periodLabel} value={member.timeTracking.thisWeek} suffix="h" icon={Clock} color="text-emerald-600" />
-                    <MetricCard label="Overdue Tasks" sub="Current Status" value={member.taskSummary.overdue} icon={AlertTriangle} color={member.taskSummary.overdue > 0 ? 'text-red-600' : 'text-zinc-600'} />
+                    <MetricCard label="Tasks Completed" sub={periodLabel} value={member?.performance?.tasksCompleted || 0} icon={CheckCircle2} color="text-blue-600" trend={taskTrend} />
+                    <MetricCard label="Points Earned" sub={periodLabel} value={member?.performance?.pointsEarned || 0} icon={Award} color="text-purple-600" trend={ptsTrend} />
+                    <MetricCard label="Hours Logged" sub={periodLabel} value={member?.timeTracking?.thisWeek || 0} suffix="h" icon={Clock} color="text-emerald-600" />
+                    <MetricCard label="Overdue Tasks" sub="Current Status" value={member?.taskSummary?.overdue || 0} icon={AlertTriangle} color={(member?.taskSummary?.overdue || 0) > 0 ? 'text-red-600' : 'text-zinc-600'} />
                 </div>
 
-                {/* ── Tabs ── */}
-                <div className="flex gap-1 bg-zinc-100 dark:bg-zinc-800/50 p-1 rounded-xl w-fit border border-zinc-200 dark:border-zinc-700">
+                {/* ── Tabs Menu ── */}
+                <div className="flex gap-1 bg-zinc-100 dark:bg-zinc-800/50 p-1 rounded-xl w-fit border border-zinc-200 dark:border-zinc-700 overflow-x-auto">
                     {tabs.map(t => (
                         <button key={t.id} onClick={() => setActiveTab(t.id as any)}
-                            className={`px-5 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === t.id ? 'bg-white dark:bg-zinc-900 text-sada-red shadow-sm' : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'}`}>
+                            className={`px-5 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === t.id ? 'bg-white dark:bg-zinc-900 text-sada-red shadow-sm' : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'}`}>
                             {t.label}
                         </button>
                     ))}
@@ -260,12 +267,12 @@ export default function MemberPerformanceDetail({ workspace, member, recentTasks
                                 <SL title="Task Status" sub="Active tasks only" />
                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                                     {[
-                                        { label: 'In Progress', val: member.taskSummary.in_progress, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
-                                        { label: 'Todo', val: member.taskSummary.todo, color: 'text-zinc-600', bg: 'bg-zinc-50 dark:bg-zinc-800' },
-                                        { label: 'In Review', val: member.taskSummary.review, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20' },
-                                        { label: 'Revision', val: member.taskSummary.revision, color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-900/20' },
-                                        { label: 'Done This Week', val: member.taskSummary.doneThisWeek, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
-                                        { label: 'Overdue', val: member.taskSummary.overdue, color: 'text-red-600', bg: 'bg-red-50 dark:bg-red-900/20' },
+                                        { label: 'In Progress', val: member?.taskSummary?.in_progress || 0, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
+                                        { label: 'Todo', val: member?.taskSummary?.todo || 0, color: 'text-zinc-600', bg: 'bg-zinc-50 dark:bg-zinc-800' },
+                                        { label: 'In Review', val: member?.taskSummary?.review || 0, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20' },
+                                        { label: 'Revision', val: member?.taskSummary?.revision || 0, color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-900/20' },
+                                        { label: 'Done This Week', val: member?.taskSummary?.doneThisWeek || 0, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
+                                        { label: 'Overdue', val: member?.taskSummary?.overdue || 0, color: 'text-red-600', bg: 'bg-red-50 dark:bg-red-900/20' },
                                     ].map(({ label, val, color, bg }) => (
                                         <div key={label} className={`${bg} rounded-2xl p-4`}>
                                             <p className={`text-2xl font-black ${color}`}>{val}</p>
@@ -278,13 +285,13 @@ export default function MemberPerformanceDetail({ workspace, member, recentTasks
                             {/* Priority Breakdown */}
                             <div className="bg-white dark:bg-zinc-900 rounded-[24px] p-6 border border-zinc-100 dark:border-zinc-800 shadow-sm">
                                 <SL title="By Priority" sub="Active tasks" />
-                                <PriorityBar label="High" value={member.taskSummary.byPriority.high} total={member.taskSummary.total} color="text-red-600" />
-                                <PriorityBar label="Medium" value={member.taskSummary.byPriority.medium} total={member.taskSummary.total} color="text-amber-500" />
-                                <PriorityBar label="Low" value={member.taskSummary.byPriority.low} total={member.taskSummary.total} color="text-emerald-500" />
+                                <PriorityBar label="High" value={member?.taskSummary?.byPriority?.high || 0} total={member?.taskSummary?.total || 0} color="text-red-600" />
+                                <PriorityBar label="Medium" value={member?.taskSummary?.byPriority?.medium || 0} total={member?.taskSummary?.total || 0} color="text-amber-500" />
+                                <PriorityBar label="Low" value={member?.taskSummary?.byPriority?.low || 0} total={member?.taskSummary?.total || 0} color="text-emerald-500" />
 
                                 <div className="mt-6 pt-4 border-t border-zinc-100 dark:border-zinc-800">
                                     <SL title="Daily Hours" sub="This week" />
-                                    {member.timeTracking.dailyBreakdown?.map((d: any, i: number) => (
+                                    {member?.timeTracking?.dailyBreakdown?.map((d: any, i: number) => (
                                         <div key={i} className="flex items-center justify-between mb-2">
                                             <span className="text-[10px] font-bold text-zinc-500 w-10">{d.day}</span>
                                             <div className="flex-1 h-2 bg-zinc-100 dark:bg-zinc-800 rounded-full mx-3 overflow-hidden">
@@ -303,7 +310,6 @@ export default function MemberPerformanceDetail({ workspace, member, recentTasks
                                 <RecentActivities activities={recentActivities || []} />
                             </div>
                         </div>
-
                     </div>
                 )}
 
@@ -313,17 +319,17 @@ export default function MemberPerformanceDetail({ workspace, member, recentTasks
                         <div className="px-6 py-5 border-b border-zinc-50 dark:border-zinc-800">
                             <SL title="Recent Tasks" sub={`Updated in ${periodLabel.toLowerCase()}`} />
                         </div>
-                        {recentTasks.length > 0 ? (
+                        {recentTasks?.length > 0 ? (
                             <div className="divide-y divide-zinc-50 dark:divide-zinc-800">
                                 {recentTasks.map((task: any) => (
                                     <div key={task.id} className="px-6 py-4 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition">
                                         <div className="flex items-start justify-between gap-4">
                                             <div>
-                                                <p className="text-[9px] font-black text-sada-red uppercase tracking-tighter mb-1">{task.project?.name}</p>
+                                                <p className="text-[9px] font-black text-sada-red uppercase tracking-tighter mb-1">{task?.project?.name || 'Unknown Project'}</p>
                                                 <p className="text-sm font-black text-zinc-900 dark:text-white uppercase">{task.title}</p>
                                                 <div className="flex items-center gap-2 mt-2">
                                                     <span className={`text-[9px] font-black px-2.5 py-1 rounded-full ${statusColors[task.status] ?? 'bg-zinc-100 text-zinc-600'}`}>
-                                                        {task.status.replace('_', ' ')}
+                                                        {task.status?.replace('_', ' ')}
                                                     </span>
                                                     <span className={`text-[9px] font-black px-2.5 py-1 rounded-full border ${task.priority === 'high' ? 'bg-red-50 border-red-100 text-red-600' : task.priority === 'medium' ? 'bg-amber-50 border-amber-100 text-amber-600' : 'bg-zinc-50 border-zinc-100 text-zinc-400'}`}>
                                                         {task.priority}
@@ -354,21 +360,21 @@ export default function MemberPerformanceDetail({ workspace, member, recentTasks
                         <div className="grid grid-cols-3 gap-4">
                             <div className="bg-blue-50 dark:bg-blue-900/20 rounded-[24px] p-6">
                                 <p className="text-[9px] font-black text-zinc-400 uppercase mb-1">Total Hours</p>
-                                <p className="text-4xl font-black text-blue-700 dark:text-blue-400">{member.timeTracking.totalHours}<span className="text-xl">h</span></p>
+                                <p className="text-4xl font-black text-blue-700 dark:text-blue-400">{member?.timeTracking?.totalHours || 0}<span className="text-xl">h</span></p>
                             </div>
                             <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-[24px] p-6">
-                                <p className="text-[9px] font-black text-zinc-400 uppercase mb-1">Avg per {member.timeTracking.granularity === 'weekly' ? 'Week' : 'Day'}</p>
-                                <p className="text-4xl font-black text-emerald-700 dark:text-emerald-400">{member.timeTracking.avgPerPeriod}<span className="text-xl">h</span></p>
+                                <p className="text-[9px] font-black text-zinc-400 uppercase mb-1">Avg per {member?.timeTracking?.granularity === 'weekly' ? 'Week' : 'Day'}</p>
+                                <p className="text-4xl font-black text-emerald-700 dark:text-emerald-400">{member?.timeTracking?.avgPerPeriod || 0}<span className="text-xl">h</span></p>
                             </div>
                             <div className="bg-purple-50 dark:bg-purple-900/20 rounded-[24px] p-6">
                                 <p className="text-[9px] font-black text-zinc-400 uppercase mb-1">Overtime Periods</p>
-                                <p className="text-4xl font-black text-purple-700 dark:text-purple-400">{member.timeTracking.overtimeCount}</p>
+                                <p className="text-4xl font-black text-purple-700 dark:text-purple-400">{member?.timeTracking?.overtimeCount || 0}</p>
                             </div>
                         </div>
 
                         <div className="bg-white dark:bg-zinc-900 rounded-[24px] p-6 border border-zinc-100 dark:border-zinc-800 shadow-sm">
-                            <SL title={`${member.timeTracking.granularity === 'weekly' ? 'Weekly' : 'Daily'} Breakdown`} sub={periodLabel} />
-                            {member.timeTracking.breakdown?.length > 0 ? (
+                            <SL title={`${member?.timeTracking?.granularity === 'weekly' ? 'Weekly' : 'Daily'} Breakdown`} sub={periodLabel} />
+                            {member?.timeTracking?.breakdown?.length > 0 ? (
                                 <div className="space-y-3">
                                     {member.timeTracking.breakdown.map((entry: any, i: number) => (
                                         <div key={i}>
@@ -381,7 +387,7 @@ export default function MemberPerformanceDetail({ workspace, member, recentTasks
                                             </div>
                                             <div className="h-2 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
                                                 <div className={`h-full rounded-full transition-all ${entry.overtime ? 'bg-red-500' : entry.hours >= (entry.target ?? 8) ? 'bg-emerald-500' : 'bg-blue-500'}`}
-                                                    style={{ width: `${Math.min((entry.hours / (entry.target ?? 8)) * 100, 100)}%` }} />
+                                                    style={{ width: `${Math.min(((entry.hours || 0) / (entry.target ?? 8)) * 100, 100)}%` }} />
                                             </div>
                                         </div>
                                     ))}
@@ -400,7 +406,7 @@ export default function MemberPerformanceDetail({ workspace, member, recentTasks
                 {activeTab === 'trends' && (
                     <div className="bg-white dark:bg-zinc-900 rounded-[24px] p-6 border border-zinc-100 dark:border-zinc-800 shadow-sm animate-in fade-in duration-300">
                         <SL title="Performance Trends" sub={`Based on ${periodLabel.toLowerCase()}`} />
-                        {trendData.length > 0 ? (
+                        {trendData?.length > 0 ? (
                             <div className="space-y-6">
                                 <div className="h-56">
                                     <ResponsiveContainer width="100%" height="100%">
