@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Head, usePage } from '@inertiajs/react';
+import { Head, usePage, Link } from '@inertiajs/react'; // <-- Tambahkan Link
 import WorkspaceLayout from '@/layouts/workspaces/WorkspaceLayout';
 import DataTableBase from '@/components/DataTableBase';
 import { getProjectColumns } from '@/components/tabs-workspace/ProjectColumns';
@@ -8,7 +8,7 @@ import WorkspaceSettings from '@/components/tabs-workspace/WorkspaceSettings';
 import ProjectGridCard from '@/components/tabs-workspace/ProjectGridCard';
 import { ProjectControls } from '@/components/tabs-workspace/ProjectControls';
 import WorkspaceMembers from '@/components/tabs-workspace/MemberWorkspaceTab';
-import { Zap } from 'lucide-react';
+import { Zap, Activity, TrendingUp } from 'lucide-react'; // <-- Tambahkan icon baru
 
 export default function WorkspaceShow({ 
     workspace, 
@@ -17,8 +17,8 @@ export default function WorkspaceShow({
     companies, 
     members, 
     allEmployees,
-    memberCount, // Kita tangkap data dari controller di sini
-    projectCount  // Kita tangkap data dari controller di sini
+    memberCount, 
+    projectCount  
 }: any) {
     const [activeTab, setActiveTab] = useState<'projects' | 'members' | 'settings'>('projects');
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -58,9 +58,6 @@ export default function WorkspaceShow({
     }, [projects, searchQuery, statusFilter, priorityFilter]);
 
     return (
-        /* PENTING: Kita lempar memberCount dan projectCount ke WorkspaceLayout 
-           supaya nanti Layout bisa ngoper lagi ke WorkspaceHeader 
-        */
         <WorkspaceLayout 
             workspace={workspace} 
             activeTab={activeTab} 
@@ -72,9 +69,10 @@ export default function WorkspaceShow({
             <Head title={workspace.name} />
 
             <div className="w-full flex flex-col gap-4 py-8 animate-in fade-in duration-700">
-                
+         
+
                 {activeTab === 'projects' && (
-                    <div className="flex flex-col w-full">
+                    <div className="flex flex-col w-full animate-in slide-in-from-bottom-4 duration-500">
                         <ProjectControls 
                             viewMode={viewMode}
                             setViewMode={setViewMode}
@@ -123,11 +121,13 @@ export default function WorkspaceShow({
                 )}
                 
                 {activeTab === 'settings' && ( 
-                    <WorkspaceSettings 
-                        workspace={workspace} 
-                        isSuperAdmin={auth.user.roles?.includes('super-admin')} 
-                        companies={companies} 
-                    /> 
+                    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <WorkspaceSettings 
+                            workspace={workspace} 
+                            isSuperAdmin={auth.user.roles?.includes('super-admin')} 
+                            companies={companies} 
+                        /> 
+                    </div>
                 )}
             </div>
 

@@ -7,6 +7,7 @@ import { TaskDetailTabs } from '@/layouts/tasks/tabs/TabsDetailTasks';
 import { TaskOverview } from '@/layouts/tasks/tabs/TaskOverview';
 import { TaskDocuments } from '@/layouts/tasks/tabs/TaskDocument';
 import { TaskTimesheetTab } from '@/layouts/tasks/tabs/TaskTimesheetTab';
+import { TaskActivityLog } from '@/layouts/tasks/tabs/TaskActivity';
 
 export default function TaskShow({ workspace, project, task, isManager }: any) {
     const [activeTab, setActiveTab] = useState<'brief' | 'logs' | 'docs' | 'activity'>('brief');
@@ -60,7 +61,7 @@ export default function TaskShow({ workspace, project, task, isManager }: any) {
                         <TaskDocuments
                             task={enrichedTask} />}
                     {activeTab === 'activity' &&
-                        <TaskTimesheetTab task={enrichedTask} isManager={isManager} />
+                        <TaskActivityLog task={enrichedTask} />
                     }
                 </div>
 

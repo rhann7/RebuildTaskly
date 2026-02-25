@@ -16,6 +16,7 @@ use Laravel\Fortify\Features;
 use Spatie\Permission\Models\Permission;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\TaskManagement\TaskDocumentController;
+use App\Http\Controllers\TeamPerformanceController;
 use App\Http\Controllers\Timesheets\TimesheetController;
 use Illuminate\Support\Facades\Auth;
 
@@ -124,6 +125,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::patch('/timesheets/entries/{id}/approve', [TimesheetController::class, 'approveEntry'])->name('timesheets.entries.approve');
         Route::patch('/timesheets/entries/{id}/reject', [TimesheetController::class, 'rejectEntry'])->name('timesheets.entries.reject');
 
+        Route::get('/workspaces/{workspace:slug}/team-performance', [TeamPerformanceController::class, 'index'])
+            ->name('workspaces.team-performance');
+        Route::get('/workspaces/{workspace:slug}/team-performance/member/{member}', [TeamPerformanceController::class, 'showMember'])
+            ->name('workspaces.team-performance.member');
 
         if (Schema::hasTable('permissions') && Schema::hasColumns('permissions', ['route_path', 'route_name'])) {
             $dynamicRoutes = cache()->remember('dynamic_routes', 3600, function () {

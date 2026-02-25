@@ -61,7 +61,7 @@ class MenuService
         }
 
         // 3. LOGIC INHERITANCE (MANAGER/MEMBER NYONTEK PERMISSION BOSS)
-        
+
         // Cari ID Owner (Role Company) di perusahaan yang sama
         $owner = User::role('company')
             ->where('company_id', $user->company_id)
@@ -100,13 +100,30 @@ class MenuService
         // 4. Generate Menu Array
         foreach ($allPermissions as $p) {
             $href = '#';
-            
-            // Handle URL/HREF (Prioritas: Route Name -> Route Path)
-            if ($p->route_name && Route::has($p->route_name)) {
-                $href = route($p->route_name);
-            } elseif ($p->route_path) {
-                $href = url($p->route_path);
+
+            // --- LOGIC PERBAIKAN UNTUK ROUTE YANG BUTUH PARAMETER ---
+            // Jika route_name adalah 'workspaces.team-performance', 
+            // kita harus memastikan kita sedang berada di dalam halaman Workspace
+            if ($p->route_name === 'workspaces.team-performance') {
+                $workspace = $request->route('workspace'); // Ambil parameter dari URL saat ini
+
+                // Jika sedang TIDAK berada di dalam workspace (misal di halaman /tasks), SKIP menu ini
+                if (!$workspace) {
+                    continue;
+                }
+
+                // Jika ada, generate route-nya
+                $workspaceSlug = is_object($workspace) ? $workspace->slug : $workspace;
+                $href = route($p->route_name, ['workspace' => $workspaceSlug]);
+            } else {
+                // Logic default untuk menu-menu lainnya yang tidak butuh parameter
+                if ($p->route_name && Route::has($p->route_name)) {
+                    $href = route($p->route_name);
+                } elseif ($p->route_path) {
+                    $href = url($p->route_path);
+                }
             }
+            // --------------------------------------------------------
 
             $menu[] = [
                 'title'    => Str::headline($p->name),

@@ -11,7 +11,7 @@ export default function GlobalTaskIndex({ tasks, filters }: any) {
     const [searchQuery, setSearchQuery] = useState(filters.search || '');
 
     const handleSearch = () => {
-        router.get('/tasks', { search: searchQuery }, { preserveState: true });
+        // router.get('/tasks', { search: searchQuery }, { preserveState: true });
     };
     interface Task {
         id: number;

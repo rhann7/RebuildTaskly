@@ -12,7 +12,7 @@ export const TaskDetailTabs = ({ activeTab, setActiveTab, isManager, taskStatus 
         { id: 'brief', label: 'Briefing', icon: Target },
         { id: 'logs', label: 'Timesheets', icon: Clock }, // Kita masukkan Timesheet ke sini
         { id: 'docs', label: 'Documentation', icon: Paperclip },
-        { id: 'activity', label: 'System Activity', icon: Activity },
+        { id: 'activity', label: 'Task Activity Log', icon: Activity },
     ];
 
     return (
