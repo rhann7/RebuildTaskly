@@ -56,7 +56,7 @@ export default function Dashboard() {
     const getQuickActions = () => {
         if (role === 'super-admin') {
             return [
-                { label: 'Add Company', description: 'Register new client', icon: Building2, color: 'from-purple-500 to-indigo-600', href: '/companies/create' },
+                { label: 'Add Company', description: 'Register new client', icon: Building2, color: 'from-purple-500 to-indigo-600', href: '/company-management/companies/create' },
                 { label: 'Manage Roles', description: 'System permissions', icon: Settings, color: 'from-zinc-500 to-zinc-700', href: '/permissions' },
             ];
         }
