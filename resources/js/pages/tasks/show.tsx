@@ -57,9 +57,9 @@ export default function TaskShow({ workspace, project, task, isManager }: any) {
                             <TaskTimesheetTab task={task} isManager={isManager} />
                         </div>
                     )}
-                    {activeTab === 'docs' &&
+                    {/* {activeTab === 'docs' &&
                         <TaskDocuments
-                            task={enrichedTask} />}
+                            task={enrichedTask} />} */}
                     {activeTab === 'activity' &&
                         <TaskActivityLog task={enrichedTask} />
                     }
