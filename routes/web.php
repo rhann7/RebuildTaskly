@@ -107,6 +107,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
             Route::resource('appeals', CompanyAppealController::class)
                 ->only(['index', 'update']);
+
+            Route::prefix('reports')->name('reports.')->group(function () {
+                Route::get('company', [\App\Http\Controllers\Companies\ReportPageController::class, 'company'])
+                    ->name('company');
+            });
         });
     });
 
