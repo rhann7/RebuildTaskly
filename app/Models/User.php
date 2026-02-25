@@ -7,11 +7,12 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Lab404\Impersonate\Models\Impersonate;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasFactory, HasRoles, Impersonate, Notifiable, TwoFactorAuthenticatable;
+    use HasFactory, HasRoles, Impersonate, Notifiable, TwoFactorAuthenticatable, HasApiTokens;
 
     protected $fillable = [
         'name',
