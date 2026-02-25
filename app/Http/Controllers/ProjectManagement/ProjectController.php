@@ -118,19 +118,26 @@ class ProjectController extends Controller
         // 1. VALIDASI DASAR & KEAMANAN
         abort_if($project->workspace_id !== $workspace->id, 404);
 
-        // GATE KEEPER: Hanya Admin, Manager Workspace, atau Member Project yang bisa masuk
+        // GATE KEEPER: Hanya Admin, Company Owner, Manager Workspace, atau Member Project yang bisa masuk
         if (!$user->isSuperAdmin()) {
+            
+            // Cek apakah dia Boss (Role Company)
+            $isCompanyAdmin = $user->hasRole('company') && $user->company_id === $workspace->company_id;
+            
+            // Cek apakah dia Manager Workspace (Si Bedul)
             $isWorkspaceManager = $workspace->manager_id === $user->id;
+            
+            // Cek apakah dia Member Project (Karyawan terdaftar)
             $isProjectMember = $project->members()->where('users.id', $user->id)->exists();
 
-            if (!$isWorkspaceManager && !$isProjectMember) {
-                // Kita arahkan kembali ke halaman detail Workspace
+            // JIKA BUKAN ketiganya, BARU usir
+            if (!$isCompanyAdmin && !$isWorkspaceManager && !$isProjectMember) {
                 return redirect()->route('workspaces.show', $workspace->slug)
                     ->with('error', 'AUTHORIZATION ERROR: Unit not deployed to this project sector.');
             }
         }
 
-        // --- HITUNG PROGRESS (Pake manual load buat jaga-jaga appends gak kebaca) ---
+        // --- HITUNG PROGRESS ---
         $project->tasks_count = $project->tasks()->count();
         $completedTasksCount = $project->tasks()->where('status', 'done')->count();
         $project->progress = $project->tasks_count > 0
@@ -138,8 +145,6 @@ class ProjectController extends Controller
             : 0;
 
         // --- MANAJEMEN PERSONNEL ---
-        
-        // 1. Ambil Manager Workspace
         $managers = collect();
         if ($workspace->manager) {
             $managers = collect([$workspace->manager])->map(fn($m) => [
@@ -152,7 +157,6 @@ class ProjectController extends Controller
             ]);
         }
 
-        // 2. Ambil Member Project (Pivot data)
         $members = $project->members()
             ->get()
             ->map(fn($m) => [
@@ -164,10 +168,8 @@ class ProjectController extends Controller
                 'is_manager'   => false,
             ]);
 
-        // 3. Gabungkan Semua Personnel
         $allPersonnel = $managers->concat($members);
 
-        // 4. Filter Karyawan yang Bisa Ditambah (Exclude yang sudah jadi member/manager)
         $managerId = $workspace->manager_id;
         $availableEmployees = $workspace->members()
             ->whereDoesntHave('projects', function ($q) use ($project) {
@@ -183,8 +185,10 @@ class ProjectController extends Controller
             'projectMembers'     => $allPersonnel,
             'availableEmployees' => $availableEmployees,
             'isSuperAdmin'       => $user->isSuperAdmin(),
-            // Tambahin ini biar di frontend lo bisa sembunyiin tombol "Add Member" buat member biasa
-            'can_manage'         => $user->isSuperAdmin() || $user->id === $workspace->manager_id,
+            // UPDATE can_manage: SuperAdmin & Company Admin juga boleh manage
+            'can_manage'         => $user->isSuperAdmin() || 
+                                    ($user->hasRole('company') && $user->company_id === $workspace->company_id) || 
+                                    $user->id === $workspace->manager_id,
         ]);
     }
 
