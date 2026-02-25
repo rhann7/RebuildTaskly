@@ -5,9 +5,9 @@ import dayjs from "dayjs";
 interface TimeEntry {
   id: number;
   taskName: string;
-  date: string; 
-  startTime: string; 
-  endTime: string; 
+  date: string;
+  startTime: string;
+  endTime: string;
   status: "draft" | "submitted" | "approved" | "revision";
 }
 
@@ -113,10 +113,7 @@ export function TimeGrid({
     const deltaY = e.clientY - startY;
     const deltaMins = Math.round(deltaY * MINS_PER_PIXEL / 15) * 15; 
 
-    if (deltaMins !== 0) {
-        setIsMoved(true);
-    }
-
+    if (deltaMins !== 0) setIsMoved(true);
     if (deltaMins === 0) return; 
 
     const newEntry = { ...draggingEntry };
@@ -162,10 +159,93 @@ export function TimeGrid({
     } catch(err) {}
   };
 
+  // --- 1. GABUNGKAN DATA ENTRY ASLI DENGAN YANG SEDANG DI-DRAG ---
   const displayEntries = useMemo(() => {
     if (!draggingEntry) return entries;
     return entries.map(e => e.id === draggingEntry.id ? draggingEntry : e);
   }, [entries, draggingEntry]);
+
+  // --- 2. ALGORITMA CLUSTERING (Dihitung di luar render loop jam) ---
+  const layoutMap = useMemo(() => {
+      const map = new Map<number, { width: string, left: string, top: string, height: string }>();
+
+      // Kelompokkan entri berdasarkan tanggal (kolom hari)
+      const entriesByDate = displayEntries.reduce((acc, entry) => {
+          if (!acc[entry.date]) acc[entry.date] = [];
+          acc[entry.date].push(entry);
+          return acc;
+      }, {} as Record<string, TimeEntry[]>);
+
+      Object.values(entriesByDate).forEach(dayEntries => {
+          if (dayEntries.length === 0) return;
+
+          // A. Urutkan berdasarkan waktu mulai, lalu durasi terpanjang
+          const sorted = [...dayEntries].sort((a, b) => {
+              const sA = timeToMinutes(a.startTime);
+              const sB = timeToMinutes(b.startTime);
+              return sA !== sB ? sA - sB : timeToMinutes(b.endTime) - timeToMinutes(a.endTime);
+          });
+
+          // B. Kelompokkan ke cluster (grup jadwal yang saling bersinggungan)
+          const clusters: TimeEntry[][] = [];
+          let currentCluster: TimeEntry[] = [];
+          let clusterEnd = 0;
+
+          sorted.forEach(entry => {
+              const start = timeToMinutes(entry.startTime);
+              const end = timeToMinutes(entry.endTime);
+              
+              if (currentCluster.length > 0 && start >= clusterEnd) {
+                  clusters.push(currentCluster);
+                  currentCluster = [];
+                  clusterEnd = 0;
+              }
+              currentCluster.push(entry);
+              clusterEnd = Math.max(clusterEnd, end);
+          });
+          if (currentCluster.length > 0) clusters.push(currentCluster);
+
+          // C. Bagi setiap cluster ke dalam kolom-kolom
+          clusters.forEach(cluster => {
+              const columns: TimeEntry[][] = [];
+              
+              cluster.forEach(entry => {
+                  const start = timeToMinutes(entry.startTime);
+                  let placed = false;
+                  
+                  for (let i = 0; i < columns.length; i++) {
+                      const lastEvent = columns[i][columns[i].length - 1];
+                      if (start >= timeToMinutes(lastEvent.endTime)) {
+                          columns[i].push(entry);
+                          placed = true;
+                          break;
+                      }
+                  }
+                  if (!placed) columns.push([entry]);
+              });
+
+              // D. Simpan hasil perhitungan styling (width, left, top, height) ke Map
+              const numCols = columns.length;
+              columns.forEach((col, colIndex) => {
+                  col.forEach(entry => {
+                      const startMins = timeToMinutes(entry.startTime);
+                      const endMins = timeToMinutes(entry.endTime);
+                      const duration = endMins - startMins;
+
+                      map.set(entry.id, {
+                          width: `calc(${100 / numCols}% - 4px)`,
+                          left: `calc(${(100 / numCols) * colIndex}% + 2px)`,
+                          top: `${(startMins / 60) * ROW_HEIGHT + 2}px`,
+                          height: `${(duration / 60) * ROW_HEIGHT - 4}px`
+                      });
+                  });
+              });
+          });
+      });
+
+      return map;
+  }, [displayEntries]);
+
 
   return (
     <div className="bg-background border border-border rounded-[32px] shadow-xl overflow-hidden animate-in fade-in slide-in-from-bottom duration-700 flex flex-col h-[800px] select-none">
@@ -201,142 +281,26 @@ export function TimeGrid({
 
           <div className="relative" style={{ height: `${24 * ROW_HEIGHT}px` }}>
             
-            {/* GRID LINES & LABELS */}
+            {/* GRID BACKGROUND (HANYA GARIS JAM & SLOT KOSONG) */}
             {hours.map((hour) => (
               <div key={hour} className="absolute w-full flex" style={{ top: `${hour * ROW_HEIGHT}px`, height: `${ROW_HEIGHT}px` }}>
                 <div className="w-[80px] shrink-0 border-r border-border relative">
                   <span className="absolute -top-2.5 right-4 text-[10px] font-bold text-muted-foreground">{formatHour(hour)}</span>
                 </div>
 
-                {/* Day Slots */}
                 {days.map((day, dayIndex) => {
                   const dateStr = dayjs(day).format("YYYY-MM-DD");
-                  const dayEntries = displayEntries.filter(e => e.date === dateStr);
-
-                  // --- ALGORITMA OVERLAP YANG BARU (CLUSTERING & COLUMNS) ---
-                  const layoutMap = new Map<number, { width: string, left: string }>();
-                  
-                  if (dayEntries.length > 0) {
-                      // 1. Urutkan berdasarkan waktu mulai, lalu waktu selesai (durasi terpanjang)
-                      const sorted = [...dayEntries].sort((a, b) => {
-                          const sA = timeToMinutes(a.startTime);
-                          const sB = timeToMinutes(b.startTime);
-                          return sA !== sB ? sA - sB : timeToMinutes(b.endTime) - timeToMinutes(a.endTime);
-                      });
-
-                      // 2. Kelompokkan jadwal yang bersinggungan ke dalam "cluster"
-                      const clusters: TimeEntry[][] = [];
-                      let currentCluster: TimeEntry[] = [];
-                      let clusterEnd = 0;
-
-                      sorted.forEach(entry => {
-                          const start = timeToMinutes(entry.startTime);
-                          const end = timeToMinutes(entry.endTime);
-                          
-                          if (currentCluster.length > 0 && start >= clusterEnd) {
-                              clusters.push(currentCluster);
-                              currentCluster = [];
-                              clusterEnd = 0;
-                          }
-                          currentCluster.push(entry);
-                          clusterEnd = Math.max(clusterEnd, end);
-                      });
-                      if (currentCluster.length > 0) clusters.push(currentCluster);
-
-                      // 3. Bagi ke dalam kolom-kolom agar tidak bertabrakan
-                      clusters.forEach(cluster => {
-                          const columns: TimeEntry[][] = [];
-                          
-                          cluster.forEach(entry => {
-                              const start = timeToMinutes(entry.startTime);
-                              let placed = false;
-                              
-                              for (let i = 0; i < columns.length; i++) {
-                                  const lastEvent = columns[i][columns[i].length - 1];
-                                  if (start >= timeToMinutes(lastEvent.endTime)) {
-                                      columns[i].push(entry);
-                                      placed = true;
-                                      break;
-                                  }
-                              }
-                              if (!placed) columns.push([entry]);
-                          });
-
-                          // 4. Hitung persentase ukuran (width) dan posisi (left)
-                          const numCols = columns.length;
-                          columns.forEach((col, colIndex) => {
-                              col.forEach(entry => {
-                                  layoutMap.set(entry.id, {
-                                      width: `calc(${100 / numCols}% - 4px)`,
-                                      left: `calc(${(100 / numCols) * colIndex}% + 2px)`
-                                  });
-                              });
-                          });
-                      });
-                  }
-
                   return (
                     <div
                       key={dayIndex}
                       className={`flex-1 relative border-r border-b border-border/40 transition-colors ${isToday(day) ? "bg-sada-red/[0.01]" : ""}`}
                       onPointerDown={(e) => {
-                         // CEGAH BUBBLING
                          if (e.target === e.currentTarget) {
                              onTimeSlotClick(dateStr, hour);
                          }
                       }}
                     >
                       <div className="absolute top-1/2 w-full border-t border-border/20 border-dashed pointer-events-none" />
-
-                      {/* RENDER TASKS */}
-                      {hour === 0 && dayEntries.map((entry) => {
-                        const startMins = timeToMinutes(entry.startTime);
-                        const endMins = timeToMinutes(entry.endTime);
-                        const duration = endMins - startMins;
-
-                        // Ambil layout yang sudah dihitung oleh algoritma overlap di atas
-                        const layout = layoutMap.get(entry.id) || { width: 'calc(100% - 4px)', left: '2px' };
-                        const isDraggingThis = draggingEntry?.id === entry.id;
-
-                        return (
-                          <div
-                            key={entry.id}
-                            className={`absolute rounded-xl border-l-4 p-2 transition-all overflow-hidden flex flex-col group/card
-                                ${getStatusColor(entry.status)} border border-y-black/5 border-r-black/5
-                                ${isDraggingThis ? 'z-50 opacity-80 ring-2 ring-sada-red shadow-2xl scale-[1.02] cursor-grabbing' : 'z-20 hover:shadow-lg hover:z-30 cursor-grab'}
-                            `}
-                            style={{
-                              top: `${(startMins / 60) * ROW_HEIGHT + 2}px`,
-                              height: `${(duration / 60) * ROW_HEIGHT - 4}px`,
-                              minHeight: '28px',
-                              width: layout.width,
-                              left: layout.left,
-                            }}
-                            onPointerDown={(e) => handlePointerDown(e, entry, 'move')}
-                          >
-                            <div className="absolute top-1 right-1 opacity-0 group-hover/card:opacity-30 pointer-events-none">
-                                <GripHorizontal size={12} />
-                            </div>
-
-                            <span className="text-[10px] font-black uppercase truncate leading-tight pointer-events-none">
-                              {entry.taskName}
-                            </span>
-                            {duration > 30 && (
-                              <span className="text-[9px] font-bold opacity-70 mt-0.5 truncate pointer-events-none">
-                                {entry.startTime} - {entry.endTime}
-                              </span>
-                            )}
-
-                            <div 
-                                className="absolute bottom-0 left-0 w-full h-3 cursor-ns-resize flex items-end justify-center group-hover/card:bg-black/5"
-                                onPointerDown={(e) => handlePointerDown(e, entry, 'resize')}
-                            >
-                                <div className="w-6 h-1 bg-black/20 rounded-full mb-1" />
-                            </div>
-                          </div>
-                        );
-                      })}
-
                       <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity pointer-events-none">
                         <Plus size={20} className="text-muted-foreground/30" />
                       </div>
@@ -345,6 +309,68 @@ export function TimeGrid({
                 })}
               </div>
             ))}
+
+            {/* RENDER TASKS (KOTAK JADWAL DI RENDER DI SINI, DI ATAS GRID) */}
+            <div className="absolute top-0 left-[80px] right-0 bottom-0 pointer-events-none flex">
+                {days.map((day, dayIndex) => {
+                    const dateStr = dayjs(day).format("YYYY-MM-DD");
+                    const dayEntries = displayEntries.filter(e => e.date === dateStr);
+
+                    return (
+                        <div key={dayIndex} className="flex-1 relative h-full">
+                            {dayEntries.map((entry) => {
+                                const layout = layoutMap.get(entry.id);
+                                if (!layout) return null;
+
+                                const isDraggingThis = draggingEntry?.id === entry.id;
+
+                                return (
+                                    <div
+                                        key={entry.id}
+                                        className={`absolute rounded-xl border-l-4 p-2 transition-all overflow-hidden flex flex-col group/card pointer-events-auto
+                                            ${getStatusColor(entry.status)} border border-y-black/5 border-r-black/5
+                                            ${isDraggingThis ? 'z-50 opacity-80 ring-2 ring-sada-red shadow-2xl scale-[1.02] cursor-grabbing' : 'z-20 hover:shadow-lg hover:z-30 cursor-grab'}
+                                        `}
+                                        style={{
+                                            top: layout.top,
+                                            height: layout.height,
+                                            minHeight: '28px',
+                                            width: layout.width,
+                                            left: layout.left,
+                                        }}
+                                        onPointerDown={(e) => handlePointerDown(e, entry, 'move')}
+                                        onPointerMove={handlePointerMove}
+                                        onPointerUp={handlePointerUp}
+                                    >
+                                        <div className="absolute top-1 right-1 opacity-0 group-hover/card:opacity-30 pointer-events-none">
+                                            <GripHorizontal size={12} />
+                                        </div>
+
+                                        <span className="text-[10px] font-black uppercase truncate leading-tight pointer-events-none">
+                                            {entry.taskName}
+                                        </span>
+                                        {parseInt(layout.height) > 30 && (
+                                            <span className="text-[9px] font-bold opacity-70 mt-0.5 truncate pointer-events-none">
+                                                {entry.startTime} - {entry.endTime}
+                                            </span>
+                                        )}
+
+                                        <div 
+                                            className="absolute bottom-0 left-0 w-full h-3 cursor-ns-resize flex items-end justify-center group-hover/card:bg-black/5"
+                                            onPointerDown={(e) => handlePointerDown(e, entry, 'resize')}
+                                            onPointerMove={handlePointerMove}
+                                            onPointerUp={handlePointerUp}
+                                        >
+                                            <div className="w-6 h-1 bg-black/20 rounded-full mb-1" />
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    );
+                })}
+            </div>
+
           </div>
         </div>
       </div>
