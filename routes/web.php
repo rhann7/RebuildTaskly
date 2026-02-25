@@ -118,16 +118,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 
         Route::patch('/timesheets/{id}/time', [TimesheetController::class, 'updateTime'])->name('timesheets.time.update');
-        // Route::patch('/timesheet-entries/{id}/reject', [TimesheetController::class, 'rejectEntry'])->name('timesheet-entries.reject');
+        Route::patch('/timesheet-entries/{id}/reject', [TimesheetController::class, 'rejectEntry'])->name('timesheet-entries.reject');
         Route::patch('/timesheets/{timesheet}/submit', [TimesheetController::class, 'submit'])->name('timesheets.submit');
         Route::patch('/timesheets/{timesheet}/approve', [TimesheetController::class, 'approve'])->name('timesheets.approve');
         Route::patch('/timesheets/{timesheet}/reject', [TimesheetController::class, 'reject'])->name('timesheets.reject');
         Route::patch('/timesheets/entries/{id}/approve', [TimesheetController::class, 'approveEntry'])->name('timesheets.entries.approve');
         Route::patch('/timesheets/entries/{id}/reject', [TimesheetController::class, 'rejectEntry'])->name('timesheets.entries.reject');
 
-        Route::get('/workspaces/{workspace:slug}/team-performance', [TeamPerformanceController::class, 'index'])
+        Route::patch('/workspaces/{workspace:slug}/team-performance', [TeamPerformanceController::class, 'index'])
             ->name('workspaces.team-performance');
-        Route::get('/workspaces/{workspace:slug}/team-performance/member/{member}', [TeamPerformanceController::class, 'showMember'])
+        Route::patch('/workspaces/{workspace:slug}/team-performance/member/{member}', [TeamPerformanceController::class, 'showMember'])
             ->name('workspaces.team-performance.member');
 
         if (Schema::hasTable('permissions') && Schema::hasColumns('permissions', ['route_path', 'route_name'])) {
